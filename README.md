@@ -1,98 +1,169 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Sunoo Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS backend application with TypeORM, PostgreSQL, OpenAPI, and JWT authentication.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- 🚀 **NestJS** - Modern Node.js framework
+- 🗄️ **TypeORM** - Type-safe ORM for PostgreSQL
+- 🐘 **PostgreSQL** - Robust relational database
+- 📚 **OpenAPI/Swagger** - Interactive API documentation
+- 🔐 **JWT Authentication** - Secure token-based auth
+- ✅ **Validation** - Request validation with class-validator
+- 🛡️ **Security** - Helmet, CORS, and other security middleware
+- 🐳 **Docker** - Containerized PostgreSQL and pgAdmin
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Quick Start
 
-## Project setup
+### Prerequisites
 
-```bash
-$ npm install
+- Node.js (v18 or higher)
+- PostgreSQL (or use Docker)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env with your database credentials
+   ```
+
+4. Start PostgreSQL (using Docker):
+
+   ```bash
+   docker-compose up -d postgres
+   ```
+
+5. Run the application:
+
+   ```bash
+   # Development
+   npm run start:dev
+
+   # Production
+   npm run build
+   npm run start:prod
+   ```
+
+### API Documentation
+
+Once the application is running, visit:
+
+- **API Documentation**: http://localhost:3005/api
+- **Health Check**: http://localhost:3005/health
+
+### Database Management
+
+- **pgAdmin**: http://localhost:5050 (admin@sunoo.com / admin)
+- **PostgreSQL**: localhost:5432
+
+## Project Structure
+
+```
+src/
+├── auth/                 # Authentication module
+│   ├── guards/          # JWT guards
+│   ├── strategies/      # Passport strategies
+│   ├── auth.controller.ts
+│   ├── auth.service.ts
+│   └── auth.module.ts
+├── users/               # Users module
+│   ├── users.controller.ts
+│   ├── users.service.ts
+│   └── users.module.ts
+├── entities/            # TypeORM entities
+│   ├── base.entity.ts
+│   └── user.entity.ts
+├── dto/                 # Data Transfer Objects
+│   ├── auth.dto.ts
+│   └── user.dto.ts
+├── config/              # Configuration files
+│   ├── app.config.ts
+│   └── database.config.ts
+├── app.controller.ts
+├── app.service.ts
+├── app.module.ts
+└── main.ts
 ```
 
-## Compile and run the project
+## API Endpoints
 
-```bash
-# development
-$ npm run start
+### Authentication
 
-# watch mode
-$ npm run start:dev
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `GET /auth/profile` - Get current user profile
 
-# production mode
-$ npm run start:prod
+### Users
+
+- `GET /users` - Get all users
+- `GET /users/:id` - Get user by ID
+- `POST /users` - Create user
+- `PATCH /users/:id` - Update user
+- `DELETE /users/:id` - Delete user
+
+## Environment Variables
+
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_NAME=sunoo_backend
+
+# Application
+PORT=3005
+NODE_ENV=development
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+
+# CORS
+CORS_ORIGIN=http://localhost:3000
 ```
 
-## Run tests
+## Development
+
+### Available Scripts
+
+- `npm run start:dev` - Start in development mode
+- `npm run build` - Build the application
+- `npm run start:prod` - Start in production mode
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
+
+### Database Migrations
+
+TypeORM is configured with `synchronize: true` in development mode, which automatically creates/updates database schema. For production, use migrations:
 
 ```bash
-# unit tests
-$ npm run test
+# Generate migration
+npm run typeorm migration:generate -- -n MigrationName
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Run migrations
+npm run typeorm migration:run
 ```
 
-## Deployment
+## Security
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- JWT tokens for authentication
+- Password hashing with bcrypt
+- Helmet for security headers
+- CORS configuration
+- Input validation and sanitization
+- Soft delete for data retention
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is licensed under the MIT License.
