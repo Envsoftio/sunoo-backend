@@ -39,7 +39,7 @@ export class HealthService {
 
   constructor(
     private configService: ConfigService,
-    private databaseService: DatabaseService
+    private databaseService: DatabaseService,
   ) {}
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -50,9 +50,9 @@ export class HealthService {
     const [databaseHealth, memoryHealth, diskHealth, systemInfo] =
       await Promise.allSettled([
         this.checkDatabase(),
-        this.checkMemory(),
-        this.checkDisk(),
-        this.getSystemInfo(),
+        Promise.resolve(this.checkMemory()),
+        Promise.resolve(this.checkDisk()),
+        Promise.resolve(this.getSystemInfo()),
       ]);
 
     const services = {
@@ -81,7 +81,7 @@ export class HealthService {
     };
 
     // Determine overall status
-    const serviceStatuses = Object.values(services).map(s => s.status);
+    const serviceStatuses = Object.values(services).map((s) => s.status);
     const overallStatus = this.determineOverallStatus(serviceStatuses);
 
     return {
@@ -133,7 +133,7 @@ export class HealthService {
     }
   }
 
-  private async checkMemory(): Promise<ServiceHealth> {
+  private checkMemory(): ServiceHealth {
     try {
       const memUsage = process.memoryUsage();
       const totalMem = require('os').totalmem();
@@ -168,7 +168,7 @@ export class HealthService {
     }
   }
 
-  private async checkDisk(): Promise<ServiceHealth> {
+  private checkDisk(): ServiceHealth {
     try {
       // const fs = require('fs');
       // const path = require('path');
@@ -216,7 +216,7 @@ export class HealthService {
   }
 
   private determineOverallStatus(
-    serviceStatuses: string[]
+    serviceStatuses: string[],
   ): 'healthy' | 'unhealthy' | 'degraded' {
     if (serviceStatuses.includes('down')) {
       return 'unhealthy';

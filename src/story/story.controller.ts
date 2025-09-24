@@ -25,14 +25,14 @@ export class StoryController {
   @ApiOperation({ summary: 'Get all stories (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Stories retrieved successfully' })
   async getAllStories(@Query('userId') userId?: string) {
-    return this.storyService.getAllStories(userId);
+    return await this.storyService.getAllStories(userId);
   }
 
   @Get('getStoryById')
   @ApiOperation({ summary: 'Get story by ID (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
   async getStoryById(@Query('id') id: string) {
-    return this.storyService.getStoryById(id);
+    return await this.storyService.getStoryById(id);
   }
 
   @Get('getStoryBySlugForShow')
@@ -41,7 +41,7 @@ export class StoryController {
   })
   @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
   async getStoryBySlugForShow(@Query('slug') slug: string) {
-    return this.storyService.getStoryBySlugForShow(slug);
+    return await this.storyService.getStoryBySlugForShow(slug);
   }
 
   @Get('getMostPopularStories')
@@ -51,7 +51,7 @@ export class StoryController {
     description: 'Popular stories retrieved successfully',
   })
   async getMostPopularStories() {
-    return this.storyService.getMostPopularStories();
+    return await this.storyService.getMostPopularStories();
   }
 
   @Get('getLatestStories')
@@ -61,7 +61,7 @@ export class StoryController {
     description: 'Latest stories retrieved successfully',
   })
   async getLatestStories() {
-    return this.storyService.getLatestStories();
+    return await this.storyService.getLatestStories();
   }
 
   @Get('getStoriesByGenre')
@@ -71,7 +71,7 @@ export class StoryController {
     description: 'Genre stories retrieved successfully',
   })
   async getStoriesByGenre(@Query('genre') genre: string) {
-    return this.storyService.getStoriesByGenre(genre);
+    return await this.storyService.getStoriesByGenre(genre);
   }
 
   @Get('getStoriesByLanguage')
@@ -81,7 +81,7 @@ export class StoryController {
     description: 'Language stories retrieved successfully',
   })
   async getStoriesByLanguage(@Query('language') language: string) {
-    return this.storyService.getStoriesByLanguage(language);
+    return await this.storyService.getStoriesByLanguage(language);
   }
 
   @Get('getAllCategories')
@@ -91,21 +91,21 @@ export class StoryController {
     description: 'Categories retrieved successfully',
   })
   async getAllCategories() {
-    return this.storyService.getAllCategories();
+    return await this.storyService.getAllCategories();
   }
 
   @Get('getAuthors')
   @ApiOperation({ summary: 'Get all authors (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
   async getAuthors() {
-    return this.storyService.getAuthors();
+    return await this.storyService.getAuthors();
   }
 
   @Get('getChapters')
   @ApiOperation({ summary: 'Get chapters for a story (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Chapters retrieved successfully' })
   async getChapters(@Query('storyId') storyId: string) {
-    return this.storyService.getChapters(storyId);
+    return await this.storyService.getChapters(storyId);
   }
 
   @Post('createBookmark')
@@ -114,7 +114,7 @@ export class StoryController {
   @ApiOperation({ summary: 'Create bookmark (Sunoo compatible)' })
   @ApiResponse({ status: 201, description: 'Bookmark created successfully' })
   async createBookmark(@Body() body: { bookId: string }, @Request() req) {
-    return this.storyService.createBookmark(req.user.id, body.bookId);
+    return await this.storyService.createBookmark(req.user.id, body.bookId);
   }
 
   @Post('removeBookmark')
@@ -123,7 +123,7 @@ export class StoryController {
   @ApiOperation({ summary: 'Remove bookmark (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Bookmark removed successfully' })
   async removeBookmark(@Body() body: { bookId: string }, @Request() req) {
-    return this.storyService.removeBookmark(req.user.id, body.bookId);
+    return await this.storyService.removeBookmark(req.user.id, body.bookId);
   }
 
   @Get('getBookmarks')
@@ -132,7 +132,7 @@ export class StoryController {
   @ApiOperation({ summary: 'Get user bookmarks (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Bookmarks retrieved successfully' })
   async getBookmarks(@Request() req) {
-    return this.storyService.getBookmarks(req.user.id);
+    return await this.storyService.getBookmarks(req.user.id);
   }
 
   @Post('saveProgress')
@@ -141,7 +141,7 @@ export class StoryController {
   @ApiOperation({ summary: 'Save user progress (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Progress saved successfully' })
   async saveProgress(@Body() body: any, @Request() req) {
-    return this.storyService.saveProgress(req.user.id, body);
+    return await this.storyService.saveProgress(req.user.id, body);
   }
 
   @Get('getProgress')
@@ -150,7 +150,7 @@ export class StoryController {
   @ApiOperation({ summary: 'Get user progress (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Progress retrieved successfully' })
   async getProgress(@Query('bookId') bookId: string, @Request() req) {
-    return this.storyService.getProgress(req.user.id, bookId);
+    return await this.storyService.getProgress(req.user.id, bookId);
   }
 
   @Post('saveRating')
@@ -160,8 +160,8 @@ export class StoryController {
   @ApiResponse({ status: 200, description: 'Rating saved successfully' })
   async saveRating(
     @Body() body: { bookId: string; rating: number; review?: string },
-    @Request() req
+    @Request() req,
   ) {
-    return this.storyService.saveRating(req.user.id, body);
+    return await this.storyService.saveRating(req.user.id, body);
   }
 }

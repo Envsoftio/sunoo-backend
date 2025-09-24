@@ -5,14 +5,18 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Security middleware
-  app.use(helmet());
+  // Enhanced security middleware
+  const securityConfig = configService.get('security');
+  app.use(helmet(securityConfig?.headers || {}));
   app.use(compression());
+
+  // Global rate limiting - will be handled by individual modules
 
   // CORS configuration
   app.enableCors({

@@ -11,12 +11,14 @@ import { StoryModule } from './story/story.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
+import securityConfig from './config/security.config';
+import emailConfig from './config/email.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig],
+      load: [appConfig, securityConfig, emailConfig],
       envFilePath: ['.env.local', '.env'],
     }),
     TypeOrmModule.forRootAsync({

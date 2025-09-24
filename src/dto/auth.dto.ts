@@ -22,13 +22,9 @@ export class RegisterDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty({ example: 'John' })
+  @ApiProperty({ example: 'John Doe' })
   @IsString()
-  firstName: string;
-
-  @ApiProperty({ example: 'Doe' })
-  @IsString()
-  lastName: string;
+  name: string;
 
   @ApiProperty({ example: 'https://example.com/avatar.jpg', required: false })
   @IsOptional()

@@ -31,6 +31,9 @@ export class User extends BaseEntity {
   authId?: string; // For Supabase migration compatibility
 
   @Column({ nullable: true })
+  provider?: string; // google, local, etc.
+
+  @Column({ nullable: true })
   country?: string;
 
   @Column({ default: true })
@@ -38,6 +41,9 @@ export class User extends BaseEntity {
 
   @Column({ default: false })
   isEmailVerified: boolean;
+
+  @Column({ nullable: true })
+  emailVerificationToken?: string;
 
   @Column({ nullable: true })
   lastLoginAt?: Date;

@@ -93,6 +93,83 @@ export class AuthService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  // Google OAuth methods
+  async validateGoogleUser(googleUser: any): Promise<User> {
+    const { email, name, avatar, providerId } = googleUser;
+
+    let user = await this.userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      // Create new user with Google OAuth
+      user = this.userRepository.create({
+        email,
+        name,
+        avatar,
+        password: '', // No password for OAuth users
+        role: 'user', // Default role
+        isEmailVerified: true, // Google emails are pre-verified
+        authId: providerId,
+        provider: 'google',
+      });
+      user = await this.userRepository.save(user);
+    } else if (!user.authId) {
+      // Link existing user with Google account
+      user.authId = providerId;
+      user.provider = 'google';
+      user.avatar = avatar || user.avatar;
+      user = await this.userRepository.save(user);
+    }
+
+    return user;
+  }
+
+  async createSuperAdmin(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<User> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const superAdmin = this.userRepository.create({
+      email,
+      password: hashedPassword,
+      name,
+      role: 'superadmin',
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    return this.userRepository.save(superAdmin);
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User | null> {
+    await this.userRepository.update(userId, { role });
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.userRepository.find({
+      select: [
+        'id',
+        'email',
+        'name',
+        'role',
+        'isActive',
+        'createdAt',
+        'lastLoginAt',
+      ],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async deactivateUser(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { isActive: false });
+  }
+
+  async activateUser(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { isActive: true });
+  }
+
   // Sunoo-compatible methods
   async handleLogin(loginDto: LoginDto) {
     try {
@@ -156,7 +233,7 @@ export class AuthService {
           },
         },
       };
-    } catch (_error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -185,7 +262,7 @@ export class AuthService {
       const user = this.userRepository.create({
         email: registerDto.email,
         password: hashedPassword,
-        name: registerDto.firstName + ' ' + registerDto.lastName,
+        name: registerDto.name,
         role: 'user',
         isEmailVerified: false, // Will be verified via email
       });
@@ -196,7 +273,7 @@ export class AuthService {
         status: 201,
         message: 'Signup successful',
       };
-    } catch (error) {
+    } catch {
       return {
         status: 400,
         message: 'Signup failed',
@@ -229,7 +306,7 @@ export class AuthService {
         success: true,
         data: user,
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -260,7 +337,7 @@ export class AuthService {
         success: true,
         message: 'User updated successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -282,7 +359,7 @@ export class AuthService {
         success: true,
         data: subscriptions,
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -304,7 +381,7 @@ export class AuthService {
         success: true,
         message: 'Subscription cancelled successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {

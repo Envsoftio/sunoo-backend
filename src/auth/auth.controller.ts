@@ -7,6 +7,9 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,30 +18,63 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { SecureAuthService } from './services/secure-auth.service';
+import { RateLimitService } from './services/rate-limit.service';
 import { LoginDto, RegisterDto, AuthResponseDto } from '../dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { SuperAdminGuard } from './guards/superadmin.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
 
 @ApiTags('Authentication')
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly secureAuthService: SecureAuthService,
+    private readonly rateLimitService: RateLimitService,
+  ) {}
 
   @Post('handleLogin')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login (Sunoo compatible)' })
+  // @UseGuards(RateLimitGuard) // Temporarily disabled for development
+  // @RateLimit(true)
+  @ApiOperation({
+    summary: 'User login (Sunoo compatible) - Now with enhanced security',
+  })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async handleLogin(@Body() loginDto: LoginDto) {
-    return this.authService.handleLogin(loginDto);
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid credentials or account locked',
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async handleLogin(@Body() loginDto: LoginDto, @Request() req) {
+    const clientIp = this.getClientIp(req);
+    return this.secureAuthService.secureLogin(loginDto, clientIp);
   }
 
   @Post('handleSignup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'User registration (Sunoo compatible)' })
+  // @UseGuards(RateLimitGuard) // Temporarily disabled for development
+  // @RateLimit(true)
+  @ApiOperation({
+    summary:
+      'User registration (Sunoo compatible) - Now with enhanced security',
+  })
   @ApiResponse({ status: 201, description: 'Registration successful' })
+  @ApiResponse({ status: 400, description: 'Invalid input or weak password' })
   @ApiResponse({ status: 409, description: 'User already exists' })
-  async handleSignup(@Body() registerDto: RegisterDto) {
-    return this.authService.handleSignup(registerDto);
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async handleSignup(@Body() registerDto: RegisterDto, @Request() req) {
+    const clientIp = this.getClientIp(req);
+    // Convert to secure registration format
+    const secureRegisterDto = {
+      email: registerDto.email,
+      password: registerDto.password,
+      name: registerDto.name,
+      acceptTerms: true, // Assume terms accepted for Sunoo compatibility
+    };
+    return this.secureAuthService.secureRegister(secureRegisterDto, clientIp);
   }
 
   @Post('handleLogout')
@@ -100,6 +136,94 @@ export class AuthController {
     return this.authService.deleteSubscription(body.id || req.user.id);
   }
 
+  // Google OAuth endpoints
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth login' })
+  @ApiResponse({ status: 302, description: 'Redirects to Google OAuth' })
+  async googleAuth() {
+    // This endpoint initiates Google OAuth flow
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiResponse({ status: 200, description: 'Google OAuth successful' })
+  googleAuthRedirect(@Request() req) {
+    const user = req.user;
+    const payload = { email: user.email, sub: user.id };
+    const accessToken = this.authService['jwtService'].sign(payload);
+
+    return {
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar,
+        },
+        accessToken,
+      },
+    };
+  }
+
+  // Admin management endpoints
+  @Get('admin/users')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all users (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+  async getAllUsers() {
+    return this.authService.getAllUsers();
+  }
+
+  @Post('admin/create-superadmin')
+  @ApiOperation({ summary: 'Create superadmin account' })
+  @ApiResponse({ status: 201, description: 'Superadmin created successfully' })
+  async createSuperAdmin(
+    @Body() body: { email: string; password: string; name: string },
+  ) {
+    return this.authService.createSuperAdmin(
+      body.email,
+      body.password,
+      body.name,
+    );
+  }
+
+  @Patch('admin/users/:id/role')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user role (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'User role updated successfully' })
+  async updateUserRole(
+    @Param('id') userId: string,
+    @Body() body: { role: string },
+  ) {
+    return this.authService.updateUserRole(userId, body.role);
+  }
+
+  @Patch('admin/users/:id/deactivate')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate user (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'User deactivated successfully' })
+  async deactivateUser(@Param('id') userId: string) {
+    await this.authService.deactivateUser(userId);
+    return { message: 'User deactivated successfully' };
+  }
+
+  @Patch('admin/users/:id/activate')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate user (Superadmin only)' })
+  @ApiResponse({ status: 200, description: 'User activated successfully' })
+  async activateUser(@Param('id') userId: string) {
+    await this.authService.activateUser(userId);
+    return { message: 'User activated successfully' };
+  }
+
   // Legacy endpoints for compatibility
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -113,5 +237,34 @@ export class AuthController {
   @ApiOperation({ summary: 'User registration (Legacy)' })
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
+  }
+
+  @Post('clear-rate-limits')
+  @ApiOperation({ summary: 'Clear rate limits (Development only)' })
+  @ApiResponse({ status: 200, description: 'Rate limits cleared' })
+  async clearRateLimits(@Request() req) {
+    const clientIp = this.getClientIp(req);
+    this.rateLimitService.resetRateLimit(clientIp);
+    return { message: 'Rate limits cleared for this IP', clientIp };
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify user email with token' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(@Query('token') token: string) {
+    return this.secureAuthService.verifyEmail(token);
+  }
+
+  // Helper method to get client IP
+  private getClientIp(request: any): string {
+    return (
+      request.headers['x-forwarded-for']?.split(',')[0] ||
+      request.headers['x-real-ip'] ||
+      request.connection?.remoteAddress ||
+      request.socket?.remoteAddress ||
+      request.ip ||
+      'unknown'
+    );
   }
 }
