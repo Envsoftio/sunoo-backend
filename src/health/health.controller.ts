@@ -10,8 +10,8 @@ export class HealthController {
 
   @Get()
   @ApiOperation({ summary: 'Simple health check' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Basic health status',
     schema: {
       type: 'object',
@@ -19,18 +19,18 @@ export class HealthController {
         status: { type: 'string', example: 'ok' },
         timestamp: { type: 'string', example: '2024-01-01T00:00:00.000Z' },
         uptime: { type: 'number', example: 3600 },
-        environment: { type: 'string', example: 'development' }
-      }
-    }
+        environment: { type: 'string', example: 'development' },
+      },
+    },
   })
-  async getHealth() {
+  getHealth() {
     return this.healthService.getSimpleHealth();
   }
 
   @Get('detailed')
   @ApiOperation({ summary: 'Detailed health check with system metrics' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Comprehensive health status with system metrics',
     schema: {
       type: 'object',
@@ -49,26 +49,26 @@ export class HealthController {
                 status: { type: 'string', enum: ['up', 'down', 'degraded'] },
                 responseTime: { type: 'number' },
                 message: { type: 'string' },
-                details: { type: 'object' }
-              }
+                details: { type: 'object' },
+              },
             },
             memory: {
               type: 'object',
               properties: {
                 status: { type: 'string', enum: ['up', 'down', 'degraded'] },
                 message: { type: 'string' },
-                details: { type: 'object' }
-              }
+                details: { type: 'object' },
+              },
             },
             disk: {
               type: 'object',
               properties: {
                 status: { type: 'string', enum: ['up', 'down', 'degraded'] },
                 message: { type: 'string' },
-                details: { type: 'object' }
-              }
-            }
-          }
+                details: { type: 'object' },
+              },
+            },
+          },
         },
         system: {
           type: 'object',
@@ -82,13 +82,13 @@ export class HealthController {
               properties: {
                 used: { type: 'number' },
                 total: { type: 'number' },
-                percentage: { type: 'number' }
-              }
-            }
-          }
-        }
-      }
-    }
+                percentage: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   async getDetailedHealth(): Promise<HealthStatus> {
     return this.healthService.getHealthStatus();
@@ -96,32 +96,32 @@ export class HealthController {
 
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe for Kubernetes/Docker' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Service is ready to accept traffic',
     schema: {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'ready' },
-        timestamp: { type: 'string' }
-      }
-    }
+        timestamp: { type: 'string' },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 503, 
-    description: 'Service is not ready'
+  @ApiResponse({
+    status: 503,
+    description: 'Service is not ready',
   })
   async getReadiness(@Res() res: Response) {
     try {
       const health = await this.healthService.getHealthStatus();
-      
+
       if (health.status === 'healthy') {
         return res.status(HttpStatus.OK).json({
           status: 'ready',
           timestamp: new Date().toISOString(),
         });
       }
-      
+
       // Return 503 status for not ready
       return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         status: 'not ready',
@@ -140,19 +140,19 @@ export class HealthController {
 
   @Get('live')
   @ApiOperation({ summary: 'Liveness probe for Kubernetes/Docker' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Service is alive',
     schema: {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'alive' },
         timestamp: { type: 'string' },
-        uptime: { type: 'number' }
-      }
-    }
+        uptime: { type: 'number' },
+      },
+    },
   })
-  async getLiveness() {
+  getLiveness() {
     return {
       status: 'alive',
       timestamp: new Date().toISOString(),

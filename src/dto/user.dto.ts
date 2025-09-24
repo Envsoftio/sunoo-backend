@@ -6,13 +6,9 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'John' })
+  @ApiProperty({ example: 'John Doe' })
   @IsString()
-  firstName: string;
-
-  @ApiProperty({ example: 'Doe' })
-  @IsString()
-  lastName: string;
+  name: string;
 
   @ApiProperty({ example: 'https://example.com/avatar.jpg', required: false })
   @IsOptional()
@@ -30,15 +26,10 @@ export class UpdateUserDto {
   @IsEmail()
   email?: string;
 
-  @ApiProperty({ example: 'John', required: false })
+  @ApiProperty({ example: 'John Doe', required: false })
   @IsOptional()
   @IsString()
-  firstName?: string;
-
-  @ApiProperty({ example: 'Doe', required: false })
-  @IsOptional()
-  @IsString()
-  lastName?: string;
+  name?: string;
 
   @ApiProperty({ example: 'https://example.com/avatar.jpg', required: false })
   @IsOptional()
@@ -59,10 +50,7 @@ export class UserResponseDto {
   email: string;
 
   @ApiProperty()
-  firstName: string;
-
-  @ApiProperty()
-  lastName: string;
+  name: string;
 
   @ApiProperty({ required: false })
   avatar?: string;

@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { StoryModule } from './story/story.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
 
@@ -26,6 +28,8 @@ import appConfig from './config/app.config';
     UsersModule,
     DatabaseModule,
     HealthModule,
+    StoryModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

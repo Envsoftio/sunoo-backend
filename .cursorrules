@@ -1,0 +1,58 @@
+# Sunoo Project Context
+
+## Project Structure
+
+This is a full-stack application with:
+
+- **Backend**: NestJS API server (current directory)
+- **Frontend**: Nuxt.js/Vue.js app located at `/Users/vishnusharma/Vue/SunooApp`
+
+## Backend (NestJS) - Current Directory
+
+- TypeORM with PostgreSQL
+- JWT authentication
+- Swagger/OpenAPI documentation
+- Health check endpoints
+- Modular architecture (Auth, Users, Database, Health modules)
+
+## Frontend (Nuxt.js) - Reference Project
+
+- Located at: `/Users/vishnusharma/Vue/SunooApp`
+- Vue 3 + Nuxt 3 framework
+- TypeScript support
+- Tailwind CSS for styling
+- PWA capabilities
+- i18n internationalization
+- Supabase integration
+
+## API Integration
+
+The frontend should connect to this backend API:
+
+- Base URL: `http://localhost:3005`
+- Authentication: JWT tokens
+- API Documentation: `http://localhost:3005/api`
+
+## Key Endpoints
+
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `GET /auth/profile` - Get user profile
+- `GET /users` - Get all users
+- `GET /health` - Health check
+- `GET /health/detailed` - Detailed health metrics
+
+## Development Workflow
+
+1. Backend runs on port 3005
+2. Frontend typically runs on port 3000
+3. CORS is configured for `http://localhost:3000`
+4. Use the workspace file for multi-root development
+
+## Code Style
+
+- Use TypeScript for both projects
+- Follow NestJS conventions for backend
+- Follow Vue 3 Composition API for frontend
+- Use Tailwind CSS for styling
+- Implement proper error handling and validation

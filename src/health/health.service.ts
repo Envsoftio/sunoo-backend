@@ -39,7 +39,7 @@ export class HealthService {
 
   constructor(
     private configService: ConfigService,
-    private databaseService: DatabaseService,
+    private databaseService: DatabaseService
   ) {}
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -47,26 +47,37 @@ export class HealthService {
     const uptime = Math.floor((Date.now() - this.startTime) / 1000);
 
     // Check all services in parallel
-    const [databaseHealth, memoryHealth, diskHealth, systemInfo] = await Promise.allSettled([
-      this.checkDatabase(),
-      this.checkMemory(),
-      this.checkDisk(),
-      this.getSystemInfo(),
-    ]);
+    const [databaseHealth, memoryHealth, diskHealth, systemInfo] =
+      await Promise.allSettled([
+        this.checkDatabase(),
+        this.checkMemory(),
+        this.checkDisk(),
+        this.getSystemInfo(),
+      ]);
 
     const services = {
-      database: databaseHealth.status === 'fulfilled' ? databaseHealth.value : {
-        status: 'down' as const,
-        message: databaseHealth.reason?.message || 'Database check failed',
-      },
-      memory: memoryHealth.status === 'fulfilled' ? memoryHealth.value : {
-        status: 'down' as const,
-        message: memoryHealth.reason?.message || 'Memory check failed',
-      },
-      disk: diskHealth.status === 'fulfilled' ? diskHealth.value : {
-        status: 'down' as const,
-        message: diskHealth.reason?.message || 'Disk check failed',
-      },
+      database:
+        databaseHealth.status === 'fulfilled'
+          ? databaseHealth.value
+          : {
+              status: 'down' as const,
+              message:
+                databaseHealth.reason?.message || 'Database check failed',
+            },
+      memory:
+        memoryHealth.status === 'fulfilled'
+          ? memoryHealth.value
+          : {
+              status: 'down' as const,
+              message: memoryHealth.reason?.message || 'Memory check failed',
+            },
+      disk:
+        diskHealth.status === 'fulfilled'
+          ? diskHealth.value
+          : {
+              status: 'down' as const,
+              message: diskHealth.reason?.message || 'Disk check failed',
+            },
     };
 
     // Determine overall status
@@ -80,17 +91,20 @@ export class HealthService {
       version: process.env.npm_package_version || '1.0.0',
       environment: this.configService.get('app.nodeEnv', 'development'),
       services,
-      system: systemInfo.status === 'fulfilled' ? systemInfo.value : {
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        cpuUsage: 0,
-        memoryUsage: {
-          used: 0,
-          total: 0,
-          percentage: 0,
-        },
-      },
+      system:
+        systemInfo.status === 'fulfilled'
+          ? systemInfo.value
+          : {
+              nodeVersion: process.version,
+              platform: process.platform,
+              arch: process.arch,
+              cpuUsage: 0,
+              memoryUsage: {
+                used: 0,
+                total: 0,
+                percentage: 0,
+              },
+            },
     };
   }
 
@@ -99,7 +113,7 @@ export class HealthService {
     try {
       const result = await this.databaseService.testConnection();
       const responseTime = Date.now() - startTime;
-      
+
       return {
         status: result.status === 'connected' ? 'up' : 'down',
         responseTime,
@@ -132,7 +146,9 @@ export class HealthService {
 
       return {
         status: isHealthy ? 'up' : 'degraded',
-        message: isHealthy ? 'Memory usage is normal' : 'High memory usage detected',
+        message: isHealthy
+          ? 'Memory usage is normal'
+          : 'High memory usage detected',
         details: {
           heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
           heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
@@ -154,13 +170,13 @@ export class HealthService {
 
   private async checkDisk(): Promise<ServiceHealth> {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
+      // const fs = require('fs');
+      // const path = require('path');
+
       // Check disk space for the current directory
       const stats = require('fs').statSync('.');
       const diskUsage = require('os').totalmem(); // This is a simplified check
-      
+
       return {
         status: 'up',
         message: 'Disk space is available',
@@ -199,7 +215,9 @@ export class HealthService {
     };
   }
 
-  private determineOverallStatus(serviceStatuses: string[]): 'healthy' | 'unhealthy' | 'degraded' {
+  private determineOverallStatus(
+    serviceStatuses: string[]
+  ): 'healthy' | 'unhealthy' | 'degraded' {
     if (serviceStatuses.includes('down')) {
       return 'unhealthy';
     }
@@ -209,7 +227,7 @@ export class HealthService {
     return 'healthy';
   }
 
-  async getSimpleHealth() {
+  getSimpleHealth() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),

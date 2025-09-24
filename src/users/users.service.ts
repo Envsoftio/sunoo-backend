@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -8,7 +12,7 @@ import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../dto/user.dto';
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -41,7 +45,10 @@ export class UsersService {
     return this.mapToResponseDto(user);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto
+  ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -74,8 +81,7 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.name,
       avatar: user.avatar,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,

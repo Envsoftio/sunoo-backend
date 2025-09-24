@@ -1,0 +1,39 @@
+{
+  "folders": [
+    {
+      "name": "Backend (NestJS)",
+      "path": ".",
+    },
+    {
+      "name": "Frontend (Nuxt.js)",
+      "path": "/Users/vishnusharma/Vue/SunooApp",
+    },
+  ],
+  "settings": {
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+    },
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.nuxt": true,
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.nuxt": true,
+    },
+  },
+  "extensions": {
+    "recommendations": [
+      "vue.volar",
+      "vue.vscode-typescript-vue-plugin",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-eslint",
+    ],
+  },
+}

@@ -8,7 +8,8 @@ export default registerAs('app', () => ({
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   swagger: {
     title: process.env.SWAGGER_TITLE || 'Sunoo Backend API',
-    description: process.env.SWAGGER_DESCRIPTION || 'API documentation for Sunoo Backend',
+    description:
+      process.env.SWAGGER_DESCRIPTION || 'API documentation for Sunoo Backend',
     version: process.env.SWAGGER_VERSION || '1.0.0',
   },
 }));

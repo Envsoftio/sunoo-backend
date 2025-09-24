@@ -6,7 +6,7 @@ import { DataSource } from 'typeorm';
 export class DatabaseService {
   constructor(
     @InjectDataSource()
-    private dataSource: DataSource,
+    private dataSource: DataSource
   ) {}
 
   async testConnection(): Promise<{
@@ -20,7 +20,7 @@ export class DatabaseService {
     try {
       // Test basic connection
       await this.dataSource.query('SELECT 1');
-      
+
       // Get database info
       const dbInfo = await this.dataSource.query(`
         SELECT 
