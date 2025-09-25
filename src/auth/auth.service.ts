@@ -19,7 +19,7 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
-    private jwtService: JwtService
+    private jwtService: JwtService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -126,7 +126,7 @@ export class AuthService {
   async createSuperAdmin(
     email: string,
     password: string,
-    name: string
+    name: string,
   ): Promise<User> {
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -155,10 +155,10 @@ export class AuthService {
         'name',
         'role',
         'isActive',
-        'createdAt',
+        'created_at',
         'lastLoginAt',
       ],
-      order: { createdAt: 'DESC' },
+      order: { created_at: 'DESC' },
     });
   }
 
@@ -351,7 +351,7 @@ export class AuthService {
   async getUserSubscription(userId: string) {
     try {
       const subscriptions = await this.subscriptionRepository.find({
-        where: { userId },
+        where: { user_id: userId },
         relations: ['plan'],
       });
 
@@ -373,8 +373,8 @@ export class AuthService {
   async deleteSubscription(userId: string) {
     try {
       await this.subscriptionRepository.update(
-        { userId },
-        { status: 'cancelled', cancelledAt: new Date() }
+        { user_id: userId },
+        { status: 'cancelled', cancelledAt: new Date() },
       );
 
       return {

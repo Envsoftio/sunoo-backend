@@ -5,23 +5,28 @@ import { Book } from './book.entity';
 
 @Entity('book_ratings')
 export class BookRating extends BaseEntity {
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  bookId?: string;
 
-  @Column()
-  bookId: string;
+  @Column({ nullable: true })
+  userId?: string;
 
-  @Column({ type: 'int' })
-  rating: number; // 1-5
+  @Column({ type: 'numeric', nullable: true })
+  rating?: number;
 
   @Column({ type: 'text', nullable: true })
-  review?: string;
+  comment?: string;
 
-  @ManyToOne(() => User, user => user.bookRatings)
+  // Legacy fields for backward compatibility
+  @Column({ type: 'int', nullable: true })
+  review?: number; // 1-5
+
+  // Relationships
+  @ManyToOne(() => User, (user) => user.bookRatings)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user?: User;
 
-  @ManyToOne(() => Book, book => book.bookRatings)
+  @ManyToOne(() => Book, (book) => book.bookRatings)
   @JoinColumn({ name: 'bookId' })
-  book: Book;
+  book?: Book;
 }

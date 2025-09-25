@@ -1,36 +1,42 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Subscription } from './subscription.entity';
+import { Payment } from './payment.entity';
 
 @Entity('plans')
-export class Plan extends BaseEntity {
-  @Column()
-  name: string;
+export class Plan {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  created_at: Date;
+
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  updated_at: Date;
+  @Column({ nullable: true })
+  planName?: string;
+
+  @Column({ nullable: true })
+  razorpayPlanId?: string;
+
+  @Column({ nullable: true })
+  currency?: string;
+
+  @Column({ type: 'numeric', nullable: true })
+  amount?: number;
+
+  @Column({ nullable: true })
+  liveMode?: boolean;
+
+  @Column({ nullable: true })
   description?: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number;
+  @Column({ nullable: true })
+  frequency?: string;
 
-  @Column({ default: 'INR' })
-  currency: string;
-
-  @Column({ default: 'monthly' })
-  billingPeriod: string; // monthly, yearly
-
-  @Column({ default: true })
-  isActive: boolean;
-
-  @Column({ default: false })
-  isPopular: boolean;
-
-  @Column({ type: 'json', nullable: true })
-  features?: string[];
-
-  @Column({ default: 0 })
-  sortOrder: number;
-
-  @OneToMany(() => Subscription, subscription => subscription.plan)
+  // Relationships
+  @OneToMany(() => Subscription, (subscription) => subscription.plan)
   subscriptions: Subscription[];
+
+  @OneToMany(() => Payment, (payment) => payment.plan)
+  payments: Payment[];
 }

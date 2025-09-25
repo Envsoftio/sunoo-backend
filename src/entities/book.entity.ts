@@ -1,77 +1,85 @@
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Category } from './category.entity';
-import { Author } from './author.entity';
 import { Chapter } from './chapter.entity';
 import { Bookmark } from './bookmark.entity';
 import { BookRating } from './book-rating.entity';
 import { AudiobookListener } from './audiobook-listener.entity';
 import { UserProgress } from './user-progress.entity';
+import { ChapterBookmark } from './chapter-bookmark.entity';
 
 @Entity('books')
-export class Book extends BaseEntity {
+export class Book {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  created_at: Date;
+
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  updated_at: Date;
   @Column()
   title: string;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
-
   @Column({ nullable: true })
-  coverImage?: string;
-
-  @Column({ nullable: true })
-  slug?: string;
-
-  @Column({ default: false })
-  isFeatured: boolean;
-
-  @Column({ default: 0 })
-  totalChapters: number;
-
-  @Column({ default: 0 })
-  totalDuration: number; // in seconds
+  bookCoverUrl?: string;
 
   @Column({ nullable: true })
   language?: string;
 
   @Column({ nullable: true })
-  genre?: string;
-
-  @Column({ default: 0 })
-  price: number;
-
-  @Column({ default: true })
-  isActive: boolean;
+  bookDescription?: string;
 
   @Column({ nullable: true })
-  authorId?: string;
+  duration?: string;
+
+  @Column({ default: false })
+  isPublished: boolean;
 
   @Column({ nullable: true })
   categoryId?: string;
 
-  @ManyToOne(() => Category, category => category.books)
+  @Column({ default: false })
+  isFree: boolean;
+
+  @Column({ nullable: true })
+  contentRating?: string;
+
+  @Column({ nullable: true })
+  tags?: string;
+
+  @Column({ unique: true })
+  slug: string;
+
+  // Relationships
+  @ManyToOne(() => Category)
   @JoinColumn({ name: 'categoryId' })
   category?: Category;
 
-  @ManyToOne(() => Author, author => author.books)
-  @JoinColumn({ name: 'authorId' })
-  author?: Author;
-
-  @OneToMany(() => Chapter, chapter => chapter.book)
+  @OneToMany(() => Chapter, (chapter) => chapter.book)
   chapters: Chapter[];
 
-  @OneToMany(() => Bookmark, bookmark => bookmark.book)
+  @OneToMany(() => Bookmark, (bookmark) => bookmark.book)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => BookRating, bookRating => bookRating.book)
+  @OneToMany(() => BookRating, (bookRating) => bookRating.book)
   bookRatings: BookRating[];
 
   @OneToMany(
     () => AudiobookListener,
-    audiobookListener => audiobookListener.book
+    (audiobookListener) => audiobookListener.book,
   )
   audiobookListeners: AudiobookListener[];
 
-  @OneToMany(() => UserProgress, userProgress => userProgress.book)
+  @OneToMany(() => UserProgress, (userProgress) => userProgress.book)
   userProgress: UserProgress[];
+
+  @OneToMany(() => ChapterBookmark, (chapterBookmark) => chapterBookmark.book)
+  chapterBookmarks: ChapterBookmark[];
 }

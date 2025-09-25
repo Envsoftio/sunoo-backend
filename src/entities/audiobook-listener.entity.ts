@@ -5,20 +5,22 @@ import { Book } from './book.entity';
 
 @Entity('audiobook_listeners')
 export class AudiobookListener extends BaseEntity {
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  userId?: string;
 
-  @Column()
-  bookId: string;
+  @Column({ nullable: true })
+  bookId?: string;
 
+  // Legacy fields for backward compatibility
   @Column({ default: 1 })
   count: number;
 
-  @ManyToOne(() => User, user => user.audiobookListeners)
+  // Relationships
+  @ManyToOne(() => User, (user) => user.audiobookListeners)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user?: User;
 
-  @ManyToOne(() => Book, book => book.audiobookListeners)
+  @ManyToOne(() => Book, (book) => book.audiobookListeners)
   @JoinColumn({ name: 'bookId' })
-  book: Book;
+  book?: Book;
 }

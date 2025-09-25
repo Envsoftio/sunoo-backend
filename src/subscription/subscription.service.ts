@@ -10,14 +10,14 @@ export class SubscriptionService {
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>
+    private subscriptionRepository: Repository<Subscription>,
   ) {}
 
   async getAllPlans() {
     try {
       const plans = await this.planRepository.find({
-        where: { isActive: true },
-        order: { sortOrder: 'ASC' },
+        where: {},
+        order: { amount: 'ASC' },
       });
 
       return { status: 201, plans };
@@ -29,7 +29,7 @@ export class SubscriptionService {
   async getPlanById(id: string) {
     try {
       const plan = await this.planRepository.findOne({
-        where: { id, isActive: true },
+        where: { id },
       });
 
       if (!plan) {
@@ -49,7 +49,7 @@ export class SubscriptionService {
 
       // Check if plan exists
       const plan = await this.planRepository.findOne({
-        where: { id: planId, isActive: true },
+        where: { id: planId },
       });
 
       if (!plan) {
@@ -58,19 +58,21 @@ export class SubscriptionService {
 
       // Cancel any existing active subscriptions
       await this.subscriptionRepository.update(
-        { userId, status: 'active' },
-        { status: 'cancelled', cancelledAt: new Date() }
+        { user_id: userId, status: 'active' },
+        { status: 'cancelled', cancelledAt: new Date() },
       );
 
       // Create new subscription
       const subscription = this.subscriptionRepository.create({
-        userId,
-        planId,
+        user_id: userId,
+        plan_id: planId,
+        subscription_id: razorpaySubscriptionId,
+        status: 'active',
+        start_date: new Date(),
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        // Legacy fields for backward compatibility
         razorpaySubscriptionId,
         razorpayPaymentId,
-        status: 'active',
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         isTrial: false,
       });
 
@@ -87,7 +89,7 @@ export class SubscriptionService {
       const { subscriptionId } = cancellationData;
 
       const subscription = await this.subscriptionRepository.findOne({
-        where: { id: subscriptionId, userId },
+        where: { id: parseInt(subscriptionId), user_id: userId },
       });
 
       if (!subscription) {
@@ -108,7 +110,7 @@ export class SubscriptionService {
   async getSubscriptionById(userId: string, subscriptionId: string) {
     try {
       const subscription = await this.subscriptionRepository.findOne({
-        where: { id: subscriptionId, userId },
+        where: { id: parseInt(subscriptionId), user_id: userId },
         relations: ['plan'],
       });
 
@@ -125,9 +127,9 @@ export class SubscriptionService {
   async getSubscriptionInvoices(userId: string) {
     try {
       const subscriptions = await this.subscriptionRepository.find({
-        where: { userId },
+        where: { user_id: userId },
         relations: ['plan'],
-        order: { createdAt: 'DESC' },
+        order: { created_at: 'DESC' },
       });
 
       return { success: true, data: subscriptions };

@@ -5,17 +5,18 @@ import { Book } from './book.entity';
 
 @Entity('bookmarks')
 export class Bookmark extends BaseEntity {
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  bookId?: string;
 
-  @Column()
-  bookId: string;
+  @Column({ nullable: true })
+  userId?: string;
 
+  // Relationships
   @ManyToOne(() => User, user => user.bookmarks)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user?: User;
 
   @ManyToOne(() => Book, book => book.bookmarks)
   @JoinColumn({ name: 'bookId' })
-  book: Book;
+  book?: Book;
 }

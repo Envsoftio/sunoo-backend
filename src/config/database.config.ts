@@ -1,8 +1,9 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 export const getDatabaseConfig = (
-  configService: ConfigService
+  configService: ConfigService,
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -12,10 +13,12 @@ export const getDatabaseConfig = (
   database: configService.get('DB_NAME', 'sunoo_backend'),
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-  synchronize: configService.get('NODE_ENV') === 'development',
+  synchronize: false, // Disabled to prevent TypeORM from modifying existing schema
   logging: configService.get('NODE_ENV') === 'development',
   ssl:
     configService.get('NODE_ENV') === 'production'
       ? { rejectUnauthorized: false }
       : false,
+  // Temporarily disable naming strategy to test
+  // namingStrategy: new SnakeNamingStrategy(),
 });

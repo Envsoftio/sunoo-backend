@@ -12,7 +12,7 @@ import { CreateUserDto, UpdateUserDto, UserResponseDto } from '../dto/user.dto';
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>
+    private userRepository: Repository<User>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -34,7 +34,7 @@ export class UsersService {
     const users = await this.userRepository.find({
       where: { isActive: true },
     });
-    return users.map(user => this.mapToResponseDto(user));
+    return users.map((user) => this.mapToResponseDto(user));
   }
 
   async findOne(id: string): Promise<UserResponseDto> {
@@ -47,7 +47,7 @@ export class UsersService {
 
   async update(
     id: string,
-    updateUserDto: UpdateUserDto
+    updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
@@ -85,8 +85,8 @@ export class UsersService {
       avatar: user.avatar,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
     };
   }
 }

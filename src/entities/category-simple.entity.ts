@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('authors')
-export class Author {
+@Entity('categories')
+export class CategorySimple {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -10,12 +10,28 @@ export class Author {
 
   @Column({ type: 'timestamp with time zone', default: () => 'now()' })
   updated_at: Date;
-  @Column({ nullable: true })
-  name?: string;
+
+  @Column()
+  name: string;
+
+  @Column({ unique: true })
+  slug: string;
 
   @Column({ nullable: true })
-  bio?: string;
+  description?: string;
 
   @Column({ nullable: true })
-  picture?: string;
+  icon_url?: string;
+
+  @Column({ nullable: true })
+  color?: string;
+
+  @Column({ default: true })
+  is_active: boolean;
+
+  @Column({ nullable: true })
+  sort_order?: number;
+
+  @Column({ default: false })
+  featured: boolean;
 }

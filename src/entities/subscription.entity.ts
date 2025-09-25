@@ -1,30 +1,61 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { User } from './user.entity';
 import { Plan } from './plan.entity';
 
 @Entity('subscriptions')
-export class Subscription extends BaseEntity {
-  @Column()
-  userId: string;
+export class Subscription {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
 
-  @Column()
-  planId: string;
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  created_at: Date;
 
-  @Column({ default: 'active' })
-  status: string; // active, cancelled, expired
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  updated_at: Date;
 
+  @Column({ nullable: true })
+  subscription_id?: string;
+
+  @Column({ nullable: true })
+  plan_id?: string;
+
+  @Column({ type: 'date', nullable: true })
+  start_date?: Date;
+
+  @Column({ type: 'date', nullable: true })
+  end_date?: Date;
+
+  @Column({ nullable: true })
+  status?: string;
+
+  @Column({ type: 'date', nullable: true })
+  next_billing_date?: Date;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata?: any;
+
+  @Column({ nullable: true })
+  user_id?: string;
+
+  @Column({ default: false })
+  user_cancelled: boolean;
+
+  @Column({ type: 'bigint', nullable: true })
+  ended_at?: number;
+
+  // Legacy fields for backward compatibility
   @Column({ nullable: true })
   razorpaySubscriptionId?: string;
 
   @Column({ nullable: true })
   razorpayPaymentId?: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  startDate?: Date;
-
-  @Column({ type: 'timestamp', nullable: true })
-  endDate?: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   cancelledAt?: Date;
@@ -35,11 +66,12 @@ export class Subscription extends BaseEntity {
   @Column({ type: 'timestamp', nullable: true })
   trialEndDate?: Date;
 
-  @ManyToOne(() => User, user => user.subscriptions)
-  @JoinColumn({ name: 'userId' })
-  user: User;
+  // Relationships
+  @ManyToOne(() => User, (user) => user.subscriptions)
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 
-  @ManyToOne(() => Plan, plan => plan.subscriptions)
-  @JoinColumn({ name: 'planId' })
-  plan: Plan;
+  @ManyToOne(() => Plan, (plan) => plan.subscriptions)
+  @JoinColumn({ name: 'plan_id' })
+  plan?: Plan;
 }

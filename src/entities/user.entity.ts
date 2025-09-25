@@ -18,13 +18,13 @@ export class User extends BaseEntity {
   @Exclude()
   password: string;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
   @Column({ nullable: true })
   avatar?: string;
 
-  @Column({ default: 'user' })
+  @Column({ nullable: true })
   role: string; // user, narrator, superadmin
 
   @Column({ nullable: true })
@@ -48,27 +48,59 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   lastLoginAt?: Date;
 
-  @OneToMany(() => Subscription, subscription => subscription.user)
+  // Supabase schema fields
+  @Column({ nullable: true })
+  isAuthenticated?: boolean;
+
+  @Column({ nullable: true })
+  language?: string;
+
+  @Column({ nullable: true })
+  imageURL?: string;
+
+  @Column({ nullable: true })
+  bio?: string;
+
+  @Column({ default: false })
+  availedTrial: boolean;
+
+  @Column({ default: true })
+  email_notifications_enabled: boolean;
+
+  @Column({ default: true })
+  marketing_emails_enabled: boolean;
+
+  @Column({ default: true })
+  new_content_emails_enabled: boolean;
+
+  @Column({ default: true })
+  subscription_emails_enabled: boolean;
+
+  @Column({ nullable: true })
+  email_preferences_updated_at?: Date;
+
+  // Relationships
+  @OneToMany(() => Subscription, (subscription) => subscription.user)
   subscriptions: Subscription[];
 
-  @OneToMany(() => Bookmark, bookmark => bookmark.user)
+  @OneToMany(() => Bookmark, (bookmark) => bookmark.user)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => BookRating, bookRating => bookRating.user)
+  @OneToMany(() => BookRating, (bookRating) => bookRating.user)
   bookRatings: BookRating[];
 
   @OneToMany(
     () => AudiobookListener,
-    audiobookListener => audiobookListener.user
+    (audiobookListener) => audiobookListener.user,
   )
   audiobookListeners: AudiobookListener[];
 
-  @OneToMany(() => UserProgress, userProgress => userProgress.user)
+  @OneToMany(() => UserProgress, (userProgress) => userProgress.user)
   userProgress: UserProgress[];
 
-  @OneToMany(() => ChapterBookmark, chapterBookmark => chapterBookmark.user)
+  @OneToMany(() => ChapterBookmark, (chapterBookmark) => chapterBookmark.user)
   chapterBookmarks: ChapterBookmark[];
 
-  @OneToMany(() => Feedback, feedback => feedback.user)
+  @OneToMany(() => Feedback, (feedback) => feedback.user)
   feedbacks: Feedback[];
 }

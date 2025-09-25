@@ -4,12 +4,22 @@ import { User } from './user.entity';
 
 @Entity('feedbacks')
 export class Feedback extends BaseEntity {
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  user_id?: string;
 
-  @Column({ type: 'text' })
-  message: string;
+  @Column({ nullable: true })
+  name?: string;
 
+  @Column({ nullable: true })
+  email?: string;
+
+  @Column({ nullable: true })
+  type?: string;
+
+  @Column({ type: 'text', nullable: true })
+  message?: string;
+
+  // Legacy fields for backward compatibility
   @Column({ type: 'int', default: 1 })
   rating: number; // 1-5
 
@@ -19,7 +29,8 @@ export class Feedback extends BaseEntity {
   @Column({ default: 'pending' })
   status: string; // pending, reviewed, resolved
 
-  @ManyToOne(() => User, user => user.feedbacks)
-  @JoinColumn({ name: 'userId' })
-  user: User;
+  // Relationships
+  @ManyToOne(() => User, (user) => user.feedbacks)
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 }

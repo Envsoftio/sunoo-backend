@@ -1,39 +1,41 @@
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { Book } from './book.entity';
-import { ChapterBookmark } from './chapter-bookmark.entity';
 import { UserProgress } from './user-progress.entity';
+import { ChapterBookmark } from './chapter-bookmark.entity';
 
 @Entity('chapters')
-export class Chapter extends BaseEntity {
+export class Chapter {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  created_at: Date;
+
+  @Column({ type: 'timestamp with time zone', default: () => 'now()' })
+  updated_at: Date;
   @Column()
-  title: string;
+  name: string;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
-
-  @Column()
-  chapterUrl: string;
-
-  @Column({ default: 0 })
-  duration: number; // in seconds
-
-  @Column({ default: 0 })
-  order: number;
-
-  @Column({ default: true })
-  isActive: boolean;
+  @Column({ nullable: true })
+  playbackTime?: string;
 
   @Column({ nullable: true })
   bookId?: string;
 
+  @Column({ nullable: true })
+  chapterUrl?: string;
+
+  @Column({ type: 'numeric', nullable: true })
+  order?: number;
+
+  // Relationships
   @ManyToOne(() => Book, book => book.chapters)
   @JoinColumn({ name: 'bookId' })
   book?: Book;
 
-  @OneToMany(() => ChapterBookmark, chapterBookmark => chapterBookmark.chapter)
-  chapterBookmarks: ChapterBookmark[];
-
   @OneToMany(() => UserProgress, userProgress => userProgress.chapter)
   userProgress: UserProgress[];
+
+  @OneToMany(() => ChapterBookmark, chapterBookmark => chapterBookmark.chapter)
+  chapterBookmarks: ChapterBookmark[];
 }
