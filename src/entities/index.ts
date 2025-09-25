@@ -12,3 +12,5 @@ export { AudiobookListener } from './audiobook-listener.entity';
 export { UserProgress } from './user-progress.entity';
 export { ChapterBookmark } from './chapter-bookmark.entity';
 export { Feedback } from './feedback.entity';
+export { CastMember } from './cast-member.entity';
+export { StoryCast } from './story-cast.entity';

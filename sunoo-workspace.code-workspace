@@ -1,39 +1,34 @@
 {
   "folders": [
     {
-      "name": "Backend (NestJS)",
+      "name": "Sunoo Backend",
       "path": ".",
     },
     {
-      "name": "Frontend (Nuxt.js)",
+      "name": "Sunoo Frontend",
       "path": "/Users/vishnusharma/Vue/SunooApp",
     },
   ],
   "settings": {
     "typescript.preferences.includePackageJsonAutoImports": "on",
     "typescript.suggest.autoImports": true,
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
     },
     "files.exclude": {
       "**/node_modules": true,
       "**/dist": true,
-      "**/.nuxt": true,
-    },
-    "search.exclude": {
-      "**/node_modules": true,
-      "**/dist": true,
-      "**/.nuxt": true,
+      "**/.git": true,
     },
   },
   "extensions": {
     "recommendations": [
-      "vue.volar",
-      "vue.vscode-typescript-vue-plugin",
       "ms-vscode.vscode-typescript-next",
       "bradlc.vscode-tailwindcss",
       "esbenp.prettier-vscode",
-      "ms-vscode.vscode-eslint",
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-json",
     ],
   },
 }

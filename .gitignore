@@ -44,3 +44,13 @@ lerna-debug.log*
 # temp
 .tmp
 .temp
+
+# Database backup files
+db_cluster-*.backup
+backups/supabase-backup-converted.json
+
+# Scripts (temporary)
+scripts/simple-backup-converter.ts
+
+# Docker
+.env.docker

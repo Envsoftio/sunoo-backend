@@ -1,9 +1,10 @@
 version: '3.8'
 
 services:
+  # Development database with pgAdmin
   postgres:
     image: postgres:15-alpine
-    container_name: sunoo-postgres
+    container_name: sunoo-postgres-dev
     restart: unless-stopped
     environment:
       POSTGRES_DB: sunoo_backend
@@ -13,14 +14,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
-      - sunoo-network
+      - sunoo-dev-network
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: sunoo-pgadmin
+    container_name: sunoo-pgadmin-dev
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@sunoo.com
@@ -29,31 +30,31 @@ services:
     ports:
       - "5050:80"
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - pgadmin_dev_data:/var/lib/pgadmin
     depends_on:
       - postgres
     networks:
-      - sunoo-network
+      - sunoo-dev-network
 
   redis:
     image: redis:7-alpine
-    container_name: sunoo-redis
+    container_name: sunoo-redis-dev
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_dev_data:/data
     networks:
-      - sunoo-network
+      - sunoo-dev-network
 
 volumes:
-  postgres_data:
+  postgres_dev_data:
     driver: local
-  pgadmin_data:
+  pgadmin_dev_data:
     driver: local
-  redis_data:
+  redis_dev_data:
     driver: local
 
 networks:
-  sunoo-network:
+  sunoo-dev-network:
     driver: bridge
