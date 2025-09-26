@@ -20,11 +20,18 @@ import {
 import { AuthService } from './auth.service';
 import { SecureAuthService } from './services/secure-auth.service';
 import { RateLimitService } from './services/rate-limit.service';
-import { LoginDto, RegisterDto, AuthResponseDto } from '../dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  AuthResponseDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+} from '../dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SuperAdminGuard } from './guards/superadmin.guard';
 import { AuthGuard } from '@nestjs/passport';
-import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
+// import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
 
 @ApiTags('Authentication')
 @Controller('api/auth')
@@ -99,8 +106,43 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Forgot password (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Password reset email sent' })
-  handleForget(@Body() body: { email: string }) {
-    return this.authService.handleForget(body.email);
+  async handleForget(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.handleForget(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (authenticated user)' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid current password' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Request() req,
+  ) {
+    return this.authService.changePassword(
+      req.user.id,
+      changePasswordDto,
+    );
+  }
+
+  @Post('check-user')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if user exists and needs password reset' })
+  @ApiResponse({ status: 200, description: 'User check completed' })
+  async checkUser(@Body() body: { email: string }) {
+    return this.authService.checkUserExists(body.email);
   }
 
   @Post('handleUpdateUser')

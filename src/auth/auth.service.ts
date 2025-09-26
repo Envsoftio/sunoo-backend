@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { Subscription } from '../entities/subscription.entity';
-import { LoginDto, RegisterDto, AuthResponseDto } from '../dto/auth.dto';
+import { LoginDto, RegisterDto, AuthResponseDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from '../dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -204,6 +204,18 @@ export class AuthService {
         };
       }
 
+      // Check if user has default password (migrated user)
+      if (user.hasDefaultPassword) {
+        return {
+          success: false,
+          error: {
+            message: 'Please reset your password to continue',
+            code: 'password_reset_required',
+            requiresPasswordReset: true,
+          },
+        };
+      }
+
       // Update last login
       await this.userRepository.update(user.id, { lastLoginAt: new Date() });
 
@@ -317,12 +329,137 @@ export class AuthService {
     }
   }
 
-  handleForget(_email: string) {
-    // TODO: Implement email sending logic
-    return {
-      success: true,
-      message: 'Password reset email sent',
-    };
+  async handleForget(forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email: forgotPasswordDto.email },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'user_not_found',
+          },
+        };
+      }
+
+      // Generate reset token
+      const resetToken = require('crypto').randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+      await this.userRepository.update(user.id, {
+        passwordResetToken: resetToken,
+        passwordResetExpires: resetExpires,
+      });
+
+      // TODO: Send email with reset token
+      return {
+        success: true,
+        message: 'Password reset email sent',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to process password reset request',
+          code: 'reset_request_failed',
+        },
+      };
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: {
+          passwordResetToken: resetPasswordDto.token,
+        },
+      });
+
+      if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+        return {
+          success: false,
+          error: {
+            message: 'Invalid or expired reset token',
+            code: 'invalid_reset_token',
+          },
+        };
+      }
+
+      const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+
+      await this.userRepository.update(user.id, {
+        password: hashedPassword,
+        passwordResetToken: undefined,
+        passwordResetExpires: undefined,
+        hasDefaultPassword: false,
+      });
+
+      return {
+        success: true,
+        message: 'Password reset successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to reset password',
+          code: 'reset_failed',
+        },
+      };
+    }
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'user_not_found',
+          },
+        };
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(
+        changePasswordDto.currentPassword,
+        user.password,
+      );
+
+      if (!isCurrentPasswordValid) {
+        return {
+          success: false,
+          error: {
+            message: 'Current password is incorrect',
+            code: 'invalid_current_password',
+          },
+        };
+      }
+
+      const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+
+      await this.userRepository.update(userId, {
+        password: hashedNewPassword,
+        hasDefaultPassword: false,
+      });
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to change password',
+          code: 'change_password_failed',
+        },
+      };
+    }
   }
 
   async handleUpdateUser(userId: string, updateData: any) {
@@ -387,6 +524,48 @@ export class AuthService {
         error: {
           message: 'Failed to cancel subscription',
           code: 'subscription_cancel_failed',
+        },
+      };
+    }
+  }
+
+  async checkUserExists(email: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+        select: ['id', 'email', 'name', 'hasDefaultPassword', 'isActive', 'isEmailVerified'],
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'user_not_found',
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            hasDefaultPassword: user.hasDefaultPassword,
+            isActive: user.isActive,
+            isEmailVerified: user.isEmailVerified,
+            requiresPasswordReset: user.hasDefaultPassword,
+          },
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to check user',
+          code: 'user_check_failed',
         },
       };
     }

@@ -44,3 +44,31 @@ export class AuthResponseDto {
     avatar?: string;
   };
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'reset-token-here' })
+  @IsString()
+  token: string;
+
+  @ApiProperty({ example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'currentpassword123' })
+  @IsString()
+  currentPassword: string;
+
+  @ApiProperty({ example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}

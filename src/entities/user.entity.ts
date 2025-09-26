@@ -79,6 +79,15 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   email_preferences_updated_at?: Date;
 
+  @Column({ default: false })
+  hasDefaultPassword: boolean;
+
+  @Column({ nullable: true })
+  passwordResetToken?: string;
+
+  @Column({ nullable: true })
+  passwordResetExpires?: Date;
+
   // Relationships
   @OneToMany(() => Subscription, (subscription) => subscription.user)
   subscriptions: Subscription[];
