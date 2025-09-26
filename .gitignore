@@ -47,7 +47,9 @@ lerna-debug.log*
 
 # Database backup files
 db_cluster-*.backup
+backups/*.backup
 backups/supabase-backup-converted.json
 
-# Scripts (temporary)
-scripts/simple-backup-converter.ts
+# Keep individual JSON files for data migration
+backups/*.json
+backups/*.sql

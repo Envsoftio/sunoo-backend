@@ -22,11 +22,7 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
-    "convert:backup": "ts-node scripts/simple-backup-converter.ts",
-    "migrate:backup": "ts-node scripts/comprehensive-backup-migration.ts",
-    "migrate:json": "ts-node scripts/migrate-from-json.ts",
-    "check:missing": "ts-node scripts/check-missing-tables.ts",
-    "create:missing": "ts-node scripts/create-missing-tables.ts"
+    "migrate:data": "ts-node scripts/migrate-data.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
