@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { StoryModule } from './story/story.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { AdminModule } from './admin/admin.module';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
@@ -32,6 +33,7 @@ import emailConfig from './config/email.config';
     HealthModule,
     StoryModule,
     SubscriptionModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

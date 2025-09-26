@@ -5,7 +5,6 @@ import { StoryController } from './story.controller';
 import {
   Book,
   Category,
-  Author,
   Chapter,
   Bookmark,
   BookRating,
@@ -18,7 +17,6 @@ import {
     TypeOrmModule.forFeature([
       Book,
       Category,
-      Author,
       Chapter,
       Bookmark,
       BookRating,

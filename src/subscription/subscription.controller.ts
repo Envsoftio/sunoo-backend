@@ -6,6 +6,8 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -78,5 +80,15 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Invoices retrieved successfully' })
   async getSubscriptionInvoices(@Request() req) {
     return this.subscriptionService.getSubscriptionInvoices(req.user.id);
+  }
+
+  @Post('updateSubscriptionTrial')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update subscription trial (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Trial updated successfully' })
+  async updateSubscriptionTrial(@Body() body: { id: string }, @Request() req) {
+    return this.subscriptionService.updateSubscriptionTrial(req.user.id, body.id);
   }
 }

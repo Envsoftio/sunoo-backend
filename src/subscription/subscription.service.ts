@@ -10,7 +10,7 @@ export class SubscriptionService {
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>,
+    private subscriptionRepository: Repository<Subscription>
   ) {}
 
   async getAllPlans() {
@@ -59,7 +59,7 @@ export class SubscriptionService {
       // Cancel any existing active subscriptions
       await this.subscriptionRepository.update(
         { user_id: userId, status: 'active' },
-        { status: 'cancelled', cancelledAt: new Date() },
+        { status: 'cancelled', cancelledAt: new Date() }
       );
 
       // Create new subscription
@@ -133,6 +133,26 @@ export class SubscriptionService {
       });
 
       return { success: true, data: subscriptions };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateSubscriptionTrial(userId: string, subscriptionId: string) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { id: parseInt(subscriptionId), user_id: userId },
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'Subscription not found' };
+      }
+
+      // Update trial status logic here
+      subscription.isTrial = false;
+      await this.subscriptionRepository.save(subscription);
+
+      return { success: true, message: 'Trial updated successfully' };
     } catch (error) {
       return { success: false, message: error.message };
     }

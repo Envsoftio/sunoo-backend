@@ -6,6 +6,8 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -50,8 +52,8 @@ export class StoryController {
     status: 200,
     description: 'Popular stories retrieved successfully',
   })
-  async getMostPopularStories() {
-    return await this.storyService.getMostPopularStories();
+  async getMostPopularStories(@Query('userId') userId?: string) {
+    return await this.storyService.getMostPopularStories(userId);
   }
 
   @Get('getLatestStories')
@@ -60,8 +62,8 @@ export class StoryController {
     status: 200,
     description: 'Latest stories retrieved successfully',
   })
-  async getLatestStories() {
-    return await this.storyService.getLatestStories();
+  async getLatestStories(@Query('userId') userId?: string) {
+    return await this.storyService.getLatestStories(userId);
   }
 
   @Get('getStoriesByGenre')
@@ -70,8 +72,11 @@ export class StoryController {
     status: 200,
     description: 'Genre stories retrieved successfully',
   })
-  async getStoriesByGenre(@Query('genre') genre: string) {
-    return await this.storyService.getStoriesByGenre(genre);
+  async getStoriesByGenre(
+    @Query('genreSlug') genreSlug: string,
+    @Query('userId') userId?: string
+  ) {
+    return await this.storyService.getStoriesByGenre(genreSlug, userId);
   }
 
   @Get('getStoriesByLanguage')
@@ -80,8 +85,11 @@ export class StoryController {
     status: 200,
     description: 'Language stories retrieved successfully',
   })
-  async getStoriesByLanguage(@Query('language') language: string) {
-    return await this.storyService.getStoriesByLanguage(language);
+  async getStoriesByLanguage(
+    @Query('language') language: string,
+    @Query('userId') userId?: string
+  ) {
+    return await this.storyService.getStoriesByLanguage(language, userId);
   }
 
   @Get('getAllCategories')
@@ -92,13 +100,6 @@ export class StoryController {
   })
   async getAllCategories() {
     return await this.storyService.getAllCategories();
-  }
-
-  @Get('getAuthors')
-  @ApiOperation({ summary: 'Get all authors (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
-  async getAuthors() {
-    return await this.storyService.getAuthors();
   }
 
   @Get('getChapters')
@@ -160,8 +161,178 @@ export class StoryController {
   @ApiResponse({ status: 200, description: 'Rating saved successfully' })
   async saveRating(
     @Body() body: { bookId: string; rating: number; review?: string },
-    @Request() req,
+    @Request() req
   ) {
     return await this.storyService.saveRating(req.user.id, body);
+  }
+
+  @Get('getStoryByIdForShow')
+  @ApiOperation({ summary: 'Get story by ID for show page (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
+  async getStoryByIdForShow(
+    @Query('id') id: string,
+    @Query('userId') userId?: string
+  ) {
+    return await this.storyService.getStoryByIdForShow(id, userId);
+  }
+
+  @Get('getUsersSavedStories')
+  @ApiOperation({ summary: 'Get user saved stories (Sunoo compatible)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Saved stories retrieved successfully',
+  })
+  async getUsersSavedStories(@Query('userId') userId: string) {
+    return await this.storyService.getBookmarks(userId);
+  }
+
+  @Get('getBookmarkStatus')
+  @ApiOperation({
+    summary: 'Get bookmark status for a story (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bookmark status retrieved successfully',
+  })
+  async getBookmarkStatus(
+    @Query('userId') userId: string,
+    @Query('bookId') bookId: string
+  ) {
+    return await this.storyService.getBookmarkStatus(userId, bookId);
+  }
+
+  @Get('getChapterCount')
+  @ApiOperation({ summary: 'Get chapter count for a story (Sunoo compatible)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chapter count retrieved successfully',
+  })
+  async getChapterCount(@Query('id') id: string) {
+    return await this.storyService.getChapterCount(id);
+  }
+
+  @Get('getUniqueLanguages')
+  @ApiOperation({ summary: 'Get unique languages (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Languages retrieved successfully' })
+  async getUniqueLanguages() {
+    return await this.storyService.getUniqueLanguages();
+  }
+
+  @Get('getContinueListeningStories')
+  @ApiOperation({
+    summary: 'Get continue listening stories (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Continue listening stories retrieved successfully',
+  })
+  async getContinueListeningStories(@Query('userId') userId: string) {
+    return await this.storyService.getContinueListeningStories(userId);
+  }
+
+  @Get('getStoriesWithNewEpisodes')
+  @ApiOperation({ summary: 'Get stories with new episodes (Sunoo compatible)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stories with new episodes retrieved successfully',
+  })
+  async getStoriesWithNewEpisodes(@Query('userId') userId: string) {
+    return await this.storyService.getStoriesWithNewEpisodes(userId);
+  }
+
+  @Get('getMostPopularStoriesThisWeek')
+  @ApiOperation({
+    summary: 'Get most popular stories this week (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Popular stories this week retrieved successfully',
+  })
+  async getMostPopularStoriesThisWeek(@Query('userId') userId: string) {
+    return await this.storyService.getMostPopularStoriesThisWeek(userId);
+  }
+
+  @Get('getGenreStats')
+  @ApiOperation({ summary: 'Get genre statistics (Sunoo compatible)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Genre stats retrieved successfully',
+  })
+  async getGenreStats() {
+    return await this.storyService.getGenreStats();
+  }
+
+  @Get('getFeaturedGenres')
+  @ApiOperation({ summary: 'Get featured genres (Sunoo compatible)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured genres retrieved successfully',
+  })
+  async getFeaturedGenres() {
+    return await this.storyService.getFeaturedGenres();
+  }
+
+  // Story Management APIs
+  @Post('handleAddStories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add new story (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Story added successfully' })
+  async handleAddStories(
+    @Body() body: { title: string; language: string; description: string },
+    @Request() req
+  ) {
+    return await this.storyService.handleAddStories(body, req.user.id);
+  }
+
+  @Post('handleEditStories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Edit story (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Story edited successfully' })
+  async handleEditStories(
+    @Body()
+    body: { id: string; title: string; language: string; description: string },
+    @Request() req
+  ) {
+    return await this.storyService.handleEditStories(body, req.user.id);
+  }
+
+  @Post('handleAddChapterInStory')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add chapters to story (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Chapters added successfully' })
+  async handleAddChapterInStory(
+    @Body() body: { chapters: any[] },
+    @Request() req
+  ) {
+    return await this.storyService.handleAddChapterInStory(
+      body.chapters,
+      req.user.id
+    );
+  }
+
+  @Post('updateStoryCover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update story cover (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Cover updated successfully' })
+  async updateStoryCover(@Body() body: { storyId: string }, @Request() req) {
+    return await this.storyService.updateStoryCover(body.storyId, req.user.id);
+  }
+
+  @Post('deleteChapter')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete chapter (Sunoo compatible)' })
+  @ApiResponse({ status: 200, description: 'Chapter deleted successfully' })
+  async deleteChapter(@Body() body: { id: string }, @Request() req) {
+    return await this.storyService.deleteChapter(body.id, req.user.id);
   }
 }
