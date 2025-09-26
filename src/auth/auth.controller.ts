@@ -31,7 +31,7 @@ import {
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SuperAdminGuard } from './guards/superadmin.guard';
 import { AuthGuard } from '@nestjs/passport';
-// import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
+import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
 
 @ApiTags('Authentication')
 @Controller('api/auth')
@@ -39,13 +39,13 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly secureAuthService: SecureAuthService,
-    private readonly rateLimitService: RateLimitService,
+    private readonly rateLimitService: RateLimitService
   ) {}
 
   @Post('handleLogin')
   @HttpCode(HttpStatus.OK)
-  // @UseGuards(RateLimitGuard) // Temporarily disabled for development
-  // @RateLimit(true)
+  @UseGuards(RateLimitGuard) // Enabled for development
+  @RateLimit(true)
   @ApiOperation({
     summary: 'User login (Sunoo compatible) - Now with enhanced security',
   })
@@ -62,8 +62,8 @@ export class AuthController {
 
   @Post('handleSignup')
   @HttpCode(HttpStatus.CREATED)
-  // @UseGuards(RateLimitGuard) // Temporarily disabled for development
-  // @RateLimit(true)
+  @UseGuards(RateLimitGuard) // Enabled for development
+  @RateLimit(true)
   @ApiOperation({
     summary:
       'User registration (Sunoo compatible) - Now with enhanced security',
@@ -104,6 +104,8 @@ export class AuthController {
 
   @Post('handleForget')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
   @ApiOperation({ summary: 'Forgot password (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Password reset email sent' })
   async handleForget(@Body() forgotPasswordDto: ForgotPasswordDto) {
@@ -112,6 +114,8 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
   @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
@@ -129,12 +133,9 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
-    @Request() req,
+    @Request() req
   ) {
-    return this.authService.changePassword(
-      req.user.id,
-      changePasswordDto,
-    );
+    return this.authService.changePassword(req.user.id, changePasswordDto);
   }
 
   @Post('check-user')
@@ -225,12 +226,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Create superadmin account' })
   @ApiResponse({ status: 201, description: 'Superadmin created successfully' })
   async createSuperAdmin(
-    @Body() body: { email: string; password: string; name: string },
+    @Body() body: { email: string; password: string; name: string }
   ) {
     return this.authService.createSuperAdmin(
       body.email,
       body.password,
-      body.name,
+      body.name
     );
   }
 
@@ -241,7 +242,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   async updateUserRole(
     @Param('id') userId: string,
-    @Body() body: { role: string },
+    @Body() body: { role: string }
   ) {
     return this.authService.updateUserRole(userId, body.role);
   }

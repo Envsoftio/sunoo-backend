@@ -61,26 +61,29 @@ export class SecureAuthService {
     private accountLockoutService: AccountLockoutService,
     private secureJwtService: SecureJwtService,
     private rateLimitService: RateLimitService,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {}
 
   async secureLogin(
     loginDto: SecureLoginDto,
-    clientIp: string,
+    clientIp: string
   ): Promise<SecureAuthResponse> {
-    // Rate limiting temporarily disabled for development
-    // const rateLimit = this.rateLimitService.checkRateLimit(clientIp, true);
-    // if (!rateLimit.allowed) {
-    //   throw new HttpException({
-    //     message: 'Too many login attempts. Please try again later.',
-    //     code: 'RATE_LIMIT_EXCEEDED',
-    //     resetTime: rateLimit.resetTime,
-    //   }, HttpStatus.TOO_MANY_REQUESTS);
-    // }
+    // Rate limiting enabled for development
+    const rateLimit = this.rateLimitService.checkRateLimit(clientIp, true);
+    if (!rateLimit.allowed) {
+      throw new HttpException(
+        {
+          message: 'Too many login attempts. Please try again later.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          resetTime: rateLimit.resetTime,
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
 
     // Check account lockout
     const lockoutCheck = this.accountLockoutService.isAccountLocked(
-      loginDto.email,
+      loginDto.email
     );
     if (lockoutCheck.isLocked) {
       throw new UnauthorizedException({
@@ -119,7 +122,7 @@ export class SecureAuthService {
 
     if (!isPasswordValid) {
       const lockoutResult = this.accountLockoutService.recordFailedAttempt(
-        loginDto.email,
+        loginDto.email
       );
 
       throw new UnauthorizedException({
@@ -172,7 +175,7 @@ export class SecureAuthService {
 
   async secureRegister(
     registerDto: SecureRegisterDto,
-    clientIp: string,
+    clientIp: string
   ): Promise<SecureAuthResponse> {
     // Rate limiting temporarily disabled for development
     // const rateLimit = this.rateLimitService.checkRateLimit(clientIp, true);
@@ -194,7 +197,7 @@ export class SecureAuthService {
 
     // Validate password
     const passwordValidation = this.passwordValidationService.validatePassword(
-      registerDto.password,
+      registerDto.password
     );
     if (!passwordValidation.isValid) {
       throw new BadRequestException({
@@ -204,7 +207,7 @@ export class SecureAuthService {
           errors: passwordValidation.errors,
           score: passwordValidation.score,
           strength: this.passwordValidationService.getPasswordStrengthText(
-            passwordValidation.score,
+            passwordValidation.score
           ),
         },
       });
@@ -251,7 +254,7 @@ export class SecureAuthService {
       await this.emailService.sendWelcomeEmail(
         savedUser.email,
         savedUser.name || 'User',
-        verificationToken,
+        verificationToken
       );
     } catch (error) {
       console.error('Failed to send welcome email:', error);
@@ -282,7 +285,7 @@ export class SecureAuthService {
   }
 
   async refreshToken(
-    refreshToken: string,
+    refreshToken: string
   ): Promise<{ accessToken: string; expiresAt: Date }> {
     const payload = this.secureJwtService.verifyRefreshToken(refreshToken);
 
@@ -330,7 +333,7 @@ export class SecureAuthService {
   async changePassword(
     userId: string,
     currentPassword: string,
-    newPassword: string,
+    newPassword: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -344,7 +347,7 @@ export class SecureAuthService {
     // Verify current password
     const isCurrentPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.password,
+      user.password
     );
     if (!isCurrentPasswordValid) {
       throw new UnauthorizedException({
@@ -364,7 +367,7 @@ export class SecureAuthService {
           errors: passwordValidation.errors,
           score: passwordValidation.score,
           strength: this.passwordValidationService.getPasswordStrengthText(
-            passwordValidation.score,
+            passwordValidation.score
           ),
         },
       });
@@ -386,7 +389,7 @@ export class SecureAuthService {
   }
 
   async verifyEmail(
-    token: string,
+    token: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findOne({
       where: { emailVerificationToken: token },

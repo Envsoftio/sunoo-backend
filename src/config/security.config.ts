@@ -13,9 +13,9 @@ export default registerAs('security', () => ({
 
   // Account lockout settings
   lockout: {
-    maxAttempts: 5,
-    lockoutDuration: 15 * 60 * 1000, // 15 minutes
-    resetAttemptsAfter: 30 * 60 * 1000, // 30 minutes
+    maxAttempts: 10, // Increased from 5
+    lockoutDuration: 5 * 60 * 1000, // 5 minutes (reduced from 15)
+    resetAttemptsAfter: 15 * 60 * 1000, // 15 minutes (reduced from 30)
   },
 
   // JWT settings
@@ -29,9 +29,9 @@ export default registerAs('security', () => ({
   // Rate limiting
   rateLimit: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 200, // limit each IP to 200 requests per windowMs (increased from 100)
     authWindowMs: 5 * 60 * 1000, // 5 minutes for auth endpoints
-    authMax: 10, // limit auth endpoints to 10 requests per 5 minutes
+    authMax: 20, // limit auth endpoints to 20 requests per 5 minutes (increased from 10)
   },
 
   // Email verification
@@ -42,9 +42,9 @@ export default registerAs('security', () => ({
 
   // Password reset
   passwordReset: {
-    tokenExpiry: 30 * 60 * 1000, // 30 minutes
-    maxAttempts: 3,
-    cooldownPeriod: 5 * 60 * 1000, // 5 minutes
+    tokenExpiry: 60 * 60 * 1000, // 60 minutes (increased from 30)
+    maxAttempts: 5, // Increased from 3
+    cooldownPeriod: 2 * 60 * 1000, // 2 minutes (reduced from 5)
   },
 
   // Security headers
