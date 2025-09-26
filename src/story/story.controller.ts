@@ -14,6 +14,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StoryService } from './story.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,6 +27,11 @@ export class StoryController {
   @Get('getAllStories')
   @ApiOperation({ summary: 'Get all stories (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Stories retrieved successfully' })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
+  })
   async getAllStories(@Query('userId') userId?: string) {
     return await this.storyService.getAllStories(userId);
   }
@@ -52,6 +58,11 @@ export class StoryController {
     status: 200,
     description: 'Popular stories retrieved successfully',
   })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
+  })
   async getMostPopularStories(@Query('userId') userId?: string) {
     return await this.storyService.getMostPopularStories(userId);
   }
@@ -62,6 +73,11 @@ export class StoryController {
     status: 200,
     description: 'Latest stories retrieved successfully',
   })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
+  })
   async getLatestStories(@Query('userId') userId?: string) {
     return await this.storyService.getLatestStories(userId);
   }
@@ -71,6 +87,16 @@ export class StoryController {
   @ApiResponse({
     status: 200,
     description: 'Genre stories retrieved successfully',
+  })
+  @ApiQuery({
+    name: 'genreSlug',
+    required: true,
+    description: 'Genre slug to filter stories',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
   })
   async getStoriesByGenre(
     @Query('genreSlug') genreSlug: string,
@@ -84,6 +110,16 @@ export class StoryController {
   @ApiResponse({
     status: 200,
     description: 'Language stories retrieved successfully',
+  })
+  @ApiQuery({
+    name: 'language',
+    required: true,
+    description: 'Language to filter stories',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
   })
   async getStoriesByLanguage(
     @Query('language') language: string,
@@ -216,6 +252,52 @@ export class StoryController {
   @ApiResponse({ status: 200, description: 'Languages retrieved successfully' })
   async getUniqueLanguages() {
     return await this.storyService.getUniqueLanguages();
+  }
+
+  @Get('getOptimizedStories')
+  @ApiOperation({
+    summary: 'Get optimized stories for listen page (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Optimized stories retrieved successfully',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
+  })
+  async getOptimizedStories(@Query('userId') userId?: string) {
+    return await this.storyService.getOptimizedStories(userId);
+  }
+
+  @Get('getOptimizedLanguageStories')
+  @ApiOperation({
+    summary: 'Get optimized language stories (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Language stories retrieved successfully',
+  })
+  @ApiQuery({
+    name: 'languages',
+    required: true,
+    description: 'Comma-separated list of languages',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'User ID for personalized features',
+  })
+  async getOptimizedLanguageStories(
+    @Query('languages') languages: string,
+    @Query('userId') userId?: string
+  ) {
+    const languageArray = languages ? languages.split(',') : [];
+    return await this.storyService.getOptimizedLanguageStories(
+      languageArray,
+      userId
+    );
   }
 
   @Get('getContinueListeningStories')

@@ -57,7 +57,10 @@ export class EmailService {
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Email sent successfully to ${emailData.to}:`, info.messageId);
+      this.logger.log(
+        `Email sent successfully to ${emailData.to}:`,
+        info.messageId
+      );
       return true;
     } catch (error) {
       this.logger.error(`Failed to send email to ${emailData.to}:`, error);
@@ -65,7 +68,11 @@ export class EmailService {
     }
   }
 
-  async sendWelcomeEmail(userEmail: string, userName: string, verificationToken?: string): Promise<boolean> {
+  async sendWelcomeEmail(
+    userEmail: string,
+    userName: string,
+    verificationToken?: string
+  ): Promise<boolean> {
     const template = await this.loadTemplate('welcome');
     const data = {
       userName,
@@ -85,7 +92,11 @@ export class EmailService {
     });
   }
 
-  async sendVerificationEmail(userEmail: string, userName: string, verificationToken: string): Promise<boolean> {
+  async sendVerificationEmail(
+    userEmail: string,
+    userName: string,
+    verificationToken: string
+  ): Promise<boolean> {
     const template = await this.loadTemplate('verification');
     const data = {
       userName,
@@ -103,7 +114,11 @@ export class EmailService {
     });
   }
 
-  async sendPasswordResetEmail(userEmail: string, userName: string, resetToken: string): Promise<boolean> {
+  async sendPasswordResetEmail(
+    userEmail: string,
+    userName: string,
+    resetToken: string
+  ): Promise<boolean> {
     const template = await this.loadTemplate('password-reset');
     const data = {
       userName,
@@ -121,28 +136,23 @@ export class EmailService {
     });
   }
 
-  private async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
-    const templatePath = path.join(process.cwd(), 'dist', 'email', 'templates', `${templateName}.hbs`);
+  private async loadTemplate(
+    templateName: string
+  ): Promise<HandlebarsTemplateDelegate> {
+    const templatePath = path.join(
+      process.cwd(),
+      'dist',
+      'email',
+      'templates',
+      `${templateName}.hbs`
+    );
 
     try {
       const templateSource = fs.readFileSync(templatePath, 'utf8');
       return handlebars.compile(templateSource);
     } catch (error) {
       this.logger.error(`Failed to load template ${templateName}:`, error);
-      // Return a fallback template
-      return handlebars.compile(`
-        <html>
-          <body>
-            <h1>Welcome to {{appName}}!</h1>
-            <p>Hello {{userName}},</p>
-            <p>Thank you for registering with {{appName}}!</p>
-            {{#if verificationUrl}}
-            <p><a href="{{verificationUrl}}">Click here to verify your email</a></p>
-            {{/if}}
-            <p>Best regards,<br>The {{appName}} Team</p>
-          </body>
-        </html>
-      `);
+      throw new Error(`Template ${templateName} not found`);
     }
   }
 }

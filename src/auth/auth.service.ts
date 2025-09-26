@@ -10,7 +10,15 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { Subscription } from '../entities/subscription.entity';
-import { LoginDto, RegisterDto, AuthResponseDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from '../dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  AuthResponseDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+} from '../dto/auth.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -20,10 +28,13 @@ export class AuthService {
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
     private jwtService: JwtService,
+    private emailService: EmailService
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
     }
@@ -97,12 +108,14 @@ export class AuthService {
   async validateGoogleUser(googleUser: any): Promise<User> {
     const { email, name, avatar, providerId } = googleUser;
 
-    let user = await this.userRepository.findOne({ where: { email } });
+    let user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
 
     if (!user) {
       // Create new user with Google OAuth
       user = this.userRepository.create({
-        email,
+        email: email.toLowerCase(),
         name,
         avatar,
         password: '', // No password for OAuth users
@@ -126,7 +139,7 @@ export class AuthService {
   async createSuperAdmin(
     email: string,
     password: string,
-    name: string,
+    name: string
   ): Promise<User> {
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -332,7 +345,7 @@ export class AuthService {
   async handleForget(forgotPasswordDto: ForgotPasswordDto) {
     try {
       const user = await this.userRepository.findOne({
-        where: { email: forgotPasswordDto.email },
+        where: { email: forgotPasswordDto.email.toLowerCase() },
       });
 
       if (!user) {
@@ -354,11 +367,26 @@ export class AuthService {
         passwordResetExpires: resetExpires,
       });
 
-      // TODO: Send email with reset token
-      return {
-        success: true,
-        message: 'Password reset email sent',
-      };
+      // Send password reset email
+      try {
+        await this.emailService.sendPasswordResetEmail(
+          user.email,
+          user.name || 'User',
+          resetToken
+        );
+
+        return {
+          success: true,
+          message: 'Password reset email sent',
+        };
+      } catch (emailError) {
+        console.error('Failed to send password reset email:', emailError);
+        // Still return success since token was generated
+        return {
+          success: true,
+          message: 'Password reset email sent',
+        };
+      }
     } catch (error) {
       return {
         success: false,
@@ -378,7 +406,11 @@ export class AuthService {
         },
       });
 
-      if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      if (
+        !user ||
+        !user.passwordResetExpires ||
+        user.passwordResetExpires < new Date()
+      ) {
         return {
           success: false,
           error: {
@@ -388,7 +420,10 @@ export class AuthService {
         };
       }
 
-      const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+      const hashedPassword = await bcrypt.hash(
+        resetPasswordDto.newPassword,
+        10
+      );
 
       await this.userRepository.update(user.id, {
         password: hashedPassword,
@@ -427,7 +462,7 @@ export class AuthService {
 
       const isCurrentPasswordValid = await bcrypt.compare(
         changePasswordDto.currentPassword,
-        user.password,
+        user.password
       );
 
       if (!isCurrentPasswordValid) {
@@ -440,7 +475,10 @@ export class AuthService {
         };
       }
 
-      const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+      const hashedNewPassword = await bcrypt.hash(
+        changePasswordDto.newPassword,
+        10
+      );
 
       await this.userRepository.update(userId, {
         password: hashedNewPassword,
@@ -511,7 +549,7 @@ export class AuthService {
     try {
       await this.subscriptionRepository.update(
         { user_id: userId },
-        { status: 'cancelled', cancelledAt: new Date() },
+        { status: 'cancelled', cancelledAt: new Date() }
       );
 
       return {
@@ -533,7 +571,14 @@ export class AuthService {
     try {
       const user = await this.userRepository.findOne({
         where: { email },
-        select: ['id', 'email', 'name', 'hasDefaultPassword', 'isActive', 'isEmailVerified'],
+        select: [
+          'id',
+          'email',
+          'name',
+          'hasDefaultPassword',
+          'isActive',
+          'isEmailVerified',
+        ],
       });
 
       if (!user) {

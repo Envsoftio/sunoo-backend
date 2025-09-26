@@ -581,6 +581,59 @@ export class StoryService {
     }
   }
 
+  async getOptimizedStories(userId?: string) {
+    try {
+      // Get all stories in one optimized query
+      const [continueListening, newReleases, mostPopular, editorsPicks] =
+        await Promise.all([
+          this.getContinueListeningStories(userId || ''),
+          this.getLatestStories(userId),
+          this.getMostPopularStoriesThisWeek(userId || ''),
+          this.getStoriesWithNewEpisodes(userId || ''),
+        ]);
+
+      return {
+        success: true,
+        data: {
+          continueListening: continueListening.success
+            ? continueListening.data
+            : [],
+          newReleases: newReleases.success ? newReleases.data : [],
+          mostPopular: mostPopular.success ? mostPopular.data : [],
+          editorsPicks: editorsPicks.success ? editorsPicks.data : [],
+        },
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getOptimizedLanguageStories(languages: string[], userId?: string) {
+    try {
+      const storiesByLanguage: { [key: string]: any[] } = {};
+
+      // Fetch stories for each language in parallel
+      const languagePromises = languages.map(async language => {
+        const result = await this.getStoriesByLanguage(language, userId);
+        return {
+          language,
+          stories: result.success ? result.data : [],
+        };
+      });
+
+      const results = await Promise.all(languagePromises);
+
+      // Convert to object format
+      results.forEach(({ language, stories }) => {
+        storiesByLanguage[language] = stories || [];
+      });
+
+      return { success: true, data: storiesByLanguage };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   async getContinueListeningStories(userId: string) {
     try {
       const progressStories = await this.userProgressRepository

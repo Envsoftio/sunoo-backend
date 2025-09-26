@@ -146,6 +146,7 @@ export class AuthController {
     return this.authService.checkUserExists(body.email);
   }
 
+
   @Post('handleUpdateUser')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
