@@ -26,16 +26,7 @@
     "migrate:backup": "ts-node scripts/comprehensive-backup-migration.ts",
     "migrate:json": "ts-node scripts/migrate-from-json.ts",
     "check:missing": "ts-node scripts/check-missing-tables.ts",
-    "create:missing": "ts-node scripts/create-missing-tables.ts",
-    "docker:setup": "./scripts/docker-setup.sh setup",
-    "docker:start": "./scripts/docker-setup.sh start",
-    "docker:stop": "./scripts/docker-setup.sh stop",
-    "docker:restart": "./scripts/docker-setup.sh restart",
-    "docker:status": "./scripts/docker-setup.sh status",
-    "docker:logs": "./scripts/docker-setup.sh logs",
-    "docker:reset-db": "./scripts/docker-setup.sh reset-db",
-    "docker:migrate": "./scripts/docker-setup.sh migrate",
-    "docker:migrate-backup": "./scripts/docker-setup.sh migrate-backup"
+    "create:missing": "ts-node scripts/create-missing-tables.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

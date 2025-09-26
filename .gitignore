@@ -51,6 +51,3 @@ backups/supabase-backup-converted.json
 
 # Scripts (temporary)
 scripts/simple-backup-converter.ts
-
-# Docker
-.env.docker

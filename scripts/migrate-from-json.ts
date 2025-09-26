@@ -155,15 +155,15 @@ const COLUMN_MAPPING = {
   Payments: {
     id: 'id',
     created_at: 'created_at',
-    amount: 'transaction_id', // JSON has transaction_id as the amount value
-    currency: 'currency', // This will be null since currency field contains "authorized"
-    status: 'currency', // JSON has currency field with "authorized" value (this is actually status)
-    payment_id: 'payment_method', // JSON has payment_method as the payment_id
-    invoice_id: 'user_id', // JSON has user_id field with invoice IDs like "inv_Ps1hdGK0YJ3oq8"
+    amount: 'amount',
+    currency: 'currency',
+    status: 'status',
+    payment_id: 'payment_id',
+    invoice_id: 'invoice_id',
     plan_id: 'plan_id',
-    user_id: 'user_id', // This will be null since user_id contains invoice IDs
-    subscription_id: 'subscription_id', // This field doesn't exist in JSON, will be null
-    metadata: 'status', // JSON has status field with JSON object (this is metadata)
+    user_id: 'user_id',
+    subscription_id: 'subscription_id',
+    metadata: 'metadata',
   },
   Plans: {
     id: 'id',
@@ -274,12 +274,6 @@ async function migrateFromJson() {
       `);
       const currentColumnNames = currentColumns.map((c) => c.column_name);
 
-      // Debug logging for Payments table
-      if (currentTableName === 'payments') {
-        console.log(`🔍 Debug: Payments table columns:`, currentColumnNames);
-        console.log(`🔍 Debug: Payments column mapping:`, columnMapping);
-      }
-
       // Get existing records to avoid duplicates
       const existingRecords = await dataSource.query(
         `SELECT id FROM ${currentTableName}`,
@@ -293,18 +287,6 @@ async function migrateFromJson() {
       // Process each record
       for (const record of records) {
         const mappedRecord: any = {};
-
-        // Debug logging for Payments table
-        if (currentTableName === 'payments' && records.indexOf(record) === 0) {
-          console.log(
-            `🔍 Debug: First Payments record fields:`,
-            Object.keys(record),
-          );
-          console.log(
-            `🔍 Debug: First Payments record transaction_id:`,
-            record.transaction_id,
-          );
-        }
 
         // Map columns
         for (const [backupColumn, currentColumn] of Object.entries(
@@ -320,21 +302,6 @@ async function migrateFromJson() {
               value = null;
             }
             mappedRecord[currentColumn] = value;
-
-            // Debug logging for Payments table
-            if (
-              currentTableName === 'payments' &&
-              backupColumn === 'transaction_id'
-            ) {
-              console.log(
-                `🔍 Debug: transaction_id = ${value}, mapped to amount = ${mappedRecord[currentColumn]}`,
-              );
-            }
-            if (currentTableName === 'payments' && currentColumn === 'amount') {
-              console.log(
-                `🔍 Debug: amount column mapping - backupColumn: ${backupColumn}, currentColumn: ${currentColumn}, value: ${value}`,
-              );
-            }
           }
         }
 
@@ -359,10 +326,7 @@ async function migrateFromJson() {
         }
 
         // Validate UUID fields (skip for tables with integer IDs)
-        if (
-          currentTableName !== 'payments' &&
-          currentTableName !== 'user_progress'
-        ) {
+        if (currentTableName !== 'payments') {
           const uuidFields = [
             'id',
             'userId',
@@ -370,27 +334,6 @@ async function migrateFromJson() {
             'chapterId',
             'categoryId',
           ];
-          for (const field of uuidFields) {
-            if (
-              mappedRecord[field] &&
-              typeof mappedRecord[field] === 'string'
-            ) {
-              // Check if it's a valid UUID format
-              const uuidRegex =
-                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-              if (!uuidRegex.test(mappedRecord[field])) {
-                // Skip this record if UUID is invalid
-                console.log(
-                  `⚠️ Skipping record with invalid UUID in field ${field}: ${mappedRecord[field]}`,
-                );
-                skippedRecords++;
-                continue;
-              }
-            }
-          }
-        } else {
-          // For payments and user_progress tables, only validate UUID fields (not the integer id)
-          const uuidFields = ['userId', 'bookId', 'chapterId', 'categoryId'];
           for (const field of uuidFields) {
             if (
               mappedRecord[field] &&
@@ -441,7 +384,6 @@ async function migrateFromJson() {
               mappedRecord.user_id = null;
             }
           }
-          // subscription_id is varchar, so no validation needed
         }
 
         // Handle special cases for Subscriptions table
