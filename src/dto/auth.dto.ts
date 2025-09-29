@@ -36,6 +36,12 @@ export class AuthResponseDto {
   @ApiProperty()
   accessToken: string;
 
+  @ApiProperty({ required: false })
+  refreshToken?: string;
+
+  @ApiProperty({ required: false })
+  expiresAt?: Date;
+
   @ApiProperty()
   user: {
     id: string;

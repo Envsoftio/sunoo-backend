@@ -9,7 +9,9 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Put,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +20,6 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { SecureAuthService } from './services/secure-auth.service';
 import { RateLimitService } from './services/rate-limit.service';
 import {
   LoginDto,
@@ -38,77 +39,43 @@ import { RateLimitGuard, RateLimit } from './guards/rate-limit.guard';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly secureAuthService: SecureAuthService,
     private readonly rateLimitService: RateLimitService
   ) {}
 
-  @Post('handleLogin')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RateLimitGuard) // Enabled for development
-  @RateLimit(true)
-  @ApiOperation({
-    summary: 'User login (Sunoo compatible) - Now with enhanced security',
-  })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid credentials or account locked',
-  })
-  @ApiResponse({ status: 429, description: 'Too many requests' })
-  async handleLogin(@Body() loginDto: LoginDto, @Request() req) {
-    const clientIp = this.getClientIp(req);
-    return this.secureAuthService.secureLogin(loginDto, clientIp);
-  }
-
-  @Post('handleSignup')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RateLimitGuard) // Enabled for development
-  @RateLimit(true)
-  @ApiOperation({
-    summary:
-      'User registration (Sunoo compatible) - Now with enhanced security',
-  })
-  @ApiResponse({ status: 201, description: 'Registration successful' })
-  @ApiResponse({ status: 400, description: 'Invalid input or weak password' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
-  @ApiResponse({ status: 429, description: 'Too many requests' })
-  async handleSignup(@Body() registerDto: RegisterDto, @Request() req) {
-    const clientIp = this.getClientIp(req);
-    // Convert to secure registration format
-    const secureRegisterDto = {
-      email: registerDto.email,
-      password: registerDto.password,
-      name: registerDto.name,
-      acceptTerms: true, // Assume terms accepted for Sunoo compatibility
-    };
-    return this.secureAuthService.secureRegister(secureRegisterDto, clientIp);
-  }
-
-  @Post('handleLogout')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User logout (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Logout successful' })
-  handleLogout() {
-    return this.authService.handleLogout();
-  }
-
-  @Post('getProfile')
+  @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user profile (Sunoo compatible)' })
+  @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@Body() body: { id: string }, @Request() req) {
-    return this.authService.getProfile(body.id || req.user.id);
+  async getProfile(@Request() req) {
+    const result = await this.authService.getProfile(req.user.id);
+    if (result.success) {
+      return result.data;
+    } else {
+      throw new UnauthorizedException(
+        result.error?.message || 'Failed to get profile'
+      );
+    }
   }
 
-  @Post('handleForget')
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateProfile(@Body() updateData: any, @Request() req) {
+    return this.authService.handleUpdateUser(req.user.id, updateData);
+  }
+
+  @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RateLimitGuard)
   @RateLimit(true)
-  @ApiOperation({ summary: 'Forgot password (Sunoo compatible)' })
+  @ApiOperation({ summary: 'Forgot password' })
   @ApiResponse({ status: 200, description: 'Password reset email sent' })
-  async handleForget(@Body() forgotPasswordDto: ForgotPasswordDto) {
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.handleForget(forgotPasswordDto);
   }
 
@@ -144,16 +111,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User check completed' })
   async checkUser(@Body() body: { email: string }) {
     return this.authService.checkUserExists(body.email);
-  }
-
-
-  @Post('handleUpdateUser')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update user profile (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  async handleUpdateUser(@Body() updateData: any, @Request() req) {
-    return this.authService.handleUpdateUser(req.user.id, updateData);
   }
 
   @Post('getUserSubscription')
@@ -271,9 +228,49 @@ export class AuthController {
   // Legacy endpoints for compatibility
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login (Legacy)' })
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(loginDto);
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
+  @ApiOperation({
+    summary: 'User login with rate limiting and account lockout',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid credentials or account locked',
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async login(
+    @Body() loginDto: LoginDto,
+    @Request() req
+  ): Promise<AuthResponseDto> {
+    try {
+      return await this.authService.login(loginDto, req);
+    } catch (error) {
+      // Handle password reset required error
+      if (error.code === 'PASSWORD_RESET_REQUIRED') {
+        throw new UnauthorizedException({
+          message: error.message,
+          code: error.code,
+          requiresPasswordReset: error.requiresPasswordReset,
+        });
+      }
+
+      // Handle invalid credentials with attempt information
+      if (error.code === 'INVALID_CREDENTIALS') {
+        throw new UnauthorizedException({
+          message: error.message,
+          code: error.code,
+          remainingAttempts: error.remainingAttempts,
+          isLocked: error.isLocked,
+          lockoutTime: error.lockoutTime,
+        });
+      }
+
+      throw error;
+    }
   }
 
   @Post('register')
@@ -286,7 +283,7 @@ export class AuthController {
   @Post('clear-rate-limits')
   @ApiOperation({ summary: 'Clear rate limits (Development only)' })
   @ApiResponse({ status: 200, description: 'Rate limits cleared' })
-  async clearRateLimits(@Request() req) {
+  clearRateLimits(@Request() req) {
     const clientIp = this.getClientIp(req);
     this.rateLimitService.resetRateLimit(clientIp);
     return { message: 'Rate limits cleared for this IP', clientIp };
@@ -297,7 +294,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(@Query('token') token: string) {
-    return this.secureAuthService.verifyEmail(token);
+    return this.authService.verifyEmail(token);
   }
 
   // Helper method to get client IP

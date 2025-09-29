@@ -125,7 +125,7 @@ export class EmailService {
       userEmail,
       appName: this.emailConfig.templates.appName,
       appUrl: this.emailConfig.templates.appUrl,
-      resetUrl: `${this.emailConfig.templates.baseUrl}/api/auth/reset-password?token=${resetToken}`,
+      resetUrl: `${this.emailConfig.templates.appUrl}/reset-password?token=${resetToken}`,
     };
 
     const html = template(data);

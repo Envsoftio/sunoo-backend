@@ -3,6 +3,9 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +22,11 @@ import {
   ChangePasswordDto,
 } from '../dto/auth.dto';
 import { EmailService } from '../email/email.service';
+import { SessionService } from './services/session.service';
+import { RateLimitService } from './services/rate-limit.service';
+import { AccountLockoutService } from './services/account-lockout.service';
+import { PasswordValidationService } from './services/password-validation.service';
+import { SecureJwtService } from './services/secure-jwt.service';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +36,12 @@ export class AuthService {
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
     private jwtService: JwtService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private sessionService: SessionService,
+    private rateLimitService: RateLimitService,
+    private accountLockoutService: AccountLockoutService,
+    private passwordValidationService: PasswordValidationService,
+    private secureJwtService: SecureJwtService
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -41,24 +54,109 @@ export class AuthService {
     return null;
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+  async login(loginDto: LoginDto, request?: any): Promise<AuthResponseDto> {
+    const clientIp = this.getClientIp(request);
+
+    // Rate limiting check
+    const rateLimit = this.rateLimitService.checkRateLimit(clientIp, true);
+    if (!rateLimit.allowed) {
+      throw new HttpException(
+        {
+          message: 'Too many login attempts. Please try again later.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          resetTime: rateLimit.resetTime,
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
+    // Check account lockout
+    const lockoutCheck = this.accountLockoutService.isAccountLocked(
+      loginDto.email
+    );
+    if (lockoutCheck.isLocked) {
+      throw new HttpException(
+        {
+          message:
+            'Account is temporarily locked due to too many failed attempts.',
+          code: 'ACCOUNT_LOCKED',
+          lockoutTime: lockoutCheck.lockoutTime,
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
+    // First check if user exists and has default password (migrated user)
+    const user = await this.userRepository.findOne({
+      where: { email: loginDto.email.toLowerCase() },
+    });
+
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      // Record failed attempt for rate limiting
+      const attemptResult = this.accountLockoutService.recordFailedAttempt(
+        loginDto.email
+      );
+      throw new UnauthorizedException({
+        message: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS',
+        remainingAttempts: attemptResult.remainingAttempts,
+        isLocked: attemptResult.isLocked,
+        lockoutTime: attemptResult.lockoutTime,
+      });
     }
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    // Check if user has default password (migrated user) - this should be checked BEFORE password validation
+    if (user.hasDefaultPassword) {
+      throw new UnauthorizedException({
+        message: 'Please reset your password to continue',
+        code: 'PASSWORD_RESET_REQUIRED',
+        requiresPasswordReset: true,
+      });
+    }
+
+    // Now validate the password
+    const isValidPassword =
+      user.password && (await bcrypt.compare(loginDto.password, user.password));
+    if (!isValidPassword) {
+      // Record failed attempt for rate limiting
+      const attemptResult = this.accountLockoutService.recordFailedAttempt(
+        loginDto.email
+      );
+      throw new UnauthorizedException({
+        message: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS',
+        remainingAttempts: attemptResult.remainingAttempts,
+        isLocked: attemptResult.isLocked,
+        lockoutTime: attemptResult.lockoutTime,
+      });
+    }
+
+    // Clear failed attempts on successful login
+    this.accountLockoutService.recordSuccessfulAttempt(loginDto.email);
+
     // Update last login
     await this.userRepository.update(user.id, { lastLoginAt: new Date() });
 
-    const payload = { email: user.email, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);
+    // Create session
+    const session = await this.sessionService.createSession({
+      userId: user.id,
+      userAgent: request?.headers?.['user-agent'],
+      ipAddress: clientIp,
+      deviceInfo: request?.headers?.['x-device-info'],
+      metadata: {
+        loginMethod: 'email_password',
+        timestamp: new Date().toISOString(),
+      },
+    });
 
     return {
-      accessToken,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt: session.expiresAt,
       user: {
         id: user.id,
         email: user.email,
@@ -314,7 +412,7 @@ export class AuthService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ['subscriptions', 'subscriptions.plan'],
+        relations: ['subscriptions'],
       });
 
       if (!user) {
@@ -387,7 +485,7 @@ export class AuthService {
           message: 'Password reset email sent',
         };
       }
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -436,7 +534,7 @@ export class AuthService {
         success: true,
         message: 'Password reset successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -489,7 +587,7 @@ export class AuthService {
         success: true,
         message: 'Password changed successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -605,7 +703,7 @@ export class AuthService {
           },
         },
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -614,5 +712,42 @@ export class AuthService {
         },
       };
     }
+  }
+
+  async verifyEmail(
+    token: string
+  ): Promise<{ success: boolean; message: string }> {
+    const user = await this.userRepository.findOne({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException({
+        message: 'Invalid or expired verification token',
+        code: 'INVALID_VERIFICATION_TOKEN',
+      });
+    }
+
+    // Mark email as verified and clear token
+    await this.userRepository.update(user.id, {
+      isEmailVerified: true,
+      emailVerificationToken: undefined,
+    });
+
+    return {
+      success: true,
+      message: 'Email verified successfully. You can now log in.',
+    };
+  }
+
+  private getClientIp(request: any): string {
+    return (
+      request?.ip ||
+      request?.connection?.remoteAddress ||
+      request?.socket?.remoteAddress ||
+      request?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+      request?.headers?.['x-real-ip'] ||
+      '127.0.0.1'
+    );
   }
 }

@@ -8,6 +8,7 @@ import { AudiobookListener } from './audiobook-listener.entity';
 import { UserProgress } from './user-progress.entity';
 import { ChapterBookmark } from './chapter-bookmark.entity';
 import { Feedback } from './feedback.entity';
+import { UserSession } from './user-session.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -112,4 +113,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Feedback, (feedback) => feedback.user)
   feedbacks: Feedback[];
+
+  @OneToMany(() => UserSession, (session) => session.user)
+  sessions: UserSession[];
 }

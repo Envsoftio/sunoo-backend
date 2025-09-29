@@ -10,7 +10,7 @@ export const getDatabaseConfig = (
   port: configService.get('DB_PORT', 5432),
   username: configService.get('DB_USERNAME', 'postgres'),
   password: configService.get('DB_PASSWORD', 'password'),
-  database: configService.get('DB_NAME', 'sunoo_backend'),
+  database: configService.get('DB_NAME', 'sunooapp'),
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false, // Disabled to prevent TypeORM from modifying existing schema
