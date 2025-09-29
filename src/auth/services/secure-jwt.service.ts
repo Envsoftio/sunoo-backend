@@ -30,7 +30,7 @@ export class SecureJwtService {
     role: string;
   }): TokenPair {
     const securityConfig = this.configService.get('security');
-    const jwtConfig = securityConfig.jwt;
+    const jwtConfig = securityConfig?.jwt;
 
     const jti = uuidv4();
     const now = new Date();
@@ -57,15 +57,17 @@ export class SecureJwtService {
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
-      expiresIn: jwtConfig.accessTokenExpiry,
-      issuer: jwtConfig.issuer,
-      audience: jwtConfig.audience,
+      expiresIn: jwtConfig?.accessTokenExpiry,
+      issuer: jwtConfig?.issuer,
+      audience: jwtConfig?.audience,
+      algorithm: jwtConfig?.algorithm,
     });
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
-      expiresIn: jwtConfig.refreshTokenExpiry,
-      issuer: jwtConfig.issuer,
-      audience: jwtConfig.audience,
+      expiresIn: jwtConfig?.refreshTokenExpiry,
+      issuer: jwtConfig?.issuer,
+      audience: jwtConfig?.audience,
+      algorithm: jwtConfig?.algorithm,
     });
 
     return {
@@ -81,7 +83,7 @@ export class SecureJwtService {
     role: string;
   }): string {
     const securityConfig = this.configService.get('security');
-    const jwtConfig = securityConfig.jwt;
+    const jwtConfig = securityConfig?.jwt;
 
     const payload: TokenPayload = {
       sub: user.id,
@@ -91,9 +93,10 @@ export class SecureJwtService {
     };
 
     return this.jwtService.sign(payload, {
-      expiresIn: jwtConfig.accessTokenExpiry,
-      issuer: jwtConfig.issuer,
-      audience: jwtConfig.audience,
+      expiresIn: jwtConfig?.accessTokenExpiry,
+      issuer: jwtConfig?.issuer,
+      audience: jwtConfig?.audience,
+      algorithm: jwtConfig?.algorithm,
     });
   }
 

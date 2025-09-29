@@ -42,12 +42,26 @@ import { EmailModule } from '../email/email.module';
     // }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN'),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const securityConfig = configService.get('security');
+        const jwtConfig = securityConfig?.jwt;
+
+        return {
+          secret:
+            jwtConfig?.secret ||
+            configService.get<string>('JWT_SECRET') ||
+            'default-secret-change-in-production',
+          signOptions: {
+            expiresIn:
+              jwtConfig?.accessTokenExpiry ||
+              configService.get<string>('JWT_EXPIRES_IN') ||
+              '7d',
+            issuer: jwtConfig?.issuer,
+            audience: jwtConfig?.audience,
+            algorithm: jwtConfig?.algorithm,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     UsersModule,

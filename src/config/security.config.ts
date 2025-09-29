@@ -20,10 +20,12 @@ export default registerAs('security', () => ({
 
   // JWT settings
   jwt: {
-    accessTokenExpiry: '15m', // 15 minutes
-    refreshTokenExpiry: '7d', // 7 days
+    secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
+    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRES_IN || '15m', // 15 minutes
+    refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
     issuer: process.env.JWT_ISSUER || 'sunoo-backend',
     audience: process.env.JWT_AUDIENCE || 'sunoo-app',
+    algorithm: process.env.JWT_ALGORITHM || 'HS256',
   },
 
   // Rate limiting

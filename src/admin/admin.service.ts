@@ -1,9 +1,11 @@
+/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Feedback } from '../entities/feedback.entity';
 import { Subscription } from '../entities/subscription.entity';
+import { UserSession } from '../entities/user-session.entity';
 
 @Injectable()
 export class AdminService {
@@ -13,7 +15,9 @@ export class AdminService {
     @InjectRepository(Feedback)
     private feedbackRepository: Repository<Feedback>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>
+    private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(UserSession)
+    private userSessionRepository: Repository<UserSession>
   ) {}
 
   // User Management
@@ -154,6 +158,33 @@ export class AdminService {
         order: { created_at: 'DESC' },
       });
       return { success: true, data: feedbacks };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateNarratorPassword(userId: string, newPassword: string) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        return { success: false, message: 'User not found' };
+      }
+
+      // Hash the new password
+      const bcrypt = require('bcrypt');
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update the user's password
+      user.password = hashedPassword;
+      await this.userRepository.save(user);
+
+      // Invalidate all user sessions for security
+      await this.userSessionRepository.update(
+        { userId: userId, isActive: true },
+        { isActive: false }
+      );
+
+      return { success: true, message: 'Password updated successfully. All sessions have been invalidated.' };
     } catch (error) {
       return { success: false, message: error.message };
     }

@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { SessionService } from '../services/session.service';
 import { RateLimitGuard } from '../guards/rate-limit.guard';
 
-@Controller('auth/sessions')
+@Controller('api/auth/sessions')
 @UseGuards(JwtAuthGuard, RateLimitGuard)
 export class SessionController {
   constructor(private sessionService: SessionService) {}

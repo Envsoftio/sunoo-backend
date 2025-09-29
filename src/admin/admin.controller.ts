@@ -97,4 +97,14 @@ export class AdminController {
   async getAllFeedbacks() {
     return this.adminService.getAllFeedbacks();
   }
+
+  @Post('updateNarratorPassword')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update narrator password (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  async updateNarratorPassword(@Body() body: { userId: string; new_password: string }) {
+    return this.adminService.updateNarratorPassword(body.userId, body.new_password);
+  }
 }
