@@ -19,7 +19,7 @@ export const RateLimit =
 export class RateLimitGuard implements CanActivate {
   constructor(
     private rateLimitService: RateLimitService,
-    private reflector: Reflector,
+    private reflector: Reflector
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -31,14 +31,14 @@ export class RateLimitGuard implements CanActivate {
 
     const isAuthEndpoint = this.reflector.get<boolean>(
       RATE_LIMIT_KEY,
-      context.getHandler(),
+      context.getHandler()
     );
     const request = context.switchToHttp().getRequest();
     const clientIp = this.getClientIp(request);
 
     const rateLimit = this.rateLimitService.checkRateLimit(
       clientIp,
-      isAuthEndpoint,
+      isAuthEndpoint
     );
 
     if (!rateLimit.allowed) {
@@ -49,7 +49,7 @@ export class RateLimitGuard implements CanActivate {
           resetTime: rateLimit.resetTime,
           remaining: rateLimit.remaining,
         },
-        HttpStatus.TOO_MANY_REQUESTS,
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
 

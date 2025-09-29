@@ -30,7 +30,7 @@ export class Feedback extends BaseEntity {
   status: string; // pending, reviewed, resolved
 
   // Relationships
-  @ManyToOne(() => User, (user) => user.feedbacks)
+  @ManyToOne(() => User, user => user.feedbacks)
   @JoinColumn({ name: 'user_id' })
   user?: User;
 }

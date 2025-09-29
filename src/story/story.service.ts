@@ -819,7 +819,7 @@ export class StoryService {
   // Story Management Methods
   async handleAddStories(
     storyData: { title: string; language: string; description: string },
-    userId: string
+    _userId: string
   ) {
     try {
       const story = this.bookRepository.create({
@@ -848,7 +848,7 @@ export class StoryService {
       language: string;
       description: string;
     },
-    userId: string
+    _userId: string
   ) {
     try {
       const story = await this.bookRepository.findOne({
@@ -875,7 +875,7 @@ export class StoryService {
     }
   }
 
-  async handleAddChapterInStory(chapters: any[], userId: string) {
+  async handleAddChapterInStory(chapters: any[], _userId: string) {
     try {
       const savedChapters: any[] = [];
 
@@ -897,7 +897,7 @@ export class StoryService {
     }
   }
 
-  async updateStoryCover(storyId: string, userId: string) {
+  async updateStoryCover(storyId: string, _userId: string) {
     try {
       const story = await this.bookRepository.findOne({
         where: { id: storyId },
@@ -914,7 +914,7 @@ export class StoryService {
     }
   }
 
-  async deleteChapter(chapterId: string, userId: string) {
+  async deleteChapter(chapterId: string, _userId: string) {
     try {
       const chapter = await this.chapterRepository.findOne({
         where: { id: chapterId },

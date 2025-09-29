@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Feedback } from '../entities/feedback.entity';
 import { Subscription } from '../entities/subscription.entity';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminService {
@@ -14,14 +13,22 @@ export class AdminService {
     @InjectRepository(Feedback)
     private feedbackRepository: Repository<Feedback>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>,
+    private subscriptionRepository: Repository<Subscription>
   ) {}
 
   // User Management
   async getUsers() {
     try {
       const users = await this.userRepository.find({
-        select: ['id', 'email', 'name', 'role', 'isActive', 'created_at', 'updated_at'],
+        select: [
+          'id',
+          'email',
+          'name',
+          'role',
+          'isActive',
+          'created_at',
+          'updated_at',
+        ],
         order: { created_at: 'DESC' },
       });
       return { success: true, data: users };

@@ -44,6 +44,6 @@ export class Category {
   featured: boolean;
 
   // Relationships
-  @OneToMany(() => Book, (book) => book.category)
+  @OneToMany(() => Book, book => book.category)
   books: Book[];
 }

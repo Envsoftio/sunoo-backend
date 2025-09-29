@@ -62,24 +62,24 @@ export class Book {
   @JoinColumn({ name: 'categoryId' })
   category?: Category;
 
-  @OneToMany(() => Chapter, (chapter) => chapter.book)
+  @OneToMany(() => Chapter, chapter => chapter.book)
   chapters: Chapter[];
 
-  @OneToMany(() => Bookmark, (bookmark) => bookmark.book)
+  @OneToMany(() => Bookmark, bookmark => bookmark.book)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => BookRating, (bookRating) => bookRating.book)
+  @OneToMany(() => BookRating, bookRating => bookRating.book)
   bookRatings: BookRating[];
 
   @OneToMany(
     () => AudiobookListener,
-    (audiobookListener) => audiobookListener.book,
+    audiobookListener => audiobookListener.book
   )
   audiobookListeners: AudiobookListener[];
 
-  @OneToMany(() => UserProgress, (userProgress) => userProgress.book)
+  @OneToMany(() => UserProgress, userProgress => userProgress.book)
   userProgress: UserProgress[];
 
-  @OneToMany(() => ChapterBookmark, (chapterBookmark) => chapterBookmark.book)
+  @OneToMany(() => ChapterBookmark, chapterBookmark => chapterBookmark.book)
   chapterBookmarks: ChapterBookmark[];
 }

@@ -22,7 +22,7 @@ export class SessionController {
   async getUserSessions(@Request() req) {
     const userId = req.user.id;
     const sessions = await this.sessionService.getUserSessions(userId);
-    
+
     return {
       success: true,
       data: {
@@ -45,8 +45,10 @@ export class SessionController {
   @RateLimit({ isAuthEndpoint: true })
   async refreshSession(@Body() body: { refreshToken: string }) {
     try {
-      const session = await this.sessionService.refreshSession(body.refreshToken);
-      
+      const session = await this.sessionService.refreshSession(
+        body.refreshToken
+      );
+
       return {
         success: true,
         data: {
@@ -71,12 +73,12 @@ export class SessionController {
   async logout(@Body() body: { refreshToken: string }) {
     try {
       await this.sessionService.invalidateSession(body.refreshToken);
-      
+
       return {
         success: true,
         message: 'Logged out successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -93,12 +95,12 @@ export class SessionController {
     try {
       const userId = req.user.id;
       await this.sessionService.invalidateAllUserSessions(userId);
-      
+
       return {
         success: true,
         message: 'All sessions logged out successfully',
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {
@@ -113,7 +115,7 @@ export class SessionController {
   async getActiveSessionCount(@Request() req) {
     const userId = req.user.id;
     const count = await this.sessionService.getActiveSessionCount(userId);
-    
+
     return {
       success: true,
       data: {
@@ -125,7 +127,15 @@ export class SessionController {
 
 // Rate limit decorator
 function RateLimit(options: { isAuthEndpoint: boolean }) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    Reflect.defineMetadata('rateLimit', options.isAuthEndpoint, descriptor.value);
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
+    Reflect.defineMetadata(
+      'rateLimit',
+      options.isAuthEndpoint,
+      descriptor.value
+    );
   };
 }

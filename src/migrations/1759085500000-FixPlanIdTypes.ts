@@ -40,29 +40,35 @@ export class FixPlanIdTypes1759085500000 implements MigrationInterface {
     // 1. Foreign key constraints were already dropped in up()
     // 2. Converting back to UUID will fail if plan_id contains Razorpay IDs
     // 3. This migration should be considered irreversible in practice
-    
-    console.log('⚠️ WARNING: This down migration may fail if plan_id contains non-UUID values');
-    console.log('⚠️ Consider this migration irreversible in production environments');
-    
+
+    console.log(
+      '⚠️ WARNING: This down migration may fail if plan_id contains non-UUID values'
+    );
+    console.log(
+      '⚠️ Consider this migration irreversible in production environments'
+    );
+
     // Only attempt to revert if plan_id values are valid UUIDs
     try {
       // Check if plan_id values are valid UUIDs before attempting conversion
       const subscriptionCheck = await queryRunner.query(`
-        SELECT COUNT(*) as count 
-        FROM subscriptions 
-        WHERE plan_id IS NOT NULL 
+        SELECT COUNT(*) as count
+        FROM subscriptions
+        WHERE plan_id IS NOT NULL
         AND plan_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       `);
-      
+
       const paymentCheck = await queryRunner.query(`
-        SELECT COUNT(*) as count 
-        FROM payments 
-        WHERE plan_id IS NOT NULL 
+        SELECT COUNT(*) as count
+        FROM payments
+        WHERE plan_id IS NOT NULL
         AND plan_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       `);
 
       if (subscriptionCheck[0].count > 0 || paymentCheck[0].count > 0) {
-        console.log('❌ Cannot revert: plan_id contains non-UUID values (likely Razorpay IDs)');
+        console.log(
+          '❌ Cannot revert: plan_id contains non-UUID values (likely Razorpay IDs)'
+        );
         console.log('❌ This migration is effectively irreversible');
         return;
       }

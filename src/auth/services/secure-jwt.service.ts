@@ -21,17 +21,25 @@ export interface TokenPayload {
 export class SecureJwtService {
   constructor(
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
-  generateTokenPair(user: { id: string; email: string; role: string }): TokenPair {
+  generateTokenPair(user: {
+    id: string;
+    email: string;
+    role: string;
+  }): TokenPair {
     const securityConfig = this.configService.get('security');
     const jwtConfig = securityConfig.jwt;
 
     const jti = uuidv4();
     const now = new Date();
-    const accessExpiry = new Date(now.getTime() + this.parseExpiry(jwtConfig.accessTokenExpiry));
-    const refreshExpiry = new Date(now.getTime() + this.parseExpiry(jwtConfig.refreshTokenExpiry));
+    const accessExpiry = new Date(
+      now.getTime() + this.parseExpiry(jwtConfig.accessTokenExpiry)
+    );
+    const _refreshExpiry = new Date(
+      now.getTime() + this.parseExpiry(jwtConfig.refreshTokenExpiry)
+    );
 
     const accessPayload: TokenPayload = {
       sub: user.id,
@@ -67,7 +75,11 @@ export class SecureJwtService {
     };
   }
 
-  generateAccessToken(user: { id: string; email: string; role: string }): string {
+  generateAccessToken(user: {
+    id: string;
+    email: string;
+    role: string;
+  }): string {
     const securityConfig = this.configService.get('security');
     const jwtConfig = securityConfig.jwt;
 
@@ -87,7 +99,7 @@ export class SecureJwtService {
 
   verifyToken(token: string): TokenPayload | null {
     try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
+      const payload = this.jwtService.verify(token);
       return payload;
     } catch {
       return null;
@@ -96,7 +108,7 @@ export class SecureJwtService {
 
   verifyRefreshToken(token: string): TokenPayload | null {
     try {
-      const payload = this.jwtService.verify(token) as TokenPayload;
+      const payload = this.jwtService.verify(token);
       if (payload.type !== 'refresh') {
         return null;
       }
@@ -135,11 +147,16 @@ export class SecureJwtService {
     const unit = match[2];
 
     switch (unit) {
-      case 's': return value * 1000;
-      case 'm': return value * 60 * 1000;
-      case 'h': return value * 60 * 60 * 1000;
-      case 'd': return value * 24 * 60 * 60 * 1000;
-      default: throw new Error(`Invalid expiry unit: ${unit}`);
+      case 's':
+        return value * 1000;
+      case 'm':
+        return value * 60 * 1000;
+      case 'h':
+        return value * 60 * 60 * 1000;
+      case 'd':
+        return value * 24 * 60 * 60 * 1000;
+      default:
+        throw new Error(`Invalid expiry unit: ${unit}`);
     }
   }
 }

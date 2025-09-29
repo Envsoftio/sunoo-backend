@@ -21,7 +21,7 @@ export class AnalyticsController {
     @InjectRepository(UserSession)
     private sessionRepository: Repository<UserSession>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   @Get('online-users')
@@ -81,7 +81,7 @@ export class AnalyticsController {
 
   @Get('session-stats')
   async getSessionStats(
-    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number,
+    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number
   ) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -110,9 +110,19 @@ export class AnalyticsController {
         activeUsers,
         dailyStats: stats,
         summary: {
-          totalSessions: stats.reduce((sum, day) => sum + parseInt(day.total_sessions), 0),
-          uniqueUsers: stats.reduce((sum, day) => sum + parseInt(day.unique_users), 0),
-          avgSessionDuration: stats.reduce((sum, day) => sum + parseFloat(day.avg_session_duration || 0), 0) / stats.length,
+          totalSessions: stats.reduce(
+            (sum, day) => sum + parseInt(day.total_sessions),
+            0
+          ),
+          uniqueUsers: stats.reduce(
+            (sum, day) => sum + parseInt(day.unique_users),
+            0
+          ),
+          avgSessionDuration:
+            stats.reduce(
+              (sum, day) => sum + parseFloat(day.avg_session_duration || 0),
+              0
+            ) / stats.length,
         },
       },
     };
@@ -149,7 +159,7 @@ export class AnalyticsController {
   @Get('user-activity')
   async getUserActivity(
     @Query('userId') userId?: string,
-    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number
   ) {
     let query = this.sessionRepository
       .createQueryBuilder('session')
@@ -190,7 +200,11 @@ export class AnalyticsController {
           deviceInfo: activity.deviceInfo,
           isActive: activity.isActive,
           sessionDuration: activity.lastUsedAt
-            ? Math.floor((activity.lastUsedAt.getTime() - activity.created_at.getTime()) / 1000)
+            ? Math.floor(
+                (activity.lastUsedAt.getTime() -
+                  activity.created_at.getTime()) /
+                  1000
+              )
             : null,
         })),
         total: activities.length,
@@ -225,7 +239,7 @@ export class AnalyticsController {
       .leftJoinAndSelect('session.user', 'user')
       .where('session.isActive = :isActive', { isActive: true })
       .andWhere('session.createdAt < :cutoff', {
-        cutoff: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        cutoff: new Date(Date.now() - 24 * 60 * 60 * 1000),
       })
       .getMany();
 
@@ -248,7 +262,9 @@ export class AnalyticsController {
           userName: session.user?.name || 'Unknown',
           createdAt: session.created_at,
           lastUsedAt: session.lastUsedAt,
-          duration: Math.floor((Date.now() - session.created_at.getTime()) / (1000 * 60 * 60)),
+          duration: Math.floor(
+            (Date.now() - session.created_at.getTime()) / (1000 * 60 * 60)
+          ),
         })),
         totalAlerts: suspiciousSessions.length + longSessions.length,
       },

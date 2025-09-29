@@ -49,15 +49,15 @@ export class UserProgress {
   lastListenedAt?: Date;
 
   // Relationships
-  @ManyToOne(() => User, (user) => user.userProgress)
+  @ManyToOne(() => User, user => user.userProgress)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Book, (book) => book.userProgress)
+  @ManyToOne(() => Book, book => book.userProgress)
   @JoinColumn({ name: 'bookId' })
   book: Book;
 
-  @ManyToOne(() => Chapter, (chapter) => chapter.userProgress)
+  @ManyToOne(() => Chapter, chapter => chapter.userProgress)
   @JoinColumn({ name: 'chapterId' })
   chapter: Chapter;
 }

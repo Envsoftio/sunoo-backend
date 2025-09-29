@@ -37,7 +37,7 @@ export class EmailService {
     });
 
     // Verify connection configuration
-    this.transporter.verify((error, success) => {
+    this.transporter.verify((error, _success) => {
       if (error) {
         this.logger.error('SMTP connection failed:', error);
       } else {
@@ -73,7 +73,7 @@ export class EmailService {
     userName: string,
     verificationToken?: string
   ): Promise<boolean> {
-    const template = await this.loadTemplate('welcome');
+    const template = this.loadTemplate('welcome');
     const data = {
       userName,
       userEmail,
@@ -97,7 +97,7 @@ export class EmailService {
     userName: string,
     verificationToken: string
   ): Promise<boolean> {
-    const template = await this.loadTemplate('verification');
+    const template = this.loadTemplate('verification');
     const data = {
       userName,
       userEmail,
@@ -119,7 +119,7 @@ export class EmailService {
     userName: string,
     resetToken: string
   ): Promise<boolean> {
-    const template = await this.loadTemplate('password-reset');
+    const template = this.loadTemplate('password-reset');
     const data = {
       userName,
       userEmail,
@@ -136,9 +136,7 @@ export class EmailService {
     });
   }
 
-  private async loadTemplate(
-    templateName: string
-  ): Promise<HandlebarsTemplateDelegate> {
+  private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),
       'dist',

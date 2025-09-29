@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Book } from './book.entity';
 import { UserProgress } from './user-progress.entity';
 import { ChapterBookmark } from './chapter-bookmark.entity';

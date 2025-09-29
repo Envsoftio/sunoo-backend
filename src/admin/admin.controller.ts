@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -54,7 +53,6 @@ export class AdminController {
     return this.adminService.makeNarrator(body.email);
   }
 
-
   // Analytics
   @Post('getUserRegistrationsByPeriod')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -70,7 +68,9 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get subscription registrations by period (Admin only)' })
+  @ApiOperation({
+    summary: 'Get subscription registrations by period (Admin only)',
+  })
   @ApiResponse({ status: 200, description: 'Analytics retrieved successfully' })
   async getSubscriptionRegistrationsByPeriod(@Body() body: { period: string }) {
     return this.adminService.getSubscriptionRegistrationsByPeriod(body.period);
@@ -81,7 +81,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get feedback count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Feedback count retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Feedback count retrieved successfully',
+  })
   async getFeedbackCount() {
     return this.adminService.getFeedbackCount();
   }

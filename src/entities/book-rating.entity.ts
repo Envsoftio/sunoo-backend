@@ -22,11 +22,11 @@ export class BookRating extends BaseEntity {
   review?: number; // 1-5
 
   // Relationships
-  @ManyToOne(() => User, (user) => user.bookRatings)
+  @ManyToOne(() => User, user => user.bookRatings)
   @JoinColumn({ name: 'userId' })
   user?: User;
 
-  @ManyToOne(() => Book, (book) => book.bookRatings)
+  @ManyToOne(() => Book, book => book.bookRatings)
   @JoinColumn({ name: 'bookId' })
   book?: Book;
 }

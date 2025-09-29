@@ -90,30 +90,30 @@ export class User extends BaseEntity {
   passwordResetExpires?: Date;
 
   // Relationships
-  @OneToMany(() => Subscription, (subscription) => subscription.user)
+  @OneToMany(() => Subscription, subscription => subscription.user)
   subscriptions: Subscription[];
 
-  @OneToMany(() => Bookmark, (bookmark) => bookmark.user)
+  @OneToMany(() => Bookmark, bookmark => bookmark.user)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => BookRating, (bookRating) => bookRating.user)
+  @OneToMany(() => BookRating, bookRating => bookRating.user)
   bookRatings: BookRating[];
 
   @OneToMany(
     () => AudiobookListener,
-    (audiobookListener) => audiobookListener.user,
+    audiobookListener => audiobookListener.user
   )
   audiobookListeners: AudiobookListener[];
 
-  @OneToMany(() => UserProgress, (userProgress) => userProgress.user)
+  @OneToMany(() => UserProgress, userProgress => userProgress.user)
   userProgress: UserProgress[];
 
-  @OneToMany(() => ChapterBookmark, (chapterBookmark) => chapterBookmark.user)
+  @OneToMany(() => ChapterBookmark, chapterBookmark => chapterBookmark.user)
   chapterBookmarks: ChapterBookmark[];
 
-  @OneToMany(() => Feedback, (feedback) => feedback.user)
+  @OneToMany(() => Feedback, feedback => feedback.user)
   feedbacks: Feedback[];
 
-  @OneToMany(() => UserSession, (session) => session.user)
+  @OneToMany(() => UserSession, session => session.user)
   sessions: UserSession[];
 }

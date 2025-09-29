@@ -5,7 +5,6 @@ import {
   JoinColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { BaseEntity } from './base.entity';
 import { User } from './user.entity';
 import { Plan } from './plan.entity';
 
@@ -67,11 +66,11 @@ export class Subscription {
   trialEndDate?: Date;
 
   // Relationships
-  @ManyToOne(() => User, (user) => user.subscriptions)
+  @ManyToOne(() => User, user => user.subscriptions)
   @JoinColumn({ name: 'user_id' })
   user?: User;
 
-  @ManyToOne(() => Plan, (plan) => plan.subscriptions)
+  @ManyToOne(() => Plan, plan => plan.subscriptions)
   @JoinColumn({ name: 'plan_id' })
   plan?: Plan;
 }

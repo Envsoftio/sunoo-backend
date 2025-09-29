@@ -16,11 +16,11 @@ export class AudiobookListener extends BaseEntity {
   count: number;
 
   // Relationships
-  @ManyToOne(() => User, (user) => user.audiobookListeners)
+  @ManyToOne(() => User, user => user.audiobookListeners)
   @JoinColumn({ name: 'userId' })
   user?: User;
 
-  @ManyToOne(() => Book, (book) => book.audiobookListeners)
+  @ManyToOne(() => Book, book => book.audiobookListeners)
   @JoinColumn({ name: 'bookId' })
   book?: Book;
 }

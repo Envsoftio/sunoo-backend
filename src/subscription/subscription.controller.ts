@@ -89,6 +89,9 @@ export class SubscriptionController {
   @ApiOperation({ summary: 'Update subscription trial (Sunoo compatible)' })
   @ApiResponse({ status: 200, description: 'Trial updated successfully' })
   async updateSubscriptionTrial(@Body() body: { id: string }, @Request() req) {
-    return this.subscriptionService.updateSubscriptionTrial(req.user.id, body.id);
+    return this.subscriptionService.updateSubscriptionTrial(
+      req.user.id,
+      body.id
+    );
   }
 }

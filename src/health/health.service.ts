@@ -39,7 +39,7 @@ export class HealthService {
 
   constructor(
     private configService: ConfigService,
-    private databaseService: DatabaseService,
+    private databaseService: DatabaseService
   ) {}
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -81,7 +81,7 @@ export class HealthService {
     };
 
     // Determine overall status
-    const serviceStatuses = Object.values(services).map((s) => s.status);
+    const serviceStatuses = Object.values(services).map(s => s.status);
     const overallStatus = this.determineOverallStatus(serviceStatuses);
 
     return {
@@ -174,8 +174,8 @@ export class HealthService {
       // const path = require('path');
 
       // Check disk space for the current directory
-      const stats = require('fs').statSync('.');
-      const diskUsage = require('os').totalmem(); // This is a simplified check
+      const _stats = require('fs').statSync('.');
+      const _diskUsage = require('os').totalmem(); // This is a simplified check
 
       return {
         status: 'up',
@@ -195,9 +195,9 @@ export class HealthService {
     }
   }
 
-  private async getSystemInfo() {
+  private getSystemInfo() {
     const os = require('os');
-    const memUsage = process.memoryUsage();
+    const _memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
@@ -216,7 +216,7 @@ export class HealthService {
   }
 
   private determineOverallStatus(
-    serviceStatuses: string[],
+    serviceStatuses: string[]
   ): 'healthy' | 'unhealthy' | 'degraded' {
     if (serviceStatuses.includes('down')) {
       return 'unhealthy';

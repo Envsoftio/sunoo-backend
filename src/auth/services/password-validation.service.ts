@@ -18,12 +18,16 @@ export class PasswordValidationService {
 
     // Check minimum length
     if (password.length < passwordConfig.minLength) {
-      errors.push(`Password must be at least ${passwordConfig.minLength} characters long`);
+      errors.push(
+        `Password must be at least ${passwordConfig.minLength} characters long`
+      );
     }
 
     // Check maximum length
     if (password.length > passwordConfig.maxLength) {
-      errors.push(`Password must be no more than ${passwordConfig.maxLength} characters long`);
+      errors.push(
+        `Password must be no more than ${passwordConfig.maxLength} characters long`
+      );
     }
 
     // Check for uppercase letter
@@ -42,15 +46,33 @@ export class PasswordValidationService {
     }
 
     // Check for special characters
-    if (passwordConfig.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (
+      passwordConfig.requireSpecialChars &&
+      !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+    ) {
       errors.push('Password must contain at least one special character');
     }
 
     // Check for common passwords
     const commonPasswords = [
-      'password', '123456', '123456789', 'qwerty', 'abc123', 'password123',
-      'admin', 'letmein', 'welcome', 'monkey', '1234567890', 'dragon',
-      'master', 'hello', 'freedom', 'whatever', 'qazwsx', 'trustno1'
+      'password',
+      '123456',
+      '123456789',
+      'qwerty',
+      'abc123',
+      'password123',
+      'admin',
+      'letmein',
+      'welcome',
+      'monkey',
+      '1234567890',
+      'dragon',
+      'master',
+      'hello',
+      'freedom',
+      'whatever',
+      'qazwsx',
+      'trustno1',
     ];
 
     if (commonPasswords.includes(password.toLowerCase())) {
@@ -80,8 +102,9 @@ export class PasswordValidationService {
     if (/[a-z]/.test(password)) score += 10; // lowercase
     if (/[A-Z]/.test(password)) score += 10; // uppercase
     if (/\d/.test(password)) score += 10; // numbers
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 10; // special chars
-    if (/[^a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 10; // unicode
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score += 10; // special chars
+    if (/[^a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password))
+      score += 10; // unicode
 
     // Pattern penalty (0-25 points deduction)
     if (/(.)\1{2,}/.test(password)) score -= 10; // repeated characters

@@ -14,7 +14,7 @@ export class RateLimitService {
 
   checkRateLimit(
     identifier: string,
-    isAuthEndpoint: boolean = false,
+    isAuthEndpoint: boolean = false
   ): { allowed: boolean; remaining: number; resetTime: Date } {
     const securityConfig = this.configService.get('security');
     const rateLimitConfig = securityConfig.rateLimit;
@@ -72,7 +72,7 @@ export class RateLimitService {
 
   getRateLimitInfo(
     identifier: string,
-    isAuthEndpoint: boolean = false,
+    isAuthEndpoint: boolean = false
   ): {
     remaining: number;
     resetTime: Date;

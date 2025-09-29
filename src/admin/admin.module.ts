@@ -7,9 +7,7 @@ import { Feedback } from '../entities/feedback.entity';
 import { Subscription } from '../entities/subscription.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, Feedback, Subscription]),
-  ],
+  imports: [TypeOrmModule.forFeature([User, Feedback, Subscription])],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

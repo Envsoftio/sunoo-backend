@@ -34,9 +34,9 @@ export class Plan {
   frequency?: string;
 
   // Relationships
-  @OneToMany(() => Subscription, (subscription) => subscription.plan)
+  @OneToMany(() => Subscription, subscription => subscription.plan)
   subscriptions: Subscription[];
 
-  @OneToMany(() => Payment, (payment) => payment.plan)
+  @OneToMany(() => Payment, payment => payment.plan)
   payments: Payment[];
 }
