@@ -157,4 +157,56 @@ export class SubscriptionService {
       return { success: false, message: error.message };
     }
   }
+
+  // Additional methods for frontend compatibility
+  async getUserSubscription(userId: string) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { user_id: userId, status: 'active' },
+        relations: ['plan'],
+        order: { created_at: 'DESC' },
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'No active subscription found' };
+      }
+
+      return { success: true, data: subscription };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateSubscription(userId: string, updateData: any) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { user_id: userId, status: 'active' },
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'No active subscription found' };
+      }
+
+      Object.assign(subscription, updateData);
+      await this.subscriptionRepository.save(subscription);
+
+      return { success: true, message: 'Subscription updated successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getSubscriptionEvents(userId: string) {
+    try {
+      const subscriptions = await this.subscriptionRepository.find({
+        where: { user_id: userId },
+        relations: ['plan'],
+        order: { created_at: 'DESC' },
+      });
+
+      return { success: true, data: subscriptions };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }

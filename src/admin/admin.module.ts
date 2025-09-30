@@ -8,7 +8,9 @@ import { Subscription } from '../entities/subscription.entity';
 import { UserSession } from '../entities/user-session.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Feedback, Subscription, UserSession])],
+  imports: [
+    TypeOrmModule.forFeature([User, Feedback, Subscription, UserSession]),
+  ],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

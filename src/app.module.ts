@@ -10,6 +10,8 @@ import { HealthModule } from './health/health.module';
 import { StoryModule } from './story/story.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { AdminModule } from './admin/admin.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { GenreModule } from './genre/genre.module';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
@@ -34,6 +36,8 @@ import emailConfig from './config/email.config';
     StoryModule,
     SubscriptionModule,
     AdminModule,
+    FeedbackModule,
+    GenreModule,
   ],
   controllers: [AppController],
   providers: [AppService],

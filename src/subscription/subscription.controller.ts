@@ -8,6 +8,8 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Delete,
+  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -35,30 +37,6 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Plan retrieved successfully' })
   async getPlanById(@Query('id') id: string) {
     return this.subscriptionService.getPlanById(id);
-  }
-
-  @Post('create-subscription')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create subscription (Sunoo compatible)' })
-  @ApiResponse({
-    status: 201,
-    description: 'Subscription created successfully',
-  })
-  async createSubscription(@Body() body: any, @Request() req) {
-    return this.subscriptionService.createSubscription(req.user.id, body);
-  }
-
-  @Post('cancel-subscription')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Cancel subscription (Sunoo compatible)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Subscription cancelled successfully',
-  })
-  async cancelSubscription(@Body() body: any, @Request() req) {
-    return this.subscriptionService.cancelSubscription(req.user.id, body);
   }
 
   @Get('get-subscription-by-id')
@@ -93,5 +71,70 @@ export class SubscriptionController {
       req.user.id,
       body.id
     );
+  }
+
+  // Additional endpoints for frontend compatibility
+  @Get('plans')
+  @ApiOperation({ summary: 'Get all subscription plans' })
+  @ApiResponse({ status: 200, description: 'Plans retrieved successfully' })
+  async getPlans() {
+    return this.subscriptionService.getAllPlans();
+  }
+
+  @Get('user-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'User subscription retrieved successfully',
+  })
+  async getUserSubscription(@Request() req) {
+    return this.subscriptionService.getUserSubscription(req.user.id);
+  }
+
+  @Post('create')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create subscription' })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created successfully',
+  })
+  async createSubscription(@Body() body: any, @Request() req) {
+    return this.subscriptionService.createSubscription(req.user.id, body);
+  }
+
+  @Delete('cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription cancelled successfully',
+  })
+  async cancelSubscription(@Request() req) {
+    return this.subscriptionService.cancelSubscription(req.user.id, {});
+  }
+
+  @Put('update')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription updated successfully',
+  })
+  async updateSubscription(@Body() body: any, @Request() req) {
+    return this.subscriptionService.updateSubscription(req.user.id, body);
+  }
+
+  @Get('events')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get subscription events' })
+  @ApiResponse({ status: 200, description: 'Events retrieved successfully' })
+  async getSubscriptionEvents(@Request() req) {
+    return this.subscriptionService.getSubscriptionEvents(req.user.id);
   }
 }

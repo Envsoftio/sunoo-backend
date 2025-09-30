@@ -14,11 +14,12 @@ import { SessionService } from '../services/session.service';
 import { RateLimitGuard } from '../guards/rate-limit.guard';
 
 @Controller('api/auth/sessions')
-@UseGuards(JwtAuthGuard, RateLimitGuard)
+@UseGuards(RateLimitGuard) // Only rate limiting at controller level
 export class SessionController {
   constructor(private sessionService: SessionService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async getUserSessions(@Request() req) {
     const userId = req.user.id;
     const sessions = await this.sessionService.getUserSessions(userId);
@@ -91,6 +92,7 @@ export class SessionController {
 
   @Delete('logout-all')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   async logoutAll(@Request() req) {
     try {
       const userId = req.user.id;

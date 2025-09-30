@@ -10,6 +10,9 @@ import {
   BookRating,
   UserProgress,
   AudiobookListener,
+  Subscription,
+  StoryCast,
+  CastMember,
 } from '../entities';
 
 @Module({
@@ -22,6 +25,9 @@ import {
       BookRating,
       UserProgress,
       AudiobookListener,
+      Subscription,
+      StoryCast,
+      CastMember,
     ]),
   ],
   providers: [StoryService],

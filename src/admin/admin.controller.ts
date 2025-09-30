@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   Controller,
   Get,
@@ -7,6 +8,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -104,7 +106,106 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update narrator password (Admin only)' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async updateNarratorPassword(@Body() body: { userId: string; new_password: string }) {
-    return this.adminService.updateNarratorPassword(body.userId, body.new_password);
+  async updateNarratorPassword(
+    @Body() body: { userId: string; new_password: string }
+  ) {
+    return this.adminService.updateNarratorPassword(
+      body.userId,
+      body.new_password
+    );
   }
+
+  // Additional admin endpoints for frontend compatibility
+  @Get('getAllNarrator')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all narrators (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrators retrieved successfully' })
+  async getAllNarrators() {
+    return this.adminService.getAllNarrators();
+  }
+
+  @Get('getNarrator')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get narrator (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrator retrieved successfully' })
+  async getNarrator(@Query('id') id: string) {
+    return this.adminService.getNarrator(id);
+  }
+
+  @Post('addNarrator')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add narrator (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrator added successfully' })
+  async addNarrator(@Body() body: any) {
+    return this.adminService.addNarrator(body);
+  }
+
+  @Post('editNarrator')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Edit narrator (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrator edited successfully' })
+  async editNarrator(@Body() body: { payload: any; id: string }) {
+    return this.adminService.editNarrator(body.payload, body.id);
+  }
+
+  @Post('deleteNarrator')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete narrator (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrator deleted successfully' })
+  async deleteNarrator(@Body() body: { email: string }) {
+    return this.adminService.deleteNarrator(body.email);
+  }
+
+  @Post('updateNarratorProfile')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update narrator profile (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  async updateNarratorProfile(@Body() body: { userId: string }) {
+    return this.adminService.updateNarratorProfile(body.userId);
+  }
+
+  @Post('updateNarratorName')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update narrator name (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Name updated successfully' })
+  async updateNarratorName(@Body() body: { userId: string; name: string }) {
+    return this.adminService.updateNarratorName(body.userId, body.name);
+  }
+
+  @Get('getUserBookLikes')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user book likes (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User book likes retrieved successfully',
+  })
+  getUserBookLikes(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string
+  ) {
+    return this.adminService.getUserBookLikes(
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder
+    );
+  }
+
 }

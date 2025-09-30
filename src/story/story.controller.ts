@@ -4,10 +4,12 @@ import {
   Post,
   Body,
   Query,
+  Param,
   UseGuards,
   Request,
   HttpCode,
   HttpStatus,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -154,15 +156,6 @@ export class StoryController {
     return await this.storyService.createBookmark(req.user.id, body.bookId);
   }
 
-  @Post('removeBookmark')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Remove bookmark (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Bookmark removed successfully' })
-  async removeBookmark(@Body() body: { bookId: string }, @Request() req) {
-    return await this.storyService.removeBookmark(req.user.id, body.bookId);
-  }
-
   @Get('getBookmarks')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -172,15 +165,6 @@ export class StoryController {
     return await this.storyService.getBookmarks(req.user.id);
   }
 
-  @Post('saveProgress')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Save user progress (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Progress saved successfully' })
-  async saveProgress(@Body() body: any, @Request() req) {
-    return await this.storyService.saveProgress(req.user.id, body);
-  }
-
   @Get('getProgress')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -188,18 +172,6 @@ export class StoryController {
   @ApiResponse({ status: 200, description: 'Progress retrieved successfully' })
   async getProgress(@Query('bookId') bookId: string, @Request() req) {
     return await this.storyService.getProgress(req.user.id, bookId);
-  }
-
-  @Post('saveRating')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Save book rating (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Rating saved successfully' })
-  async saveRating(
-    @Body() body: { bookId: string; rating: number; review?: string },
-    @Request() req
-  ) {
-    return await this.storyService.saveRating(req.user.id, body);
   }
 
   @Get('getStoryByIdForShow')
@@ -220,21 +192,6 @@ export class StoryController {
   })
   async getUsersSavedStories(@Query('userId') userId: string) {
     return await this.storyService.getBookmarks(userId);
-  }
-
-  @Get('getBookmarkStatus')
-  @ApiOperation({
-    summary: 'Get bookmark status for a story (Sunoo compatible)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Bookmark status retrieved successfully',
-  })
-  async getBookmarkStatus(
-    @Query('userId') userId: string,
-    @Query('bookId') bookId: string
-  ) {
-    return await this.storyService.getBookmarkStatus(userId, bookId);
   }
 
   @Get('getChapterCount')
@@ -300,18 +257,6 @@ export class StoryController {
     );
   }
 
-  @Get('getContinueListeningStories')
-  @ApiOperation({
-    summary: 'Get continue listening stories (Sunoo compatible)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Continue listening stories retrieved successfully',
-  })
-  async getContinueListeningStories(@Query('userId') userId: string) {
-    return await this.storyService.getContinueListeningStories(userId);
-  }
-
   @Get('getStoriesWithNewEpisodes')
   @ApiOperation({ summary: 'Get stories with new episodes (Sunoo compatible)' })
   @ApiResponse({
@@ -332,6 +277,22 @@ export class StoryController {
   })
   async getMostPopularStoriesThisWeek(@Query('userId') userId: string) {
     return await this.storyService.getMostPopularStoriesThisWeek(userId);
+  }
+
+  @Get('getMostPopularStoriesByUniqueListeners')
+  @ApiOperation({
+    summary: 'Get most popular stories by unique listeners (Sunoo compatible)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Popular stories by unique listeners retrieved successfully',
+  })
+  async getMostPopularStoriesByUniqueListeners(
+    @Query('userId') userId: string
+  ) {
+    return await this.storyService.getMostPopularStoriesByUniqueListeners(
+      userId
+    );
   }
 
   @Get('getGenreStats')
@@ -398,16 +359,6 @@ export class StoryController {
     );
   }
 
-  @Post('updateStoryCover')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update story cover (Sunoo compatible)' })
-  @ApiResponse({ status: 200, description: 'Cover updated successfully' })
-  async updateStoryCover(@Body() body: { storyId: string }, @Request() req) {
-    return await this.storyService.updateStoryCover(body.storyId, req.user.id);
-  }
-
   @Post('deleteChapter')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -416,5 +367,258 @@ export class StoryController {
   @ApiResponse({ status: 200, description: 'Chapter deleted successfully' })
   async deleteChapter(@Body() body: { id: string }, @Request() req) {
     return await this.storyService.deleteChapter(body.id, req.user.id);
+  }
+
+  // Additional endpoints for frontend compatibility
+  @Get('audiobooks')
+  @ApiOperation({ summary: 'Get audiobooks' })
+  @ApiResponse({
+    status: 200,
+    description: 'Audiobooks retrieved successfully',
+  })
+  async getAudiobooks(@Query('userId') userId?: string) {
+    return await this.storyService.getAudiobooks(userId);
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search stories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results retrieved successfully',
+  })
+  async searchStories(
+    @Query('q') query: string,
+    @Query('userId') userId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return await this.storyService.searchStories(query, userId, page, limit);
+  }
+
+  @Get('featured')
+  @ApiOperation({ summary: 'Get featured stories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured stories retrieved successfully',
+  })
+  async getFeaturedStories(@Query('userId') userId?: string) {
+    return await this.storyService.getFeaturedStories(userId);
+  }
+
+  @Get('categories/featured')
+  @ApiOperation({ summary: 'Get featured categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured categories retrieved successfully',
+  })
+  async getFeaturedCategories() {
+    return await this.storyService.getFeaturedCategories();
+  }
+
+  @Get('categories/stats')
+  @ApiOperation({ summary: 'Get category statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category stats retrieved successfully',
+  })
+  async getCategoryStats() {
+    return await this.storyService.getCategoryStats();
+  }
+
+  @Get('authors')
+  @ApiOperation({ summary: 'Get all authors' })
+  @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
+  getAllAuthors(@Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.storyService.getAllAuthors(page, limit);
+  }
+
+  @Get('authors/:id')
+  @ApiOperation({ summary: 'Get author by ID' })
+  @ApiResponse({ status: 200, description: 'Author retrieved successfully' })
+  getAuthorById(@Query('id') id: string) {
+    return this.storyService.getAuthorById(id);
+  }
+
+  @Get('narrators')
+  @ApiOperation({ summary: 'Get all narrators' })
+  @ApiResponse({ status: 200, description: 'Narrators retrieved successfully' })
+  getAllNarrators(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.storyService.getAllNarrators(page, limit);
+  }
+
+  @Get('narrators/:id')
+  @ApiOperation({ summary: 'Get narrator by ID' })
+  @ApiResponse({ status: 200, description: 'Narrator retrieved successfully' })
+  getNarratorById(@Query('id') id: string) {
+    return this.storyService.getNarratorById(id);
+  }
+
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get story by slug' })
+  @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
+  async getStoryBySlug(
+    @Param('slug') slug: string,
+    @Query('userId') userId?: string
+  ) {
+    return await this.storyService.getStoryBySlug(slug, userId);
+  }
+
+  @Get(':id/ratings')
+  @ApiOperation({ summary: 'Get story ratings' })
+  @ApiResponse({ status: 200, description: 'Ratings retrieved successfully' })
+  async getStoryRatings(
+    @Query('id') id: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return await this.storyService.getStoryRatings(id, page, limit);
+  }
+
+  @Get('user/:userId/continue')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get continue listening stories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Continue listening stories retrieved successfully',
+  })
+  async getContinueListeningStories(@Query('userId') userId: string) {
+    return await this.storyService.getContinueListeningStories(userId);
+  }
+
+  @Post('track')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Track user listening' })
+  @ApiResponse({ status: 200, description: 'Listening tracked successfully' })
+  async trackUserListening(@Body() body: any, @Request() req) {
+    return await this.storyService.trackUserListening(req.user.id, body);
+  }
+
+  @Post('rating')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Save story rating' })
+  @ApiResponse({ status: 200, description: 'Rating saved successfully' })
+  async saveRating(@Body() body: any, @Request() req) {
+    return await this.storyService.saveRating(req.user.id, body);
+  }
+
+  @Get('bookmark/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get bookmark status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Bookmark status retrieved successfully',
+  })
+  async getBookmarkStatus(@Query('storyId') storyId: string, @Request() req) {
+    return await this.storyService.getBookmarkStatus(req.user.id, storyId);
+  }
+
+  @Get('user/:userId/bookmarks')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user bookmarks' })
+  @ApiResponse({ status: 200, description: 'Bookmarks retrieved successfully' })
+  async getUserBookmarks(@Query('userId') userId: string) {
+    return await this.storyService.getBookmarks(userId);
+  }
+
+  @Get('user/:userId/progress')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user progress' })
+  @ApiResponse({ status: 200, description: 'Progress retrieved successfully' })
+  async getUserProgress(
+    @Query('userId') userId: string,
+    @Query('storyId') storyId?: string
+  ) {
+    return await this.storyService.getProgress(userId, storyId);
+  }
+
+  @Post('progress')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Save user progress' })
+  @ApiResponse({ status: 200, description: 'Progress saved successfully' })
+  async saveProgress(@Body() body: any, @Request() req) {
+    return await this.storyService.saveProgress(req.user.id, body);
+  }
+
+  @Post('bookmark')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create or remove bookmark' })
+  @ApiResponse({
+    status: 200,
+    description: 'Bookmark operation completed successfully',
+  })
+  async toggleBookmark(@Body() body: { storyId: string }, @Request() req) {
+    return await this.storyService.toggleBookmark(req.user.id, body.storyId);
+  }
+
+  @Delete('bookmark')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove bookmark' })
+  @ApiResponse({ status: 200, description: 'Bookmark removed successfully' })
+  async removeBookmark(@Body() body: { storyId: string }, @Request() req) {
+    return await this.storyService.removeBookmark(req.user.id, body.storyId);
+  }
+
+  // Admin endpoints
+  @Post('admin/add')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add new story (Admin)' })
+  @ApiResponse({ status: 200, description: 'Story added successfully' })
+  async addStory(@Body() body: any, @Request() req) {
+    return await this.storyService.handleAddStories(body, req.user.id);
+  }
+
+  @Post('admin/cover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update story cover (Admin)' })
+  @ApiResponse({ status: 200, description: 'Cover updated successfully' })
+  async updateStoryCover(@Body() body: { storyId: string }, @Request() req) {
+    return await this.storyService.updateStoryCover(body.storyId, req.user.id);
+  }
+
+  @Delete('admin/delete')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete story (Admin)' })
+  @ApiResponse({ status: 200, description: 'Story deleted successfully' })
+  async deleteStory(@Body() body: { id: string }, @Request() req) {
+    return await this.storyService.deleteStory(body.id, req.user.id);
+  }
+
+  @Post('admin/chapter')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add chapter to story (Admin)' })
+  @ApiResponse({ status: 200, description: 'Chapter added successfully' })
+  async addChapter(@Body() body: any, @Request() req) {
+    return await this.storyService.handleAddChapterInStory(
+      body.chapters,
+      req.user.id
+    );
+  }
+
+  @Delete('admin/chapter')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete chapter (Admin)' })
+  @ApiResponse({ status: 200, description: 'Chapter deleted successfully' })
+  async deleteChapterAdmin(
+    @Body() body: { chapterId: string },
+    @Request() req
+  ) {
+    return await this.storyService.deleteChapter(body.chapterId, req.user.id);
   }
 }
