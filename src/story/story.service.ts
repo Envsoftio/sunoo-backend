@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Book } from '../entities/book.entity';
 import { Category } from '../entities/category.entity';
 import { Chapter } from '../entities/chapter.entity';
@@ -11,6 +12,7 @@ import { AudiobookListener } from '../entities/audiobook-listener.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { StoryCast } from '../entities/story-cast.entity';
 import { CastMember } from '../entities/cast-member.entity';
+import { ChapterBookmark } from '../entities/chapter-bookmark.entity';
 
 @Injectable()
 export class StoryService {
@@ -34,8 +36,69 @@ export class StoryService {
     @InjectRepository(StoryCast)
     private storyCastRepository: Repository<StoryCast>,
     @InjectRepository(CastMember)
-    private castMemberRepository: Repository<CastMember>
+    private castMemberRepository: Repository<CastMember>,
+    @InjectRepository(ChapterBookmark)
+    private chapterBookmarkRepository: Repository<ChapterBookmark>,
+    private configService: ConfigService
   ) {}
+
+  // Helper function to process chapters with access control
+  private processChaptersWithAccess(
+    chapters: any[],
+    userIsSubscribed: boolean,
+    isBookFree: boolean
+  ) {
+    if (!chapters || !Array.isArray(chapters)) {
+      return [];
+    }
+
+    return chapters.map((chapter, index) => {
+      const canAccess = this.determineChapterAccess(
+        index,
+        userIsSubscribed,
+        isBookFree
+      );
+
+      const processedChapter = {
+        ...chapter,
+        canAccess,
+      };
+
+      // Add audio URL for accessible chapters (like Supabase implementation)
+      if (canAccess && chapter.chapterUrl) {
+        // Construct full S3 HLS URL for audio file
+        const awsS3HlsUrl = this.configService.get<string>('app.awsS3HlsUrl');
+        processedChapter.chapterUrl = `${awsS3HlsUrl}/${chapter.chapterUrl}`;
+      } else {
+        // Remove audio-related fields for locked chapters (security)
+        delete processedChapter.chapterUrl;
+        delete processedChapter.audioUrl;
+        delete processedChapter.hlsUrl;
+      }
+
+      return processedChapter;
+    });
+  }
+
+  // Helper function to determine if a chapter can be accessed
+  private determineChapterAccess(
+    chapterIndex: number,
+    userIsSubscribed: boolean,
+    isBookFree: boolean
+  ) {
+    // If user is subscribed, they can access all chapters
+    if (userIsSubscribed) {
+      return true;
+    }
+
+    // If book is free, all chapters are accessible
+    if (isBookFree) {
+      return true;
+    }
+
+    // For non-subscribed users, only first 3 chapters are free
+    return chapterIndex < 3;
+  }
 
   async getAllStories(userId?: string) {
     try {
@@ -102,18 +165,113 @@ export class StoryService {
     }
   }
 
-  async getStoryBySlugForShow(slug: string) {
+  async getStoryBySlugForShow(slug: string, userId?: string) {
     try {
+      console.log(
+        `🔍 getStoryBySlugForShow service called with slug: ${slug}, userId: ${userId}`
+      );
       const story = await this.bookRepository.findOne({
         where: { slug },
-        relations: ['chapters', 'category', 'bookRatings'],
+        relations: [
+          'chapters',
+          'category',
+          'bookRatings',
+          'audiobookListeners',
+        ],
       });
 
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
 
-      return { success: true, data: story };
+      let isBookmarked = false;
+      if (userId) {
+        const bookmark = await this.bookmarkRepository.findOne({
+          where: { userId, bookId: story.id },
+        });
+        isBookmarked = !!bookmark;
+      }
+
+      const ratings = story.bookRatings || [];
+      const averageRating =
+        ratings.length > 0
+          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            ratings.length
+          : null;
+
+      // Get total listeners count
+      const totalListeners =
+        story.audiobookListeners?.reduce(
+          (sum, listener) => sum + (listener.count || 0),
+          0
+        ) || 0;
+
+      // Check user subscription status
+      let userIsSubscribed = false;
+      if (userId) {
+        const subscription = await this.subscriptionRepository.findOne({
+          where: {
+            user_id: userId,
+            status: 'active',
+          },
+        });
+        userIsSubscribed = !!subscription;
+      }
+
+      // Get cast data
+      const storyCasts = await this.storyCastRepository.find({
+        where: { story_id: story.id },
+        order: { created_at: 'ASC' },
+      });
+
+      const casts: any[] = [];
+      if (storyCasts.length > 0) {
+        for (const storyCast of storyCasts) {
+          const castMember = await this.castMemberRepository.findOne({
+            where: { id: storyCast.cast_id },
+          });
+
+          casts.push({
+            id: storyCast.id,
+            created_at: storyCast.created_at,
+            updated_at: storyCast.updated_at,
+            story_id: storyCast.story_id,
+            role: storyCast.role,
+            cast_id: storyCast.cast_id,
+            name:
+              castMember?.name ||
+              storyCast.name ||
+              `Unknown ${storyCast.role || 'Cast Member'}`,
+            picture: castMember?.picture || storyCast.picture || 'dummy.jpg',
+          });
+        }
+      }
+
+      // Return empty array if no cast data exists - frontend will handle defaults
+
+      // Process chapters with access control
+      const sortedChapters =
+        story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+      const processedChapters = this.processChaptersWithAccess(
+        sortedChapters,
+        userIsSubscribed,
+        story.isFree || false
+      );
+
+      return {
+        success: true,
+        data: {
+          ...story,
+          isBookmarked,
+          Chapters: processedChapters,
+          chapters: story.chapters?.length || 0,
+          listeners: totalListeners,
+          averageRating,
+          casts: casts || [],
+          userIsSubscribed,
+          isBookFree: story.isFree || false,
+        },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -431,17 +589,19 @@ export class StoryService {
       const { bookId, chapterId, progress, currentTime, totalTime } =
         progressData;
 
+      // Find existing progress for this specific user, book, and chapter
       let userProgress = await this.userProgressRepository.findOne({
-        where: { userId, bookId },
+        where: { userId, bookId, chapterId },
       });
 
       if (userProgress) {
+        // Update existing progress
         userProgress.progress = progress;
         userProgress.currentTime = currentTime;
         userProgress.totalTime = totalTime;
         userProgress.lastListenedAt = new Date();
-        if (chapterId) userProgress.chapterId = chapterId;
       } else {
+        // Create new progress record
         userProgress = this.userProgressRepository.create({
           userId,
           bookId,
@@ -461,11 +621,14 @@ export class StoryService {
     }
   }
 
-  async getProgress(userId: string, bookId?: string) {
+  async getProgress(userId: string, bookId?: string, chapterId?: string) {
     try {
       const whereCondition: any = { userId };
       if (bookId) {
         whereCondition.bookId = bookId;
+      }
+      if (chapterId) {
+        whereCondition.chapterId = chapterId;
       }
 
       const progress = await this.userProgressRepository.findOne({
@@ -511,6 +674,9 @@ export class StoryService {
 
   async getStoryByIdForShow(id: string, userId?: string) {
     try {
+      console.log(
+        `🔍 getStoryByIdForShow service called with ID: ${id}, userId: ${userId}`
+      );
       const story = await this.bookRepository.findOne({
         where: { id },
         relations: [
@@ -1195,7 +1361,7 @@ export class StoryService {
       console.log('🔍 Story casts found:', storyCasts.length, storyCasts[0]);
 
       // Try to find cast members for each cast_id
-      let casts: any[] = [];
+      const casts: any[] = [];
       if (storyCasts.length > 0) {
         for (const storyCast of storyCasts) {
           console.log('🔍 Looking for cast member with ID:', storyCast.cast_id);
@@ -1221,49 +1387,21 @@ export class StoryService {
               castMember?.name ||
               storyCast.name ||
               `Unknown ${storyCast.role || 'Cast Member'}`,
-            picture:
-              castMember?.picture ||
-              storyCast.picture ||
-              'https://via.placeholder.com/150',
+            picture: castMember?.picture || storyCast.picture,
           });
         }
       }
 
-      // If no cast data exists, provide some default cast data
-      if (casts.length === 0) {
-        casts = [
-          {
-            id: 'default-cast-1',
-            created_at: new Date(),
-            updated_at: new Date(),
-            story_id: story.id,
-            name: 'John Doe',
-            role: 'narrator',
-            picture: 'https://via.placeholder.com/150',
-            cast_id: 'default-narrator',
-          },
-          {
-            id: 'default-cast-2',
-            created_at: new Date(),
-            updated_at: new Date(),
-            story_id: story.id,
-            name: 'Jane Smith',
-            role: 'author',
-            picture: 'https://via.placeholder.com/150',
-            cast_id: 'default-author',
-          },
-          {
-            id: 'default-cast-3',
-            created_at: new Date(),
-            updated_at: new Date(),
-            story_id: story.id,
-            name: 'Mike Johnson',
-            role: 'producer',
-            picture: 'https://via.placeholder.com/150',
-            cast_id: 'default-producer',
-          },
-        ];
-      }
+      // Return empty array if no cast data exists - frontend will handle defaults
+
+      // Process chapters with access control
+      const sortedChapters =
+        story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+      const processedChapters = this.processChaptersWithAccess(
+        sortedChapters,
+        userIsSubscribed,
+        story.isFree || false
+      );
 
       // Process the story data
       const processedStory = {
@@ -1273,7 +1411,7 @@ export class StoryService {
         isBookFree: story.isFree || false,
         averageRating,
         listeners: totalListeners,
-        Chapters: story.chapters || [], // Ensure chapters array exists
+        Chapters: processedChapters, // Use processed chapters with access control
         casts: casts || [], // Add cast data
       };
 
@@ -1306,11 +1444,111 @@ export class StoryService {
         userId,
         bookId: body.storyId,
         chapterId: body.chapterId,
-        progress_time: body.progress,
+        progress: body.progress,
+        currentTime: body.progress,
+        totalTime: 0, // Will be updated when audio loads
       });
 
       await this.userProgressRepository.save(progress);
+
+      // Track unique listener count (like Supabase implementation)
+      const existingListener = await this.audiobookListenerRepository.findOne({
+        where: { userId, bookId: body.storyId },
+      });
+
+      if (!existingListener) {
+        const listener = this.audiobookListenerRepository.create({
+          userId,
+          bookId: body.storyId,
+          count: 1,
+        });
+        await this.audiobookListenerRepository.save(listener);
+      }
+
       return { success: true, message: 'Listening tracked successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async createListener(userId: string, bookId: string) {
+    try {
+      const existingListener = await this.audiobookListenerRepository.findOne({
+        where: { userId, bookId },
+      });
+
+      if (!existingListener) {
+        const listener = this.audiobookListenerRepository.create({
+          userId,
+          bookId,
+          count: 1,
+        });
+        await this.audiobookListenerRepository.save(listener);
+        return {
+          success: true,
+          message: 'Listener record created successfully',
+        };
+      }
+
+      return { success: true, message: 'Listener already exists' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getChapterBookmarks(userId: string, bookId: string, chapterId: string) {
+    try {
+      const bookmarks = await this.chapterBookmarkRepository.find({
+        where: { userId, bookId, chapterId },
+        order: { audioTimeStamp: 'ASC' },
+      });
+
+      return { success: true, data: bookmarks };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async createChapterBookmark(userId: string, body: any) {
+    try {
+      const { bookId, chapterId, bookmarkText, audioTimeStamp } = body;
+
+      const bookmark = this.chapterBookmarkRepository.create({
+        userId,
+        bookId,
+        chapterId,
+        bookmarkText,
+        audioTimeStamp: audioTimeStamp.toString(),
+      });
+
+      await this.chapterBookmarkRepository.save(bookmark);
+
+      return {
+        success: true,
+        data: bookmark,
+        message: 'Chapter bookmark created successfully',
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async deleteChapterBookmark(userId: string, bookmarkId: string) {
+    try {
+      const bookmark = await this.chapterBookmarkRepository.findOne({
+        where: { id: bookmarkId, userId },
+      });
+
+      if (!bookmark) {
+        return { success: false, message: 'Bookmark not found' };
+      }
+
+      await this.chapterBookmarkRepository.remove(bookmark);
+
+      return {
+        success: true,
+        message: 'Chapter bookmark deleted successfully',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

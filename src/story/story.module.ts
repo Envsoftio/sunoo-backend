@@ -13,6 +13,7 @@ import {
   Subscription,
   StoryCast,
   CastMember,
+  ChapterBookmark,
 } from '../entities';
 
 @Module({
@@ -28,6 +29,7 @@ import {
       Subscription,
       StoryCast,
       CastMember,
+      ChapterBookmark,
     ]),
   ],
   providers: [StoryService],

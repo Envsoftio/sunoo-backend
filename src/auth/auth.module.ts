@@ -49,8 +49,7 @@ import { EmailModule } from '../email/email.module';
         return {
           secret:
             jwtConfig?.secret ||
-            configService.get<string>('JWT_SECRET') ||
-            'default-secret-change-in-production',
+            configService.get<string>('JWT_SECRET'),
           signOptions: {
             expiresIn:
               jwtConfig?.accessTokenExpiry ||

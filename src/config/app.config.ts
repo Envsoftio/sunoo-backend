@@ -6,6 +6,7 @@ export default registerAs('app', () => ({
   jwtSecret: process.env.JWT_SECRET || 'default-secret',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  awsS3HlsUrl: process.env.AWS_S3_HLS_URL,
   swagger: {
     title: process.env.SWAGGER_TITLE || 'Sunoo Backend API',
     description:

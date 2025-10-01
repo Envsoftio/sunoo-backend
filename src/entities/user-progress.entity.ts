@@ -36,13 +36,13 @@ export class UserProgress {
   progress_time?: number;
 
   // Legacy fields for backward compatibility
-  @Column({ default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
   progress: number; // percentage 0-100
 
-  @Column({ default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
   currentTime: number; // in seconds
 
-  @Column({ default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })
   totalTime: number; // in seconds
 
   @Column({ type: 'timestamp', nullable: true })
