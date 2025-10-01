@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
+import { RazorpayService } from './razorpay.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -10,7 +11,8 @@ export class SubscriptionService {
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
-    private subscriptionRepository: Repository<Subscription>
+    private subscriptionRepository: Repository<Subscription>,
+    private razorpayService: RazorpayService
   ) {}
 
   async getAllPlans() {
@@ -28,9 +30,22 @@ export class SubscriptionService {
 
   async getPlanById(id: string) {
     try {
-      const plan = await this.planRepository.findOne({
-        where: { id },
-      });
+      // Check if the id is a UUID format
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+      let plan;
+      if (uuidRegex.test(id)) {
+        // If it's a UUID, search by id
+        plan = await this.planRepository.findOne({
+          where: { id },
+        });
+      } else {
+        // If it's not a UUID, search by Razorpay plan ID
+        plan = await this.planRepository.findOne({
+          where: { razorpayPlanId: id },
+        });
+      }
 
       if (!plan) {
         return { success: false, message: 'Plan not found' };
@@ -111,7 +126,6 @@ export class SubscriptionService {
     try {
       const subscription = await this.subscriptionRepository.findOne({
         where: { id: parseInt(subscriptionId), user_id: userId },
-        relations: ['plan'],
       });
 
       if (!subscription) {
@@ -128,7 +142,6 @@ export class SubscriptionService {
     try {
       const subscriptions = await this.subscriptionRepository.find({
         where: { user_id: userId },
-        relations: ['plan'],
         order: { created_at: 'DESC' },
       });
 
@@ -163,7 +176,6 @@ export class SubscriptionService {
     try {
       const subscription = await this.subscriptionRepository.findOne({
         where: { user_id: userId, status: 'active' },
-        relations: ['plan'],
         order: { created_at: 'DESC' },
       });
 
@@ -200,11 +212,185 @@ export class SubscriptionService {
     try {
       const subscriptions = await this.subscriptionRepository.find({
         where: { user_id: userId },
-        relations: ['plan'],
         order: { created_at: 'DESC' },
       });
 
       return { success: true, data: subscriptions };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // New methods for Razorpay integration
+  async createRazorpaySubscription(subscriptionData: {
+    plan_id: string;
+    total_count: number;
+    start_at?: number;
+    customer_notify: number;
+    notify_info: any;
+    notes: any;
+  }) {
+    try {
+      const response =
+        await this.razorpayService.createSubscription(subscriptionData);
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async cancelRazorpaySubscription(
+    subscriptionId: string,
+    cancelAtCycleEnd = false
+  ) {
+    try {
+      const response = await this.razorpayService.cancelSubscription(
+        subscriptionId,
+        cancelAtCycleEnd
+      );
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getRazorpaySubscription(subscriptionId: string) {
+    try {
+      const response =
+        await this.razorpayService.getSubscription(subscriptionId);
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getRazorpaySubscriptionInvoices(subscriptionId: string) {
+    try {
+      const response =
+        await this.razorpayService.getSubscriptionInvoices(subscriptionId);
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async upsertSubscription(subscriptionData: {
+    subscription_id: string;
+    user_id?: string;
+    plan_id?: string;
+    status?: string;
+    start_date?: Date;
+    end_date?: Date;
+    next_billing_date?: Date;
+    metadata?: any;
+    isTrial?: boolean;
+    trialEndDate?: Date;
+  }) {
+    try {
+      const existingSubscription = await this.subscriptionRepository.findOne({
+        where: { subscription_id: subscriptionData.subscription_id },
+      });
+
+      if (existingSubscription) {
+        Object.assign(existingSubscription, subscriptionData);
+        await this.subscriptionRepository.save(existingSubscription);
+        return { success: true, data: existingSubscription };
+      } else {
+        const subscription =
+          this.subscriptionRepository.create(subscriptionData);
+        await this.subscriptionRepository.save(subscription);
+        return { success: true, data: subscription };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateSubscriptionStatus(
+    subscriptionId: string,
+    status: string,
+    additionalData?: {
+      next_billing_date?: Date;
+      ended_at?: number;
+      end_date?: Date;
+      user_cancelled?: boolean;
+      metadata?: any;
+    }
+  ) {
+    try {
+      const updateData: any = { status };
+      if (additionalData) {
+        Object.assign(updateData, additionalData);
+      }
+
+      await this.subscriptionRepository.update(
+        { subscription_id: subscriptionId },
+        updateData
+      );
+
+      return { success: true, message: 'Subscription status updated' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getSubscriptionByRazorpayId(razorpaySubscriptionId: string) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { subscription_id: razorpaySubscriptionId },
+        relations: ['user'],
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'Subscription not found' };
+      }
+
+      return { success: true, data: subscription };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getActiveSubscriptionsByUserId(userId: string) {
+    try {
+      const subscriptions = await this.subscriptionRepository.find({
+        where: {
+          user_id: userId,
+          status: 'active',
+        },
+        order: { created_at: 'DESC' },
+      });
+
+      return { success: true, data: subscriptions };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Get subscription invoices for a user
+  async getUserSubscriptionInvoices(userId: string) {
+    try {
+      // Get user's active subscription
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { user_id: userId, status: 'active' },
+        order: { created_at: 'DESC' },
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'No active subscription found' };
+      }
+
+      // Get invoices for the subscription
+      const subscriptionId =
+        subscription.razorpaySubscriptionId || subscription.subscription_id;
+      if (!subscriptionId) {
+        return { success: false, message: 'No Razorpay subscription ID found' };
+      }
+
+      const invoices =
+        await this.razorpayService.getSubscriptionInvoices(subscriptionId);
+
+      return { success: true, data: invoices };
     } catch (error) {
       return { success: false, message: error.message };
     }

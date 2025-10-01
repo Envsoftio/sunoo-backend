@@ -39,6 +39,15 @@ export class SubscriptionController {
     return this.subscriptionService.getPlanById(id);
   }
 
+  @Post('getPlanByid')
+  @ApiOperation({
+    summary: 'Get plan by ID (POST method for frontend compatibility)',
+  })
+  @ApiResponse({ status: 200, description: 'Plan retrieved successfully' })
+  async getPlanByIdPost(@Body('id') id: string) {
+    return this.subscriptionService.getPlanById(id);
+  }
+
   @Get('get-subscription-by-id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -136,5 +145,81 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Events retrieved successfully' })
   async getSubscriptionEvents(@Request() req) {
     return this.subscriptionService.getSubscriptionEvents(req.user.id);
+  }
+
+  // Razorpay integration endpoints
+  @Post('create-razorpay-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create Razorpay subscription' })
+  @ApiResponse({
+    status: 201,
+    description: 'Razorpay subscription created successfully',
+  })
+  async createRazorpaySubscription(@Body() body: any, @Request() _req) {
+    return this.subscriptionService.createRazorpaySubscription(body);
+  }
+
+  @Post('cancel-razorpay-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel Razorpay subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Razorpay subscription cancelled successfully',
+  })
+  async cancelRazorpaySubscription(
+    @Body() body: { subscription_id: string; cancel_at_cycle_end?: boolean },
+    @Request() _req
+  ) {
+    return this.subscriptionService.cancelRazorpaySubscription(
+      body.subscription_id,
+      body.cancel_at_cycle_end
+    );
+  }
+
+  @Get('razorpay-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Razorpay subscription details' })
+  @ApiResponse({
+    status: 200,
+    description: 'Razorpay subscription retrieved successfully',
+  })
+  async getRazorpaySubscription(
+    @Query('subscription_id') subscriptionId: string,
+    @Request() _req
+  ) {
+    return this.subscriptionService.getRazorpaySubscription(subscriptionId);
+  }
+
+  @Get('razorpay-subscription-invoices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Razorpay subscription invoices' })
+  @ApiResponse({
+    status: 200,
+    description: 'Razorpay subscription invoices retrieved successfully',
+  })
+  async getRazorpaySubscriptionInvoices(
+    @Query('subscription_id') subscriptionId: string,
+    @Request() _req
+  ) {
+    return this.subscriptionService.getRazorpaySubscriptionInvoices(
+      subscriptionId
+    );
+  }
+
+  @Get('get-subscription-invoices-by-user')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get subscription invoices by user ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoices retrieved successfully',
+  })
+  async getSubscriptionInvoicesByUser(@Request() req) {
+    const userId = req.user.id;
+    return this.subscriptionService.getUserSubscriptionInvoices(userId);
   }
 }
