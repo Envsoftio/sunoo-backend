@@ -297,6 +297,62 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'User logout' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@Request() req) {
+    try {
+      // Get user ID from JWT token
+      const userId = req.user.id;
+
+      // Invalidate all user sessions
+      const result = await this.authService.invalidateAllUserSessions(userId);
+      return {
+        success: true,
+        message: 'Logged out successfully',
+        userId,
+        sessionsInvalidated: result.success,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Logout failed',
+        error: error.message,
+      };
+    }
+  }
+
+  @Get('logout-status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check if user session is still valid' })
+  @ApiResponse({ status: 200, description: 'Session status retrieved' })
+  @ApiResponse({ status: 401, description: 'Session invalid' })
+  async logoutStatus(@Request() req) {
+    try {
+      const userId = req.user.id;
+      const activeSessions =
+        await this.authService.getActiveSessionCount(userId);
+      return {
+        success: true,
+        userId,
+        activeSessions,
+        isAuthenticated: true,
+        message: 'Session is valid',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Session invalid',
+        error: error.message,
+      };
+    }
+  }
+
   // Helper method to get client IP
   private getClientIp(request: any): string {
     return (

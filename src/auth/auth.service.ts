@@ -408,6 +408,25 @@ export class AuthService {
     return { success: true };
   }
 
+  async invalidateAllUserSessions(userId: string) {
+    try {
+      await this.sessionService.invalidateAllUserSessions(userId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error invalidating user sessions:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getActiveSessionCount(userId: string) {
+    try {
+      return await this.sessionService.getActiveSessionCount(userId);
+    } catch (error) {
+      console.error('Error getting active session count:', error);
+      return 0;
+    }
+  }
+
   async getProfile(userId: string) {
     try {
       const user = await this.userRepository.findOne({

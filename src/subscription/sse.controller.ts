@@ -1,20 +1,13 @@
 import {
   Controller,
   Get,
-  UseGuards,
   Request,
   Res,
   Logger,
   OnModuleDestroy,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Real-time Notifications')
@@ -25,12 +18,15 @@ export class SseController implements OnModuleDestroy {
   constructor(private notificationService: NotificationService) {}
 
   @Get('subscribe')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Subscribe to real-time subscription events' })
   @ApiResponse({ status: 200, description: 'SSE connection established' })
   subscribe(@Request() req, @Res() res: Response) {
-    const userId = req.user.id;
+    const userId = req.query.userId;
+
+    if (!userId) {
+      res.status(400).json({ error: 'User ID is required' });
+      return;
+    }
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -87,8 +83,6 @@ export class SseController implements OnModuleDestroy {
   }
 
   @Get('status')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get notification service status' })
   @ApiResponse({ status: 200, description: 'Status retrieved successfully' })
   getStatus() {
