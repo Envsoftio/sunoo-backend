@@ -5,10 +5,10 @@ import { Book } from './book.entity';
 
 @Entity('bookmarks')
 export class Bookmark extends BaseEntity {
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   bookId?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId?: string;
 
   // Relationships

@@ -6,13 +6,13 @@ import { Book } from './book.entity';
 
 @Entity('chapter_bookmarks')
 export class ChapterBookmark extends BaseEntity {
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   bookId?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   chapterId?: string;
 
   @Column({ type: 'text', nullable: true })

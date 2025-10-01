@@ -43,21 +43,15 @@ import { EmailModule } from '../email/email.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const securityConfig = configService.get('security');
-        const jwtConfig = securityConfig?.jwt;
-
         return {
-          secret:
-            jwtConfig?.secret ||
-            configService.get<string>('JWT_SECRET'),
+          secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
             expiresIn:
-              jwtConfig?.accessTokenExpiry ||
-              configService.get<string>('JWT_EXPIRES_IN') ||
-              '7d',
-            issuer: jwtConfig?.issuer,
-            audience: jwtConfig?.audience,
-            algorithm: jwtConfig?.algorithm,
+              configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m',
+            issuer: configService.get<string>('JWT_ISSUER'),
+            audience: configService.get<string>('JWT_AUDIENCE'),
+            algorithm: (configService.get<string>('JWT_ALGORITHM') ||
+              'HS256') as any,
           },
         };
       },

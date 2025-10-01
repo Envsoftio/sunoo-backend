@@ -33,10 +33,6 @@ export class Plan {
   @Column({ nullable: true })
   frequency?: string;
 
-  // Relationships
-  @OneToMany(() => Subscription, subscription => subscription.plan)
-  subscriptions: Subscription[];
-
-  @OneToMany(() => Payment, payment => payment.plan)
-  payments: Payment[];
+  // Note: plan_id in subscriptions and payments now stores external Razorpay plan IDs
+  // so we don't have direct relationships with those entities
 }

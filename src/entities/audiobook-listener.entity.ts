@@ -5,10 +5,10 @@ import { Book } from './book.entity';
 
 @Entity('audiobook_listeners')
 export class AudiobookListener extends BaseEntity {
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   bookId?: string;
 
   // Legacy fields for backward compatibility

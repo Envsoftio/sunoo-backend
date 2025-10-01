@@ -40,7 +40,7 @@ export class Subscription {
   @Column({ type: 'jsonb', nullable: true })
   metadata?: any;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   user_id?: string;
 
   @Column({ default: false })
@@ -70,7 +70,6 @@ export class Subscription {
   @JoinColumn({ name: 'user_id' })
   user?: User;
 
-  @ManyToOne(() => Plan, plan => plan.subscriptions)
-  @JoinColumn({ name: 'plan_id' })
-  plan?: Plan;
+  // Note: plan_id now stores external Razorpay plan IDs, not internal UUIDs
+  // so we don't have a direct relationship with the Plan entity
 }

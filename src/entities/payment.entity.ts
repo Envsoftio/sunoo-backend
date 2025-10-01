@@ -40,7 +40,7 @@ export class Payment {
   @Column({ nullable: true })
   amount?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   user_id?: string;
 
   @Column({ nullable: true })
@@ -51,7 +51,6 @@ export class Payment {
   @JoinColumn({ name: 'user_id' })
   user?: User;
 
-  @ManyToOne(() => Plan, plan => plan.payments)
-  @JoinColumn({ name: 'plan_id' })
-  plan?: Plan;
+  // Note: plan_id now stores external Razorpay plan IDs, not internal UUIDs
+  // so we don't have a direct relationship with the Plan entity
 }

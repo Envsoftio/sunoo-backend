@@ -32,7 +32,7 @@ export class Narrator {
   @Column({ type: 'json', nullable: true })
   languages?: any;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
   @Column({ nullable: true })

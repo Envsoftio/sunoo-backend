@@ -123,24 +123,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -300,29 +285,37 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
+  }
+
+  // Helper function to process story data consistently
+  private processStoryData(
+    story: any,
+    userId?: string,
+    bookmarks: string[] = []
+  ) {
+    const ratings = story.bookRatings || [];
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
+        : null;
+
+    return {
+      ...story,
+      isBookmarked: userId ? bookmarks.includes(story.id) : false,
+      chapters: story.chapters?.length || 0, // Chapter count for frontend
+      listeners: story.audiobookListeners?.[0]?.count || 0,
+      averageRating,
+      narrator: story.narrator || { data: {} }, // Default narrator structure
+      category: story.category?.name || story.category || 'Unknown', // Extract category name
+    };
   }
 
   async getLatestStories(userId?: string) {
@@ -349,24 +342,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -397,24 +375,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -446,24 +409,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -887,24 +835,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -940,24 +873,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {
@@ -989,24 +907,9 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story => {
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: userId ? bookmarks.includes(story.id) : false,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        };
-      });
+      const sortedData = stories.map(story =>
+        this.processStoryData(story, userId, bookmarks)
+      );
 
       return { success: true, data: sortedData };
     } catch (error) {

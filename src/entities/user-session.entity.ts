@@ -7,7 +7,7 @@ import { User } from './user.entity';
 @Index(['refreshToken']) // Index for refresh token lookups
 @Index(['expiresAt']) // Index for cleanup queries
 export class UserSession extends BaseEntity {
-  @Column({ nullable: false })
+  @Column({ type: 'uuid', nullable: false })
   userId: string;
 
   @Column({ unique: true })

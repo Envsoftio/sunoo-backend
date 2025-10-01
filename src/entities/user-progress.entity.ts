@@ -20,13 +20,13 @@ export class UserProgress {
   @Column({ type: 'timestamp with time zone', default: () => 'now()' })
   updated_at: Date;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   bookId: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   chapterId: string;
 
   @Column({ type: 'numeric', nullable: true })

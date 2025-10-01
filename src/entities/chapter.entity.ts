@@ -26,7 +26,7 @@ export class Chapter {
   @Column({ nullable: true })
   playbackTime?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   bookId?: string;
 
   @Column({ nullable: true })

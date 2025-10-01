@@ -10,16 +10,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     private authService: AuthService
   ) {
-    const securityConfig = configService.get('security');
-    const jwtConfig = securityConfig?.jwt;
-
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: jwtConfig?.secret || configService.get<string>('JWT_SECRET'),
-      issuer: jwtConfig?.issuer,
-      audience: jwtConfig?.audience,
-      algorithms: [jwtConfig?.algorithm || 'HS256'],
+      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback-secret',
+      issuer: configService.get<string>('JWT_ISSUER'),
+      audience: configService.get<string>('JWT_AUDIENCE'),
+      algorithms: [
+        (configService.get<string>('JWT_ALGORITHM') || 'HS256') as any,
+      ],
     });
   }
 

@@ -625,7 +625,6 @@ export class AuthService {
     try {
       const subscriptions = await this.subscriptionRepository.find({
         where: { user_id: userId },
-        relations: ['plan'],
       });
 
       return {

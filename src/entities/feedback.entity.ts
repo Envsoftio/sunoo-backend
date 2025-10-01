@@ -4,7 +4,7 @@ import { User } from './user.entity';
 
 @Entity('feedbacks')
 export class Feedback extends BaseEntity {
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   user_id?: string;
 
   @Column({ nullable: true })
