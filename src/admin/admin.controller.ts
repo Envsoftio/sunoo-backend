@@ -3,12 +3,14 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   UseGuards,
   Request,
   HttpCode,
   HttpStatus,
   Query,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -184,28 +186,146 @@ export class AdminController {
     return this.adminService.updateNarratorName(body.userId, body.name);
   }
 
+
   @Get('getUserBookLikes')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user book likes (Admin only)' })
-  @ApiResponse({
-    status: 200,
-    description: 'User book likes retrieved successfully',
-  })
-  getUserBookLikes(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('search') search?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: string
+  @ApiResponse({ status: 200, description: 'User book likes retrieved successfully' })
+  async getUserBookLikes(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search: string = '',
+    @Query('sortBy') sortBy: string = 'created_at',
+    @Query('sortOrder') sortOrder: string = 'desc'
   ) {
-    return this.adminService.getUserBookLikes(
+    return await this.adminService.getUserBookLikes(
       page,
       limit,
       search,
       sortBy,
       sortOrder
     );
+  }
+
+  @Post('user-activities')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get user activities (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User activities retrieved successfully' })
+  async getUserActivities(@Body() body: { startDate?: Date; endDate?: Date }) {
+    return await this.adminService.getUserActivities(body.startDate, body.endDate);
+  }
+
+  @Get('subscription-counts')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get subscription counts (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Subscription counts retrieved successfully' })
+  async getSubscriptionCounts() {
+    return this.adminService.getSubscriptionCounts();
+  }
+
+  @Get('story-casts')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story casts (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story casts retrieved successfully' })
+  getStoryCasts(@Query('story_id') storyId: string) {
+    return this.adminService.getStoryCasts(storyId);
+  }
+
+  @Post('story-casts')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Save story casts (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story casts saved successfully' })
+  saveStoryCasts(@Body() body: { story_id: string; casts: any[] }) {
+    return this.adminService.saveStoryCasts(body.story_id, body.casts);
+  }
+
+  @Get('cast-members')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get cast members (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Cast members retrieved successfully' })
+  async getCastMembers() {
+    return this.adminService.getCastMembers();
+  }
+
+  @Post('cast-members')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create cast member (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Cast member created successfully' })
+  async createCastMember(@Body() body: { name: string; bio: string; picture: string }) {
+    return await this.adminService.createCastMember(body);
+  }
+
+  @Post('cast-members/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update cast member (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Cast member updated successfully' })
+  async updateCastMember(
+    @Param('id') id: string,
+    @Body() body: { name: string; bio: string; picture: string }
+  ) {
+    return await this.adminService.updateCastMember(id, body);
+  }
+
+  @Delete('cast-members/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete cast member (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Cast member deleted successfully' })
+  async deleteCastMember(@Param('id') id: string) {
+    return await this.adminService.deleteCastMember(id);
+  }
+
+  @Post('cast-members/:id/upload-picture')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Upload cast member picture (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Picture uploaded successfully' })
+  async uploadCastPicture(@Param('id') id: string, @Body() body: { picture: string }) {
+    return await this.adminService.uploadCastPicture(id, body.picture);
+  }
+
+  // Category Management
+  @Post('save-category')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Save or update category (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Category saved successfully' })
+  async saveCategory(@Body() body: any) {
+    return this.adminService.saveCategory(body);
+  }
+
+  @Get('categories')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all categories (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  async getCategories() {
+    return this.adminService.getCategories();
+  }
+
+  @Delete('categories')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete category (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Category deleted successfully' })
+  async deleteCategory(@Query('id') id: string) {
+    return this.adminService.deleteCategory(id);
   }
 
 }

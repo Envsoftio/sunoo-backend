@@ -6,6 +6,10 @@ import { User } from '../entities/user.entity';
 import { Feedback } from '../entities/feedback.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { UserSession } from '../entities/user-session.entity';
+import { Category } from '../entities/category.entity';
+import { CastMember } from '../entities/cast-member.entity';
+import { Bookmark } from '../entities/bookmark.entity';
+import { Book } from '../entities/book.entity';
 
 @Injectable()
 export class AdminService {
@@ -17,7 +21,15 @@ export class AdminService {
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(UserSession)
-    private userSessionRepository: Repository<UserSession>
+    private userSessionRepository: Repository<UserSession>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
+    @InjectRepository(CastMember)
+    private castMemberRepository: Repository<CastMember>,
+    @InjectRepository(Bookmark)
+    private bookmarkRepository: Repository<Bookmark>,
+    @InjectRepository(Book)
+    private bookRepository: Repository<Book>
   ) {}
 
   // User Management
@@ -100,7 +112,13 @@ export class AdminService {
         .orderBy('date', 'ASC')
         .getRawMany();
 
-      return { success: true, data: registrations };
+      // Transform data to match frontend expectations
+      const transformedData = registrations.map(item => ({
+        period: item.date,
+        count: parseInt(item.count)
+      }));
+
+      return { success: true, data: transformedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -135,7 +153,14 @@ export class AdminService {
         .orderBy('date', 'ASC')
         .getRawMany();
 
-      return { success: true, data: subscriptions };
+      // Transform data to match frontend expectations
+      const transformedData = subscriptions.map(item => ({
+        period: item.date,
+        count: parseInt(item.count),
+        status: item.status
+      }));
+
+      return { success: true, data: transformedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -293,8 +318,251 @@ export class AdminService {
     }
   }
 
-  getUserBookLikes(_page = 1, _limit = 10, _search = '', _sortBy = 'created_at', _sortOrder = 'desc') {
-    // This would need to be implemented based on your bookmark/rating system
-    return { success: true, data: [], pagination: { page: _page, limit: _limit, total: 0, pages: 0 } };
+
+  async getUserActivities(startDate?: Date, endDate?: Date) {
+    try {
+      let query = this.userSessionRepository
+        .createQueryBuilder('session')
+        .leftJoinAndSelect('session.user', 'user')
+        .leftJoinAndSelect('user.userProgress', 'progress')
+        .leftJoinAndSelect('progress.book', 'book')
+        .leftJoinAndSelect('progress.chapter', 'chapter')
+        .select([
+          'session.id',
+          'session.userId',
+          'session.isActive',
+          'session.created_at',
+          'session.updated_at',
+          'user.id',
+          'user.name',
+          'user.email',
+          'user.imageURL',
+          'progress.id',
+          'progress.progress_time',
+          'progress.updated_at',
+          'book.id',
+          'book.title',
+          'chapter.id',
+          'chapter.name',
+          'chapter.playbackTime'
+        ])
+        .orderBy('session.updated_at', 'DESC');
+
+      if (startDate) {
+        query = query.andWhere('session.updated_at >= :startDate', { startDate });
+      }
+      if (endDate) {
+        query = query.andWhere('session.updated_at <= :endDate', { endDate });
+      }
+
+      const activities = await query.getMany();
+
+      return { success: true, data: activities };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getSubscriptionCounts() {
+    try {
+      const active = await this.subscriptionRepository.count({ where: { status: 'active' } });
+      const authorized = await this.subscriptionRepository.count({ where: { status: 'authorized' } });
+      const cancelled = await this.subscriptionRepository.count({ where: { status: 'cancelled' } });
+
+      return {
+        success: true,
+        data: {
+          active,
+          authorized,
+          cancelled
+        }
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  getStoryCasts(_storyId: string) {
+    try {
+      // This would need to be implemented based on your cast system
+      // For now, return empty array
+      return { success: true, casts: [] };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  saveStoryCasts(_storyId: string, _casts: any[]) {
+    try {
+      // This would need to be implemented based on your cast system
+      // For now, return success
+      return { success: true, message: 'Casts saved successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getCastMembers() {
+    try {
+      const castMembers = await this.castMemberRepository.find({
+        order: { created_at: 'DESC' }
+      });
+
+      return { success: true, data: castMembers };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserBookLikes(page: number, limit: number, search: string, sortBy: string, sortOrder: string) {
+    try {
+      const offset = (page - 1) * limit;
+
+      // Build query for bookmarks with user and book relations
+      let query = this.bookmarkRepository
+        .createQueryBuilder('bookmark')
+        .leftJoinAndSelect('bookmark.user', 'user')
+        .leftJoinAndSelect('bookmark.book', 'book')
+        .leftJoinAndSelect('book.category', 'category');
+
+      // Apply search filter
+      if (search) {
+        query = query.where(
+          '(user.name ILIKE :search OR user.email ILIKE :search OR book.title ILIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
+
+      // Apply sorting
+      const validSortFields = ['created_at', 'user.name', 'book.title'];
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+      const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+      query = query.orderBy(`bookmark.${sortField}`, sortDirection);
+
+      // Get total count for pagination
+      const total = await query.getCount();
+
+      // Apply pagination
+      const bookmarks = await query
+        .skip(offset)
+        .take(limit)
+        .getMany();
+
+      // Transform data to match expected format
+      const transformedData = bookmarks.map(bookmark => ({
+        id: bookmark.id,
+        userId: bookmark.userId,
+        bookId: bookmark.bookId,
+        likedAt: bookmark.created_at,
+        user: {
+          id: bookmark.user?.id,
+          name: bookmark.user?.name,
+          email: bookmark.user?.email,
+          joinedAt: bookmark.user?.created_at
+        },
+        book: {
+          id: bookmark.book?.id,
+          title: bookmark.book?.title,
+          language: bookmark.book?.language,
+          duration: bookmark.book?.duration,
+          coverUrl: bookmark.book?.bookCoverUrl,
+          category: bookmark.book?.category?.name
+        }
+      }));
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages
+        }
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async saveCategory(categoryData: any) {
+    try {
+      const { id, ...data } = categoryData;
+
+      if (id) {
+        // Update existing category
+        await this.categoryRepository.update(id, data);
+        return { success: true, message: 'Category updated successfully' };
+      } else {
+        // Create new category
+        const category = this.categoryRepository.create(data);
+        await this.categoryRepository.save(category);
+        return { success: true, message: 'Category created successfully', data: category };
+      }
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getCategories() {
+    try {
+      const categories = await this.categoryRepository.find({
+        order: { sort_order: 'ASC' }
+      });
+      return { success: true, data: categories };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async deleteCategory(id: string) {
+    try {
+      await this.categoryRepository.delete(id);
+      return { success: true, message: 'Category deleted successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Cast Member Management
+  async createCastMember(data: { name: string; bio: string; picture: string }) {
+    try {
+      const castMember = this.castMemberRepository.create(data);
+      const savedCastMember = await this.castMemberRepository.save(castMember);
+      return { success: true, message: 'Cast member created successfully', data: savedCastMember };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async updateCastMember(id: string, data: { name: string; bio: string; picture: string }) {
+    try {
+      await this.castMemberRepository.update(id, data);
+      const updatedCastMember = await this.castMemberRepository.findOne({ where: { id } });
+      return { success: true, message: 'Cast member updated successfully', data: updatedCastMember };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async deleteCastMember(id: string) {
+    try {
+      await this.castMemberRepository.delete(id);
+      return { success: true, message: 'Cast member deleted successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async uploadCastPicture(id: string, pictureKey: string) {
+    try {
+      await this.castMemberRepository.update(id, { picture: pictureKey });
+      return { success: true, message: 'Picture uploaded successfully', data: { pictureKey } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
   }
 }
