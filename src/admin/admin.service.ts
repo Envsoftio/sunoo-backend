@@ -10,6 +10,9 @@ import { Category } from '../entities/category.entity';
 import { CastMember } from '../entities/cast-member.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Book } from '../entities/book.entity';
+import { Author } from '../entities/author.entity';
+import { Narrator } from '../entities/narrator.entity';
+import { UserProgress } from '../entities/user-progress.entity';
 
 @Injectable()
 export class AdminService {
@@ -29,7 +32,13 @@ export class AdminService {
     @InjectRepository(Bookmark)
     private bookmarkRepository: Repository<Bookmark>,
     @InjectRepository(Book)
-    private bookRepository: Repository<Book>
+    private bookRepository: Repository<Book>,
+    @InjectRepository(Author)
+    private authorRepository: Repository<Author>,
+    @InjectRepository(Narrator)
+    private narratorRepository: Repository<Narrator>,
+    @InjectRepository(UserProgress)
+    private userProgressRepository: Repository<UserProgress>
   ) {}
 
   // User Management
@@ -86,35 +95,44 @@ export class AdminService {
   // Analytics
   async getUserRegistrationsByPeriod(period: string) {
     try {
+      let dateFormat: string;
       let dateFilter: Date;
       const now = new Date();
 
       switch (period) {
         case 'day':
-          dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM-DD';
+          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
           break;
         case 'week':
-          dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-"W"WW';
+          dateFilter = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // Last 12 weeks
           break;
         case 'month':
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM';
+          dateFilter = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // Last 12 months
+          break;
+        case 'year':
+          dateFormat = 'YYYY';
+          dateFilter = new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000); // Last 5 years
           break;
         default:
-          dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM-DD';
+          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
       const registrations = await this.userRepository
         .createQueryBuilder('user')
-        .select('DATE(user.created_at)', 'date')
+        .select(`TO_CHAR(user.created_at, '${dateFormat}')`, 'period')
         .addSelect('COUNT(*)', 'count')
         .where('user.created_at >= :dateFilter', { dateFilter })
-        .groupBy('DATE(user.created_at)')
-        .orderBy('date', 'ASC')
+        .groupBy(`TO_CHAR(user.created_at, '${dateFormat}')`)
+        .orderBy('period', 'ASC')
         .getRawMany();
 
       // Transform data to match frontend expectations
       const transformedData = registrations.map(item => ({
-        period: item.date,
+        period: item.period,
         count: parseInt(item.count)
       }));
 
@@ -126,39 +144,84 @@ export class AdminService {
 
   async getSubscriptionRegistrationsByPeriod(period: string) {
     try {
+      let dateFormat: string;
       let dateFilter: Date;
       const now = new Date();
 
       switch (period) {
         case 'day':
-          dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM-DD';
+          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
           break;
         case 'week':
-          dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-"W"WW';
+          dateFilter = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // Last 12 weeks
           break;
         case 'month':
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM';
+          dateFilter = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // Last 12 months
+          break;
+        case 'year':
+          dateFormat = 'YYYY';
+          dateFilter = new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000); // Last 5 years
           break;
         default:
-          dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          dateFormat = 'YYYY-MM-DD';
+          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
+      // Get all periods in the range to ensure we have data for all periods
+      const allPeriods = await this.subscriptionRepository
+        .createQueryBuilder('subscription')
+        .select(`TO_CHAR(subscription.created_at, '${dateFormat}')`, 'period')
+        .where('subscription.created_at >= :dateFilter', { dateFilter })
+        .groupBy(`TO_CHAR(subscription.created_at, '${dateFormat}')`)
+        .orderBy('period', 'ASC')
+        .getRawMany();
+
+      // Get subscription counts by status for each period
       const subscriptions = await this.subscriptionRepository
         .createQueryBuilder('subscription')
-        .select('DATE(subscription.created_at)', 'date')
-        .addSelect('COUNT(*)', 'count')
+        .select(`TO_CHAR(subscription.created_at, '${dateFormat}')`, 'period')
         .addSelect('subscription.status', 'status')
+        .addSelect('COUNT(*)', 'count')
         .where('subscription.created_at >= :dateFilter', { dateFilter })
-        .groupBy('DATE(subscription.created_at), subscription.status')
-        .orderBy('date', 'ASC')
+        .groupBy(`TO_CHAR(subscription.created_at, '${dateFormat}'), subscription.status`)
+        .orderBy('period', 'ASC')
         .getRawMany();
 
       // Transform data to match frontend expectations
-      const transformedData = subscriptions.map(item => ({
-        period: item.date,
-        count: parseInt(item.count),
-        status: item.status
-      }));
+      const periodMap = new Map();
+
+      // Initialize all periods with zero counts
+      allPeriods.forEach(period => {
+        periodMap.set(period.period, {
+          period: period.period,
+          active: 0,
+          authorized: 0,
+          cancelled: 0
+        });
+      });
+
+      // Fill in actual counts
+      subscriptions.forEach(item => {
+        const periodData = periodMap.get(item.period);
+        if (periodData) {
+          switch (item.status) {
+            case 'active':
+              periodData.active = parseInt(item.count);
+              break;
+            case 'authorized':
+              periodData.authorized = parseInt(item.count);
+              break;
+            case 'cancelled':
+              periodData.cancelled = parseInt(item.count);
+              break;
+          }
+        }
+      });
+
+      const transformedData = Array.from(periodMap.values());
 
       return { success: true, data: transformedData };
     } catch (error) {
@@ -600,8 +663,8 @@ export class AdminService {
         subscriptionCounts
       ] = await Promise.all([
         this.userRepository.count(),
-        this.userRepository.count({ where: { role: 'narrator' } }),
-        this.userRepository.count({ where: { role: 'author' } }),
+        this.narratorRepository.count(),
+        this.authorRepository.count(),
         this.bookRepository.count(),
         this.feedbackRepository.count(),
         this.bookmarkRepository.count(),
@@ -645,7 +708,7 @@ export class AdminService {
 
   async getAuthorCount() {
     try {
-      const count = await this.userRepository.count({ where: { role: 'author' } });
+      const count = await this.authorRepository.count();
       return { success: true, data: { count } };
     } catch (error) {
       return { success: false, message: error.message };
@@ -654,7 +717,7 @@ export class AdminService {
 
   async getNarratorCount() {
     try {
-      const count = await this.userRepository.count({ where: { role: 'narrator' } });
+      const count = await this.narratorRepository.count();
       return { success: true, data: { count } };
     } catch (error) {
       return { success: false, message: error.message };

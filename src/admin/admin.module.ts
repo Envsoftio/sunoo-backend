@@ -10,6 +10,9 @@ import { Category } from '../entities/category.entity';
 import { CastMember } from '../entities/cast-member.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Book } from '../entities/book.entity';
+import { Author } from '../entities/author.entity';
+import { Narrator } from '../entities/narrator.entity';
+import { UserProgress } from '../entities/user-progress.entity';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { Book } from '../entities/book.entity';
       CastMember,
       Bookmark,
       Book,
+      Author,
+      Narrator,
+      UserProgress,
     ]),
   ],
   controllers: [AdminController],
