@@ -514,14 +514,33 @@ export class StoryService {
               : null;
 
           return {
-            ...story,
+            id: story.id,
             isBookmarked: true,
-            chapters:
-              story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-              [],
-            listeners: story.audiobookListeners?.[0]?.count || 0,
             averageRating,
             bookmarkedAt: bookmark.created_at,
+            Books: {
+              id: story.id,
+              title: story.title,
+              bookCoverUrl: story.bookCoverUrl,
+              language: story.language,
+              bookDescription: story.bookDescription,
+              duration: story.duration,
+              isPublished: story.isPublished,
+              isFree: story.isFree,
+              contentRating: story.contentRating,
+              tags: story.tags,
+              slug: story.slug,
+              created_at: story.created_at,
+              updated_at: story.updated_at,
+              categoryId: story.categoryId,
+              category: story.category,
+              Chapters:
+                story.chapters?.sort(
+                  (a, b) => (a.order || 0) - (b.order || 0)
+                ) || [],
+              AudiobookListeners: story.audiobookListeners || [],
+              bookRatings: story.bookRatings || [],
+            },
           };
         })
         .filter(Boolean);

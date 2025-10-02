@@ -200,13 +200,17 @@ export class StoryController {
   }
 
   @Get('getUsersSavedStories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user saved stories (Sunoo compatible)' })
   @ApiResponse({
     status: 200,
     description: 'Saved stories retrieved successfully',
   })
-  async getUsersSavedStories(@Query('userId') userId: string) {
-    return await this.storyService.getBookmarks(userId);
+  async getUsersSavedStories(@Request() req, @Query('userId') userId?: string) {
+    // Use userId from query if provided, otherwise use authenticated user's ID
+    const targetUserId = userId || req.user?.id;
+    return await this.storyService.getBookmarks(targetUserId);
   }
 
   @Get('getChapterCount')
