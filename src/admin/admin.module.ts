@@ -8,11 +8,15 @@ import { Subscription } from '../entities/subscription.entity';
 import { UserSession } from '../entities/user-session.entity';
 import { Category } from '../entities/category.entity';
 import { CastMember } from '../entities/cast-member.entity';
+import { StoryCast } from '../entities/story-cast.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Book } from '../entities/book.entity';
 import { Author } from '../entities/author.entity';
 import { Narrator } from '../entities/narrator.entity';
 import { UserProgress } from '../entities/user-progress.entity';
+import { Chapter } from '../entities/chapter.entity';
+import { BookRating } from '../entities/book-rating.entity';
+import { AudiobookListener } from '../entities/audiobook-listener.entity';
 
 @Module({
   imports: [
@@ -23,11 +27,15 @@ import { UserProgress } from '../entities/user-progress.entity';
       UserSession,
       Category,
       CastMember,
+      StoryCast,
       Bookmark,
       Book,
       Author,
       Narrator,
       UserProgress,
+      Chapter,
+      BookRating,
+      AudiobookListener,
     ]),
   ],
   controllers: [AdminController],

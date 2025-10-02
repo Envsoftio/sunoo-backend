@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DatabaseService } from './database.service';
 
@@ -72,6 +72,7 @@ export class DatabaseController {
   async getStats() {
     return this.databaseService.getDatabaseStats();
   }
+
 
   @Get('health')
   @ApiOperation({ summary: 'Comprehensive database health check' })

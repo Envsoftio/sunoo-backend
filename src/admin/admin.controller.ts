@@ -236,6 +236,7 @@ export class AdminController {
     return this.adminService.getStoryCasts(storyId);
   }
 
+
   @Post('story-casts')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
@@ -381,6 +382,240 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'User likes count retrieved successfully' })
   async getUserLikesCount() {
     return await this.adminService.getUserLikesCount();
+  }
+
+  // Story Management APIs
+  @Get('stories')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all stories (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Stories retrieved successfully' })
+  async getStories(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search: string = '',
+    @Query('sortBy') sortBy: string = 'created_at',
+    @Query('sortOrder') sortOrder: string = 'desc',
+    @Query('category') category: string = '',
+    @Query('language') language: string = '',
+    @Query('isPublished') isPublished: string = ''
+  ) {
+    return await this.adminService.getStories(
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      category,
+      language,
+      isPublished
+    );
+  }
+
+  @Get('stories/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story by ID (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
+  async getStory(@Param('id') id: string) {
+    return await this.adminService.getStory(id);
+  }
+
+  @Post('stories')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create new story (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story created successfully' })
+  async createStory(@Body() body: any) {
+    return await this.adminService.createStory(body);
+  }
+
+  @Post('stories/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update story (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story updated successfully' })
+  async updateStory(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updateStory(id, body);
+  }
+
+  @Delete('stories/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete story (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story deleted successfully' })
+  async deleteStory(@Param('id') id: string) {
+    return await this.adminService.deleteStory(id);
+  }
+
+  @Post('stories/:id/publish')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Publish/unpublish story (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story publish status updated successfully' })
+  async toggleStoryPublish(@Param('id') id: string, @Body() body: { isPublished: boolean }) {
+    return await this.adminService.toggleStoryPublish(id, body.isPublished);
+  }
+
+  @Post('stories/:id/cover')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update story cover (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Story cover updated successfully' })
+  async updateStoryCover(@Param('id') id: string, @Body() body: { coverUrl: string }) {
+    return await this.adminService.updateStoryCover(id, body.coverUrl);
+  }
+
+  // Chapter Management APIs
+  @Get('stories/:storyId/chapters')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story chapters (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Chapters retrieved successfully' })
+  async getStoryChapters(@Param('storyId') storyId: string) {
+    return await this.adminService.getStoryChapters(storyId);
+  }
+
+  @Post('stories/:storyId/chapters')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Add chapter to story (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Chapter added successfully' })
+  async addChapter(@Param('storyId') storyId: string, @Body() body: any) {
+    return await this.adminService.addChapter(storyId, body);
+  }
+
+  @Post('chapters/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update chapter (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Chapter updated successfully' })
+  async updateChapter(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updateChapter(id, body);
+  }
+
+  @Delete('chapters/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete chapter (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Chapter deleted successfully' })
+  async deleteChapter(@Param('id') id: string) {
+    return await this.adminService.deleteChapter(id);
+  }
+
+  // Author Management APIs
+  @Get('authors')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all authors (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
+  async getAuthors(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search: string = ''
+  ) {
+    return await this.adminService.getAuthors(page, limit, search);
+  }
+
+  @Get('authors/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get author by ID (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Author retrieved successfully' })
+  async getAuthor(@Param('id') id: string) {
+    return await this.adminService.getAuthor(id);
+  }
+
+  @Post('authors')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create author (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Author created successfully' })
+  async createAuthor(@Body() body: any) {
+    return await this.adminService.createAuthor(body);
+  }
+
+  @Post('authors/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update author (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Author updated successfully' })
+  async updateAuthor(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updateAuthor(id, body);
+  }
+
+  @Delete('authors/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete author (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Author deleted successfully' })
+  async deleteAuthor(@Param('id') id: string) {
+    return await this.adminService.deleteAuthor(id);
+  }
+
+  // Story Analytics APIs
+  @Get('stories/analytics/overview')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story analytics overview (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Analytics retrieved successfully' })
+  async getStoryAnalyticsOverview() {
+    return await this.adminService.getStoryAnalyticsOverview();
+  }
+
+  @Get('stories/analytics/popular')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get popular stories analytics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Popular stories analytics retrieved successfully' })
+  async getPopularStoriesAnalytics(
+    @Query('period') period: string = 'week',
+    @Query('limit') limit: number = 10
+  ) {
+    return await this.adminService.getPopularStoriesAnalytics(period, limit);
+  }
+
+  @Get('stories/analytics/listeners')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story listeners analytics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Listeners analytics retrieved successfully' })
+  async getStoryListenersAnalytics(
+    @Query('storyId') storyId: string,
+    @Query('period') period: string = 'week'
+  ) {
+    return await this.adminService.getStoryListenersAnalytics(storyId, period);
+  }
+
+  @Get('stories/analytics/ratings')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story ratings analytics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Ratings analytics retrieved successfully' })
+  async getStoryRatingsAnalytics(
+    @Query('storyId') storyId: string
+  ) {
+    return await this.adminService.getStoryRatingsAnalytics(storyId);
+  }
+
+  @Get('stories/analytics/completion-rates')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story completion rates (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Completion rates retrieved successfully' })
+  async getStoryCompletionRates() {
+    return await this.adminService.getStoryCompletionRates();
   }
 
 }

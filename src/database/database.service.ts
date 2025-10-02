@@ -23,7 +23,7 @@ export class DatabaseService {
 
       // Get database info
       const dbInfo = await this.dataSource.query(`
-        SELECT 
+        SELECT
           current_database() as database_name,
           inet_server_addr() as host,
           inet_server_port() as port,
@@ -59,10 +59,10 @@ export class DatabaseService {
   }> {
     try {
       const tables = await this.dataSource.query(`
-        SELECT 
+        SELECT
           table_name,
           table_type
-        FROM information_schema.tables 
+        FROM information_schema.tables
         WHERE table_schema = 'public'
         ORDER BY table_name
       `);
@@ -85,20 +85,20 @@ export class DatabaseService {
     try {
       const [tableCount, connections, dbSize, uptime] = await Promise.all([
         this.dataSource.query(`
-          SELECT COUNT(*) as count 
-          FROM information_schema.tables 
+          SELECT COUNT(*) as count
+          FROM information_schema.tables
           WHERE table_schema = 'public'
         `),
         this.dataSource.query(`
-          SELECT COUNT(*) as count 
-          FROM pg_stat_activity 
+          SELECT COUNT(*) as count
+          FROM pg_stat_activity
           WHERE state = 'active'
         `),
         this.dataSource.query(`
           SELECT pg_size_pretty(pg_database_size(current_database())) as size
         `),
         this.dataSource.query(`
-          SELECT 
+          SELECT
             EXTRACT(EPOCH FROM (now() - pg_postmaster_start_time())) as uptime_seconds
         `),
       ]);
