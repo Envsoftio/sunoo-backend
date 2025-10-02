@@ -328,4 +328,59 @@ export class AdminController {
     return this.adminService.deleteCategory(id);
   }
 
+  // Dashboard Analytics Endpoints
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get dashboard statistics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
+  async getDashboardStats() {
+    return await this.adminService.getDashboardStats();
+  }
+
+  @Get('user-count')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get total user count (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User count retrieved successfully' })
+  async getUserCount() {
+    return await this.adminService.getUserCount();
+  }
+
+  @Get('book-count')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get total book count (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Book count retrieved successfully' })
+  async getBookCount() {
+    return await this.adminService.getBookCount();
+  }
+
+  @Get('author-count')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get total author count (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Author count retrieved successfully' })
+  async getAuthorCount() {
+    return await this.adminService.getAuthorCount();
+  }
+
+  @Get('narrator-count')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get total narrator count (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Narrator count retrieved successfully' })
+  async getNarratorCount() {
+    return await this.adminService.getNarratorCount();
+  }
+
+  @Get('user-likes-count')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get total user likes count (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User likes count retrieved successfully' })
+  async getUserLikesCount() {
+    return await this.adminService.getUserLikesCount();
+  }
+
 }

@@ -321,12 +321,13 @@ export class AdminService {
 
   async getUserActivities(startDate?: Date, endDate?: Date) {
     try {
+      // Get user progress with related data instead of sessions
       let query = this.userSessionRepository
         .createQueryBuilder('session')
         .leftJoinAndSelect('session.user', 'user')
-        .leftJoinAndSelect('user.userProgress', 'progress')
-        .leftJoinAndSelect('progress.book', 'book')
-        .leftJoinAndSelect('progress.chapter', 'chapter')
+        .leftJoin('user.userProgress', 'progress')
+        .leftJoin('progress.book', 'book')
+        .leftJoin('progress.chapter', 'chapter')
         .select([
           'session.id',
           'session.userId',
@@ -357,8 +358,28 @@ export class AdminService {
 
       const activities = await query.getMany();
 
-      return { success: true, data: activities };
+      // Transform the data to match frontend expectations
+      const transformedActivities = activities.map(activity => ({
+        id: activity.id,
+        userId: activity.userId,
+        isActive: activity.isActive,
+        created_at: activity.created_at,
+        updated_at: activity.updated_at,
+        User: activity.user ? {
+          id: activity.user.id,
+          name: activity.user.name,
+          email: activity.user.email,
+          imageURL: activity.user.imageURL
+        } : null,
+        // Add progress data if available
+        progress_time: 0, // Default value
+        Books: null,
+        Chapters: null
+      }));
+
+      return { success: true, data: transformedActivities };
     } catch (error) {
+      console.error('Error in getUserActivities:', error);
       return { success: false, message: error.message };
     }
   }
@@ -561,6 +582,89 @@ export class AdminService {
     try {
       await this.castMemberRepository.update(id, { picture: pictureKey });
       return { success: true, message: 'Picture uploaded successfully', data: { pictureKey } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Dashboard Analytics Methods
+  async getDashboardStats() {
+    try {
+      const [
+        userCount,
+        narratorCount,
+        authorCount,
+        bookCount,
+        feedbackCount,
+        userLikesCount,
+        subscriptionCounts
+      ] = await Promise.all([
+        this.userRepository.count(),
+        this.userRepository.count({ where: { role: 'narrator' } }),
+        this.userRepository.count({ where: { role: 'author' } }),
+        this.bookRepository.count(),
+        this.feedbackRepository.count(),
+        this.bookmarkRepository.count(),
+        this.getSubscriptionCounts()
+      ]);
+
+      return {
+        success: true,
+        data: {
+          userCount,
+          narratorCount,
+          authorCount,
+          bookCount,
+          feedbackCount,
+          userLikesCount,
+          subscriptionCounts: subscriptionCounts.success ? subscriptionCounts.data : null
+        }
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserCount() {
+    try {
+      const count = await this.userRepository.count();
+      return { success: true, data: { count } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getBookCount() {
+    try {
+      const count = await this.bookRepository.count();
+      return { success: true, data: { count } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getAuthorCount() {
+    try {
+      const count = await this.userRepository.count({ where: { role: 'author' } });
+      return { success: true, data: { count } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getNarratorCount() {
+    try {
+      const count = await this.userRepository.count({ where: { role: 'narrator' } });
+      return { success: true, data: { count } };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getUserLikesCount() {
+    try {
+      const count = await this.bookmarkRepository.count();
+      return { success: true, data: { count } };
     } catch (error) {
       return { success: false, message: error.message };
     }
