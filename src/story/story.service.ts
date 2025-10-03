@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Book } from '../entities/book.entity';
 import { Category } from '../entities/category.entity';
@@ -152,9 +152,6 @@ export class StoryService {
 
   async getStoryBySlugForShow(slug: string, userId?: string) {
     try {
-      console.log(
-        `🔍 getStoryBySlugForShow service called with slug: ${slug}, userId: ${userId}`
-      );
       const story = await this.bookRepository.findOne({
         where: { slug },
         relations: [
@@ -227,7 +224,7 @@ export class StoryService {
               castMember?.name ||
               storyCast.name ||
               `Unknown ${storyCast.role || 'Cast Member'}`,
-            picture: castMember?.picture || storyCast.picture || 'dummy.jpg',
+            picture: castMember?.picture || storyCast.picture || '',
           });
         }
       }
@@ -450,7 +447,10 @@ export class StoryService {
   async getChapters(storyId: string) {
     try {
       const chapters = await this.chapterRepository.find({
-        where: { bookId: storyId },
+        where: {
+          bookId: storyId,
+          deleted_at: IsNull(), // Exclude soft-deleted chapters
+        },
         order: { order: 'ASC' },
       });
 
@@ -641,9 +641,6 @@ export class StoryService {
 
   async getStoryByIdForShow(id: string, userId?: string) {
     try {
-      console.log(
-        `🔍 getStoryByIdForShow service called with ID: ${id}, userId: ${userId}`
-      );
       const story = await this.bookRepository.findOne({
         where: { id },
         relations: [
@@ -1280,22 +1277,13 @@ export class StoryService {
         order: { created_at: 'ASC' },
       });
 
-      console.log('🔍 Story casts found:', storyCasts.length, storyCasts[0]);
-
       // Try to find cast members for each cast_id
       const casts: any[] = [];
       if (storyCasts.length > 0) {
         for (const storyCast of storyCasts) {
-          console.log('🔍 Looking for cast member with ID:', storyCast.cast_id);
-
           const castMember = await this.castMemberRepository.findOne({
             where: { id: storyCast.cast_id },
           });
-
-          console.log(
-            '🔍 Cast member found:',
-            castMember ? `${castMember.name} (${castMember.id})` : 'NOT FOUND'
-          );
 
           casts.push({
             id: storyCast.id,

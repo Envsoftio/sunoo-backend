@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Feedback } from '../entities/feedback.entity';
 import { Subscription } from '../entities/subscription.entity';
@@ -486,8 +486,8 @@ export class AdminService {
           sc.story_id,
           sc.role,
           sc.cast_id,
-          COALESCE(sc.name, cm.name) as name,
-          COALESCE(sc.picture, cm.picture) as picture
+          COALESCE(cm.name, sc.name) as name,
+          COALESCE(cm.picture, sc.picture) as picture
         FROM story_casts sc
         LEFT JOIN cast_members cm ON sc.cast_id::uuid = cm.id
         WHERE sc.story_id = $1
@@ -909,7 +909,7 @@ export class AdminService {
           averageRating: Math.round(averageRating * 10) / 10,
           listeners: totalListeners,
           chapterCount: story.chapters?.length || 0,
-          category: story.category?.name || 'Uncategorized'
+          category: story.category?.id || ''
         }
       };
     } catch (error) {
@@ -1023,7 +1023,10 @@ export class AdminService {
   async getStoryChapters(storyId: string) {
     try {
       const chapters = await this.chapterRepository.find({
-        where: { bookId: storyId },
+        where: {
+          bookId: storyId,
+          deleted_at: IsNull()  // Exclude soft-deleted chapters
+        },
         order: { order: 'ASC' }
       });
 
@@ -1056,7 +1059,9 @@ export class AdminService {
 
   async updateChapter(id: string, chapterData: any) {
     try {
-      const chapter = await this.chapterRepository.findOne({ where: { id } });
+      const chapter = await this.chapterRepository.findOne({
+        where: { id, deleted_at: IsNull() }
+      });
       if (!chapter) {
         return { success: false, message: 'Chapter not found' };
       }
@@ -1064,7 +1069,9 @@ export class AdminService {
       chapterData.updated_at = new Date();
 
       await this.chapterRepository.update(id, chapterData);
-      const updatedChapter = await this.chapterRepository.findOne({ where: { id } });
+      const updatedChapter = await this.chapterRepository.findOne({
+        where: { id, deleted_at: IsNull() }
+      });
 
       return { success: true, data: updatedChapter, message: 'Chapter updated successfully' };
     } catch (error) {
@@ -1074,16 +1081,38 @@ export class AdminService {
 
   async deleteChapter(id: string) {
     try {
-      const chapter = await this.chapterRepository.findOne({ where: { id } });
+      const chapter = await this.chapterRepository.findOne({
+        where: { id, deleted_at: IsNull() }
+      });
       if (!chapter) {
         return { success: false, message: 'Chapter not found' };
       }
 
-      // Delete related data
-      await this.userProgressRepository.delete({ chapterId: id });
+      // Soft delete: set deleted_at timestamp instead of removing the record
+      await this.chapterRepository.update(id, {
+        deleted_at: new Date()
+      });
 
-      await this.chapterRepository.delete(id);
       return { success: true, message: 'Chapter deleted successfully' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  bulkUploadChapters(_storyId: string, _file: any) {
+    try {
+      // This is a placeholder implementation
+      // In a real implementation, you would:
+      // 1. Extract the ZIP file
+      // 2. Process each audio file
+      // 3. Upload to S3 or your storage service
+      // 4. Create chapter records in the database
+
+      return {
+        success: true,
+        message: 'Bulk upload functionality needs to be implemented',
+        data: { uploadedCount: 0 }
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

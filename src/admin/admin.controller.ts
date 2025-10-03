@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   UseGuards,
@@ -11,7 +12,12 @@ import {
   HttpStatus,
   Query,
   Param,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
+import { Multer } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -491,7 +497,7 @@ export class AdminController {
     return await this.adminService.addChapter(storyId, body);
   }
 
-  @Post('chapters/:id')
+  @Put('chapters/:id')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
@@ -509,6 +515,17 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Chapter deleted successfully' })
   async deleteChapter(@Param('id') id: string) {
     return await this.adminService.deleteChapter(id);
+  }
+
+  @Post('stories/:storyId/chapters/bulk-upload')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bulk upload chapters (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Chapters uploaded successfully' })
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkUploadChapters(@Param('storyId') storyId: string, @UploadedFile() file: Multer.File) {
+    return await this.adminService.bulkUploadChapters(storyId, file);
   }
 
   // Author Management APIs
