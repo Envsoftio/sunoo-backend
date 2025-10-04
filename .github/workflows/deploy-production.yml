@@ -72,30 +72,56 @@ jobs:
       - name: Build application
         run: |
           echo "🔨 Building application..."
+          echo "Current directory: $(pwd)"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+
+          # Clean any existing dist directory
+          rm -rf dist
+          echo "🧹 Cleaned existing dist directory"
+
+          # Show what we're about to build
+          echo "📁 Source files to build:"
+          find src -name "*.ts" | head -10
+
+          # Try to build with explicit error handling
+          echo "🔨 Running: npm run build"
+          set -e  # Exit on any error
           npm run build
 
-          # Verify build output
-          echo "📁 Checking build output..."
+          # Check if build actually created the dist directory
+          echo "📁 Post-build directory listing:"
           ls -la
+
           if [ -d "dist" ]; then
             echo "✅ dist directory exists"
+            echo "📁 Contents of dist/:"
             ls -la dist/
+
             if [ -f "dist/main.js" ]; then
               echo "✅ main.js exists in dist/"
+              echo "File size: $(stat -c%s dist/main.js) bytes"
+              echo "First few lines of main.js:"
+              head -5 dist/main.js
             else
               echo "❌ main.js NOT found in dist/"
-              echo "Contents of dist/:"
-              find dist/ -type f -name "*.js" | head -10
+              echo "All files in dist/:"
+              find dist/ -type f | head -20
+              echo "Looking for any .js files in dist/:"
+              find dist/ -name "*.js" -type f
             fi
           else
-            echo "❌ dist directory does not exist"
+            echo "❌ dist directory does not exist after build"
             echo "Current directory contents:"
             ls -la
+            echo "Looking for any .js files:"
+            find . -name "*.js" -type f | head -10
+            exit 1
           fi
 
-      - name: Run database migrations
-        run: npm run migration:run
-        env:
+      # - name: Run database migrations
+      #   run: npm run migration:run
+      #   env:
           # Production environment variables
           NODE_ENV: production
           PORT: 3005
