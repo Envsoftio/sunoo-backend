@@ -1,0 +1,247 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if no changes'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_ENV: production
+  DEPLOY_PATH: /opt/sunoo-backend
+  SERVICE_NAME: sunoo-backend-prod
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, production]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Production environment variables
+          NODE_ENV: production
+          PORT: 3005
+
+          # Database Configuration
+          DB_HOST: ${{ secrets.PROD_DB_HOST }}
+          DB_PORT: ${{ secrets.PROD_DB_PORT }}
+          DB_USERNAME: ${{ secrets.PROD_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+          DB_NAME: ${{ secrets.PROD_DB_NAME }}
+
+          # Redis Configuration
+          REDIS_HOST: ${{ secrets.PROD_REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.PROD_REDIS_PORT }}
+          REDIS_PASSWORD: ${{ secrets.PROD_REDIS_PASSWORD }}
+
+          # JWT Configuration
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.PROD_JWT_EXPIRES_IN }}
+          JWT_ACCESS_EXPIRES_IN: ${{ secrets.PROD_JWT_ACCESS_EXPIRES_IN }}
+          JWT_REFRESH_EXPIRES_IN: ${{ secrets.PROD_JWT_REFRESH_EXPIRES_IN }}
+          JWT_ISSUER: ${{ secrets.PROD_JWT_ISSUER }}
+          JWT_AUDIENCE: ${{ secrets.PROD_JWT_AUDIENCE }}
+          JWT_ALGORITHM: ${{ secrets.PROD_JWT_ALGORITHM }}
+
+          # Email Configuration
+          SMTP_HOST: ${{ secrets.PROD_SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.PROD_SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.PROD_SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.PROD_SMTP_USER }}
+          SMTP_PASS: ${{ secrets.PROD_SMTP_PASS }}
+          EMAIL_FROM_NAME: ${{ secrets.PROD_EMAIL_FROM_NAME }}
+          EMAIL_FROM_EMAIL: ${{ secrets.PROD_EMAIL_FROM_EMAIL }}
+          EMAIL_BASE_URL: ${{ secrets.PROD_EMAIL_BASE_URL }}
+          EMAIL_APP_NAME: ${{ secrets.PROD_EMAIL_APP_NAME }}
+          EMAIL_APP_URL: ${{ secrets.PROD_EMAIL_APP_URL }}
+
+          # Application Configuration
+          CORS_ORIGIN: ${{ secrets.PROD_CORS_ORIGIN }}
+
+          # Rate Limiting & Security
+          THROTTLE_TTL: ${{ secrets.PROD_THROTTLE_TTL }}
+          THROTTLE_LIMIT: ${{ secrets.PROD_THROTTLE_LIMIT }}
+          ACCOUNT_LOCKOUT_ATTEMPTS: ${{ secrets.PROD_ACCOUNT_LOCKOUT_ATTEMPTS }}
+          ACCOUNT_LOCKOUT_DURATION: ${{ secrets.PROD_ACCOUNT_LOCKOUT_DURATION }}
+
+          # Swagger Configuration
+          SWAGGER_TITLE: 'Sunoo Backend API - Production'
+          SWAGGER_DESCRIPTION: 'Production API documentation for Sunoo Backend'
+          SWAGGER_VERSION: '1.0.0'
+
+          # External Services
+          AWS_S3_HLS_URL: ${{ secrets.PROD_AWS_S3_HLS_URL }}
+          RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
+          RAZORPAY_SECRET: ${{ secrets.PROD_RAZORPAY_SECRET }}
+
+      - name: Create production environment file
+        run: |
+          cat > .env.production << EOF
+          NODE_ENV=production
+          PORT=3005
+
+          # Database Configuration
+          DB_HOST=${{ secrets.PROD_DB_HOST }}
+          DB_PORT=${{ secrets.PROD_DB_PORT }}
+          DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          DB_NAME=${{ secrets.PROD_DB_NAME }}
+
+          # Redis Configuration
+          REDIS_HOST=${{ secrets.PROD_REDIS_HOST }}
+          REDIS_PORT=${{ secrets.PROD_REDIS_PORT }}
+          REDIS_PASSWORD=${{ secrets.PROD_REDIS_PASSWORD }}
+
+          # JWT Configuration
+          JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
+          JWT_EXPIRES_IN=${{ secrets.PROD_JWT_EXPIRES_IN }}
+          JWT_ACCESS_EXPIRES_IN=${{ secrets.PROD_JWT_ACCESS_EXPIRES_IN }}
+          JWT_REFRESH_EXPIRES_IN=${{ secrets.PROD_JWT_REFRESH_EXPIRES_IN }}
+          JWT_ISSUER=${{ secrets.PROD_JWT_ISSUER }}
+          JWT_AUDIENCE=${{ secrets.PROD_JWT_AUDIENCE }}
+          JWT_ALGORITHM=${{ secrets.PROD_JWT_ALGORITHM }}
+
+          # Email Configuration
+          SMTP_HOST=${{ secrets.PROD_SMTP_HOST }}
+          SMTP_PORT=${{ secrets.PROD_SMTP_PORT }}
+          SMTP_SECURE=${{ secrets.PROD_SMTP_SECURE }}
+          SMTP_USER=${{ secrets.PROD_SMTP_USER }}
+          SMTP_PASS=${{ secrets.PROD_SMTP_PASS }}
+          EMAIL_FROM_NAME=${{ secrets.PROD_EMAIL_FROM_NAME }}
+          EMAIL_FROM_EMAIL=${{ secrets.PROD_EMAIL_FROM_EMAIL }}
+          EMAIL_BASE_URL=${{ secrets.PROD_EMAIL_BASE_URL }}
+          EMAIL_APP_NAME=${{ secrets.PROD_EMAIL_APP_NAME }}
+          EMAIL_APP_URL=${{ secrets.PROD_EMAIL_APP_URL }}
+
+          # Application Configuration
+          CORS_ORIGIN=${{ secrets.PROD_CORS_ORIGIN }}
+
+          # Rate Limiting & Security
+          THROTTLE_TTL=${{ secrets.PROD_THROTTLE_TTL }}
+          THROTTLE_LIMIT=${{ secrets.PROD_THROTTLE_LIMIT }}
+          ACCOUNT_LOCKOUT_ATTEMPTS=${{ secrets.PROD_ACCOUNT_LOCKOUT_ATTEMPTS }}
+          ACCOUNT_LOCKOUT_DURATION=${{ secrets.PROD_ACCOUNT_LOCKOUT_DURATION }}
+
+          # Swagger Configuration
+          SWAGGER_TITLE=Sunoo Backend API - Production
+          SWAGGER_DESCRIPTION=Production API documentation for Sunoo Backend
+          SWAGGER_VERSION=1.0.0
+
+          # External Services
+          AWS_S3_HLS_URL=${{ secrets.PROD_AWS_S3_HLS_URL }}
+          RAZORPAY_KEY_ID=${{ secrets.PROD_RAZORPAY_KEY_ID }}
+          RAZORPAY_SECRET=${{ secrets.PROD_RAZORPAY_SECRET }}
+          EOF
+
+      - name: Create deployment directory
+        run: |
+          sudo mkdir -p ${{ env.DEPLOY_PATH }}
+          sudo chown -R $USER:$USER ${{ env.DEPLOY_PATH }}
+
+      - name: Stop existing service
+        run: |
+          sudo systemctl stop ${{ env.SERVICE_NAME }} || true
+          pm2 stop ${{ env.SERVICE_NAME }} || true
+          pm2 delete ${{ env.SERVICE_NAME }} || true
+
+      - name: Deploy application
+        run: |
+          # Copy built application
+          cp -r dist ${{ env.DEPLOY_PATH }}/
+          cp -r node_modules ${{ env.DEPLOY_PATH }}/
+          cp package.json ${{ env.DEPLOY_PATH }}/
+          cp .env.production ${{ env.DEPLOY_PATH }}/.env
+
+          # Copy PM2 ecosystem file
+          cp ecosystem.config.js ${{ env.DEPLOY_PATH }}/
+
+      - name: Install PM2 globally
+        run: |
+          sudo npm install -g pm2
+
+      - name: Start application with PM2
+        run: |
+          cd ${{ env.DEPLOY_PATH }}
+          pm2 start ecosystem.config.js --env production
+          pm2 save
+          pm2 startup
+
+      - name: Create systemd service
+        run: |
+          sudo tee /etc/systemd/system/${{ env.SERVICE_NAME }}.service > /dev/null << EOF
+          [Unit]
+          Description=Sunoo Backend Production Service
+          After=network.target
+
+          [Service]
+          Type=forking
+          User=$USER
+          WorkingDirectory=${{ env.DEPLOY_PATH }}
+          ExecStart=/usr/bin/pm2 start ecosystem.config.js --env production
+          ExecReload=/usr/bin/pm2 reload ${{ env.SERVICE_NAME }}
+          ExecStop=/usr/bin/pm2 stop ${{ env.SERVICE_NAME }}
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+      - name: Enable and start service
+        run: |
+          sudo systemctl daemon-reload
+          sudo systemctl enable ${{ env.SERVICE_NAME }}
+          sudo systemctl start ${{ env.SERVICE_NAME }}
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -f http://localhost:3005/health || exit 1
+
+      - name: Cleanup
+        run: |
+          # Remove source code and build artifacts
+          rm -rf src/
+          rm -rf .github/
+          rm -rf scripts/
+          rm -rf backups/
+          rm -rf init-scripts/
+          rm -rf *.json
+          rm -rf *.js
+          rm -rf *.mjs
+          rm -rf *.md
+          rm -rf tsconfig*.json
+          rm -rf nest-cli.json
+          rm -rf docker-compose.yml
+          rm -rf .env.production
+          rm -rf .git/
+          rm -rf .gitignore
+          rm -rf .eslintrc*
+          rm -rf .prettierrc*
+          rm -rf eslint.config.mjs
+
+      - name: Deployment success notification
+        run: |
+          echo "✅ Production deployment completed successfully!"
+          echo "🚀 Application is running on port 3005"
+          echo "📚 API Documentation: http://$(curl -s ifconfig.me):3005/api"
