@@ -8,6 +8,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3005,
+        // Production URL
+        APP_URL: 'https://api.sunoo.app',
         // Logging for production - use relative paths
         log_file: './logs/combined.log',
         out_file: './logs/out.log',
@@ -17,6 +19,8 @@ module.exports = {
       env_staging: {
         NODE_ENV: 'staging',
         PORT: 3006,
+        // Staging URL
+        APP_URL: 'https://apidev.sunoo.app',
         // Logging for staging - use relative paths
         log_file: './logs/combined.log',
         out_file: './logs/out.log',
