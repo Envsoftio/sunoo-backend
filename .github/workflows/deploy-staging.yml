@@ -81,10 +81,10 @@ jobs:
           echo "📁 Source files to build:"
           find src -name "*.ts" | head -10
 
-          # Try to build with explicit error handling
-          echo "🔨 Running: npm run build"
+          # Try to build with explicit error handling using vishnu user's NVM environment
+          echo "🔨 Running: npm run build with vishnu user's NVM environment"
           set -e  # Exit on any error
-          npm run build
+          sudo -u vishnu bash -c "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd $(pwd) && npm run build"
 
           # Check if build actually created the dist directory
           echo "📁 Post-build directory listing:"
