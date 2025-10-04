@@ -220,16 +220,12 @@ jobs:
           # Copy PM2 ecosystem file
           cp ecosystem.config.js ${{ env.DEPLOY_PATH }}/
 
-      - name: Install PM2 globally
-        run: |
-          sudo npm install -g pm2
-
       - name: Start application with PM2
         run: |
           cd ${{ env.DEPLOY_PATH }}
-          pm2 start ecosystem.config.js --env staging
-          pm2 save
-          pm2 startup
+          npx pm2 start ecosystem.config.js --env staging
+          npx pm2 save
+          npx pm2 startup
 
       - name: Create systemd service
         run: |
