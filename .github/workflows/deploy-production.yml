@@ -282,7 +282,8 @@ jobs:
           cd ${{ env.DEPLOY_PATH }}
           npx pm2 start ecosystem.config.js --env production
           npx pm2 save
-          npx pm2 startup
+          # Try to setup PM2 startup, but don't fail if it requires sudo
+          npx pm2 startup 2>/dev/null || echo "⚠️  PM2 startup setup requires sudo - skipping"
 
       - name: Create systemd service
         run: |
