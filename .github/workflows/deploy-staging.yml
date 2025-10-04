@@ -35,6 +35,33 @@ jobs:
       - name: Install dependencies
         run: npm ci --only=production
 
+      - name: Check and install system dependencies
+        run: |
+          # Check if Node.js is installed
+          if ! command -v node &> /dev/null; then
+            echo "📦 Installing Node.js 20..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          else
+            echo "✅ Node.js already installed: $(node --version)"
+          fi
+
+          # Check if PM2 is installed
+          if ! command -v pm2 &> /dev/null; then
+            echo "📦 Installing PM2..."
+            sudo npm install -g pm2
+          else
+            echo "✅ PM2 already installed: $(pm2 --version)"
+          fi
+
+          # Check if NestJS CLI is installed
+          if ! command -v nest &> /dev/null; then
+            echo "📦 Installing NestJS CLI..."
+            sudo npm install -g @nestjs/cli
+          else
+            echo "✅ NestJS CLI already installed: $(nest --version)"
+          fi
+
       - name: Build application
         run: npm run build
 
