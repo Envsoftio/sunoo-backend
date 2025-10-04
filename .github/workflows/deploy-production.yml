@@ -239,6 +239,12 @@ jobs:
 
       - name: Create deployment directory
         run: |
+          # Ensure vishnu user exists
+          if ! id vishnu &>/dev/null; then
+            echo "❌ Vishnu user does not exist. Please run setup-vps.sh first."
+            exit 1
+          fi
+
           # Try to create directory with sudo, if that fails, create in home directory
           if ! sudo mkdir -p ${{ env.DEPLOY_PATH }} 2>/dev/null; then
             echo "⚠️  Cannot create ${{ env.DEPLOY_PATH }}, using home directory..."
@@ -246,7 +252,8 @@ jobs:
             export DEPLOY_PATH=~/sunoo-backend
             echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_ENV
           else
-            sudo chown -R $USER:$USER ${{ env.DEPLOY_PATH }}
+            sudo chown -R vishnu:vishnu ${{ env.DEPLOY_PATH }}
+            sudo chmod -R 755 ${{ env.DEPLOY_PATH }}
           fi
 
       - name: Stop existing service

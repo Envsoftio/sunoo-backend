@@ -270,7 +270,7 @@ pm2 logs sunoo-backend-prod
 1. **Permission Denied**:
 
    ```bash
-   sudo chown -R deploy:deploy /opt/sunoo-backend*
+   sudo chown -R vishnu:vishnu /opt/sunoo-backend*
    sudo chmod -R 755 /opt/sunoo-backend*
    ```
 

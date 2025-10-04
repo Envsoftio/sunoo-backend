@@ -64,20 +64,20 @@ module.exports = {
   // Deployment configuration
   deploy: {
     production: {
-      user: 'deploy',
-      host: 'your-vps-ip',
+      user: 'vishnu',
+      host: '38.242.210.72',
       ref: 'origin/main',
-      repo: 'git@github.com:your-username/sunoo-backend.git',
+      repo: 'git@github.com:Envsoftio/sunoo-backend.git',
       path: '/opt/sunoo-backend',
       'pre-deploy-local': '',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env production',
       'pre-setup': ''
     },
     staging: {
-      user: 'deploy',
-      host: 'your-vps-ip',
+      user: 'vishnu',
+      host: '38.242.210.72',
       ref: 'origin/develop',
-      repo: 'git@github.com:your-username/sunoo-backend.git',
+      repo: 'git@github.com:Envsoftio/sunoo-backend.git',
       path: '/opt/sunoo-backend-staging',
       'pre-deploy-local': '',
       'post-deploy': 'npm install && npm run build && pm2 reload ecosystem.config.js --env staging',
