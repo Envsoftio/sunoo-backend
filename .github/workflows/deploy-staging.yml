@@ -197,12 +197,20 @@ jobs:
 
       - name: Create deployment directory
         run: |
-          sudo mkdir -p ${{ env.DEPLOY_PATH }}
-          sudo chown -R $USER:$USER ${{ env.DEPLOY_PATH }}
+          # Try to create directory with sudo, if that fails, create in home directory
+          if ! sudo mkdir -p ${{ env.DEPLOY_PATH }} 2>/dev/null; then
+            echo "⚠️  Cannot create ${{ env.DEPLOY_PATH }}, using home directory..."
+            mkdir -p ~/sunoo-backend-staging
+            export DEPLOY_PATH=~/sunoo-backend-staging
+            echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_ENV
+          else
+            sudo chown -R $USER:$USER ${{ env.DEPLOY_PATH }}
+          fi
 
       - name: Stop existing service
         run: |
-          sudo systemctl stop ${{ env.SERVICE_NAME }} || true
+          # Try to stop systemd service, if that fails, just use PM2
+          sudo systemctl stop ${{ env.SERVICE_NAME }} 2>/dev/null || true
           pm2 stop ${{ env.SERVICE_NAME }} || true
           pm2 delete ${{ env.SERVICE_NAME }} || true
 
@@ -251,9 +259,15 @@ jobs:
 
       - name: Enable and start service
         run: |
-          sudo systemctl daemon-reload
-          sudo systemctl enable ${{ env.SERVICE_NAME }}
-          sudo systemctl start ${{ env.SERVICE_NAME }}
+          # Try to start systemd service, if that fails, use PM2
+          if ! sudo systemctl daemon-reload 2>/dev/null; then
+            echo "⚠️  Systemd service management failed, using PM2..."
+            pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env staging
+            pm2 save
+          else
+            sudo systemctl enable ${{ env.SERVICE_NAME }}
+            sudo systemctl start ${{ env.SERVICE_NAME }}
+          fi
 
       - name: Health check
         run: |
