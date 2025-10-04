@@ -46,33 +46,28 @@ jobs:
             echo "✅ Node.js already installed: $(node --version)"
           fi
 
-          # Check if PM2 is installed
-          if ! command -v pm2 &> /dev/null; then
-            echo "📦 Installing PM2..."
-            # Try with sudo first, if that fails, install locally
-            if ! sudo npm install -g pm2 2>/dev/null; then
-              echo "⚠️  Global PM2 installation failed, installing locally..."
-              npm install pm2
-              # Create symlink to make pm2 available globally for this session
-              ln -sf $(pwd)/node_modules/.bin/pm2 /usr/local/bin/pm2 || true
-            fi
+          # Check if PM2 is already installed locally
+          if [ -f "./node_modules/.bin/pm2" ]; then
+            echo "✅ PM2 already installed locally: $(npx pm2 --version)"
           else
-            echo "✅ PM2 already installed: $(pm2 --version)"
+            echo "📦 Installing PM2 locally..."
+            npm install pm2
           fi
 
-          # Check if NestJS CLI is installed
-          if ! command -v nest &> /dev/null; then
-            echo "📦 Installing NestJS CLI..."
-            # Try with sudo first, if that fails, install locally
-            if ! sudo npm install -g @nestjs/cli 2>/dev/null; then
-              echo "⚠️  Global NestJS CLI installation failed, installing locally..."
-              npm install @nestjs/cli
-              # Create symlink to make nest available globally for this session
-              ln -sf $(pwd)/node_modules/.bin/nest /usr/local/bin/nest || true
-            fi
+          # Check if NestJS CLI is already installed locally
+          if [ -f "./node_modules/.bin/nest" ]; then
+            echo "✅ NestJS CLI already installed locally: $(npx nest --version)"
           else
-            echo "✅ NestJS CLI already installed: $(nest --version)"
+            echo "📦 Installing NestJS CLI locally..."
+            npm install @nestjs/cli
           fi
+
+          # Add local node_modules to PATH for this session
+          echo "export PATH=\"./node_modules/.bin:\$PATH\"" >> $GITHUB_ENV
+
+          # Verify installations
+          echo "✅ PM2 ready: $(npx pm2 --version)"
+          echo "✅ NestJS CLI ready: $(npx nest --version)"
 
       - name: Build application
         run: npm run build
@@ -211,8 +206,8 @@ jobs:
         run: |
           # Try to stop systemd service, if that fails, just use PM2
           sudo systemctl stop ${{ env.SERVICE_NAME }} 2>/dev/null || true
-          pm2 stop ${{ env.SERVICE_NAME }} || true
-          pm2 delete ${{ env.SERVICE_NAME }} || true
+          npx pm2 stop ${{ env.SERVICE_NAME }} || true
+          npx pm2 delete ${{ env.SERVICE_NAME }} || true
 
       - name: Deploy application
         run: |
@@ -262,8 +257,8 @@ jobs:
           # Try to start systemd service, if that fails, use PM2
           if ! sudo systemctl daemon-reload 2>/dev/null; then
             echo "⚠️  Systemd service management failed, using PM2..."
-            pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env staging
-            pm2 save
+            npx pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env staging
+            npx pm2 save
           else
             sudo systemctl enable ${{ env.SERVICE_NAME }}
             sudo systemctl start ${{ env.SERVICE_NAME }}

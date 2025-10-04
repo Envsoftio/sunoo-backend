@@ -155,6 +155,154 @@ npm run typeorm migration:generate -- -n MigrationName
 npm run typeorm migration:run
 ```
 
+## Deployment
+
+This project supports automated deployment to VPS using GitHub Actions with self-hosted runners.
+
+### Deployment Architecture
+
+- **Production**: `https://api.sunoo.app` (Port 3005)
+- **Staging**: `https://apidev.sunoo.app` (Port 3006)
+- **Self-hosted runners**: Custom VPS runners for CI/CD
+- **Process management**: PM2 for production process management
+- **Database**: PostgreSQL with automated migrations
+
+### Prerequisites for VPS Deployment
+
+1. **VPS Setup**:
+
+   ```bash
+   # Run the VPS setup script
+   chmod +x scripts/setup-vps.sh
+   ./scripts/setup-vps.sh
+   ```
+
+2. **Required Software**:
+   - Node.js 20+
+   - PM2 (installed globally)
+   - PostgreSQL client
+   - Git
+
+3. **User Configuration**:
+   - `deploy` user with sudo privileges
+   - GitHub Actions runners configured
+   - SSH access configured
+
+### GitHub Actions Workflows
+
+#### Production Deployment
+
+- **Trigger**: Manual dispatch or push to `main` branch
+- **Runner**: `self-hosted-prod`
+- **Environment**: Production
+- **URL**: `https://api.sunoo.app`
+
+#### Staging Deployment
+
+- **Trigger**: Manual dispatch or push to `develop` branch
+- **Runner**: `self-hosted-staging`
+- **Environment**: Staging
+- **URL**: `https://apidev.sunoo.app`
+
+### Environment Variables
+
+All environment variables are managed through GitHub Secrets:
+
+#### Production Secrets (PROD\_\*)
+
+- `PROD_DB_HOST`, `PROD_DB_PORT`, `PROD_DB_USERNAME`, `PROD_DB_PASSWORD`, `PROD_DB_NAME`
+- `PROD_REDIS_HOST`, `PROD_REDIS_PORT`, `PROD_REDIS_PASSWORD`
+- `PROD_JWT_SECRET`, `PROD_JWT_EXPIRES_IN`
+- `PROD_EMAIL_HOST`, `PROD_EMAIL_PORT`, `PROD_EMAIL_USER`, `PROD_EMAIL_PASS`
+- `PROD_EMAIL_FROM`, `PROD_EMAIL_BASE_URL`, `PROD_EMAIL_APP_URL`
+- `PROD_CORS_ORIGIN`, `PROD_RATE_LIMIT_TTL`, `PROD_RATE_LIMIT_LIMIT`
+- `PROD_SWAGGER_TITLE`, `PROD_SWAGGER_DESCRIPTION`, `PROD_SWAGGER_VERSION`
+- `PROD_AWS_ACCESS_KEY_ID`, `PROD_AWS_SECRET_ACCESS_KEY`, `PROD_AWS_REGION`
+- `PROD_AWS_S3_BUCKET`, `PROD_AWS_S3_HLS_URL`
+- `PROD_RAZORPAY_KEY_ID`, `PROD_RAZORPAY_SECRET`
+
+#### Staging Secrets (STAGING\_\*)
+
+- Similar structure with `STAGING_` prefix
+- Different values for staging environment
+
+### Deployment Process
+
+1. **Code Push**: Push to `main` (production) or `develop` (staging)
+2. **GitHub Actions**: Workflow triggers on self-hosted runner
+3. **Dependency Check**: Verifies Node.js, PM2, NestJS CLI
+4. **Build**: Compiles TypeScript and installs dependencies
+5. **Database Migration**: Runs TypeORM migrations
+6. **Deploy**: Copies files to deployment directory
+7. **Service Management**: Stops old service, starts new one
+8. **Health Check**: Verifies application is running
+
+### Manual Deployment Commands
+
+```bash
+# Build the application
+npm run build
+
+# Run database migrations
+npm run migration:run
+
+# Start with PM2
+pm2 start ecosystem.config.js --env production
+
+# Check status
+pm2 status
+pm2 logs sunoo-backend-prod
+```
+
+### Monitoring and Logs
+
+- **PM2 Dashboard**: `pm2 monit`
+- **Application Logs**: `/opt/sunoo-backend/logs/` (production)
+- **Staging Logs**: `/opt/sunoo-backend-staging/logs/` (staging)
+- **Health Endpoints**:
+  - Production: `https://api.sunoo.app/health`
+  - Staging: `https://apidev.sunoo.app/health`
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Permission Denied**:
+
+   ```bash
+   sudo chown -R deploy:deploy /opt/sunoo-backend*
+   sudo chmod -R 755 /opt/sunoo-backend*
+   ```
+
+2. **Service Not Starting**:
+
+   ```bash
+   pm2 logs sunoo-backend-prod
+   pm2 restart sunoo-backend-prod
+   ```
+
+3. **Database Connection Issues**:
+   - Check environment variables
+   - Verify database server is running
+   - Check network connectivity
+
+4. **GitHub Runner Issues**:
+   ```bash
+   # Reset runners
+   chmod +x scripts/reset-github-runners.sh
+   ./scripts/reset-github-runners.sh
+   ```
+
+### Data Migration
+
+For migrating data from backups to production:
+
+```bash
+# Run data migration script
+chmod +x scripts/migrate-data-remote.sh
+./scripts/migrate-data-remote.sh
+```
+
 ## Security
 
 - JWT tokens for authentication
@@ -163,6 +311,8 @@ npm run typeorm migration:run
 - CORS configuration
 - Input validation and sanitization
 - Soft delete for data retention
+- Environment variables secured via GitHub Secrets
+- No sensitive data stored on VPS
 
 ## License
 
