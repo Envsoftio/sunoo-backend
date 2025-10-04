@@ -8,19 +8,19 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3005,
-        // Logging for production
-        log_file: '/opt/sunoo-backend/logs/combined.log',
-        out_file: '/opt/sunoo-backend/logs/out.log',
-        error_file: '/opt/sunoo-backend/logs/error.log',
+        // Logging for production - use relative paths
+        log_file: './logs/combined.log',
+        out_file: './logs/out.log',
+        error_file: './logs/error.log',
         log_date_format: 'DD-MM-YYYY HH:mm:ss',
       },
       env_staging: {
         NODE_ENV: 'staging',
         PORT: 3006,
-        // Logging for staging
-        log_file: '/opt/sunoo-backend-staging/logs/combined.log',
-        out_file: '/opt/sunoo-backend-staging/logs/out.log',
-        error_file: '/opt/sunoo-backend-staging/logs/error.log',
+        // Logging for staging - use relative paths
+        log_file: './logs/combined.log',
+        out_file: './logs/out.log',
+        error_file: './logs/error.log',
         log_date_format: 'DD-MM-YYYY HH:mm:ss',
       },
       // PM2 configuration

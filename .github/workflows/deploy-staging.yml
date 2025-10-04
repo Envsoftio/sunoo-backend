@@ -211,6 +211,9 @@ jobs:
 
       - name: Deploy application
         run: |
+          # Create deployment directory if it doesn't exist
+          mkdir -p ${{ env.DEPLOY_PATH }}
+
           # Copy built application
           cp -r dist ${{ env.DEPLOY_PATH }}/
           cp -r node_modules ${{ env.DEPLOY_PATH }}/
@@ -219,6 +222,13 @@ jobs:
 
           # Copy PM2 ecosystem file
           cp ecosystem.config.js ${{ env.DEPLOY_PATH }}/
+
+          # Create logs directory
+          mkdir -p ${{ env.DEPLOY_PATH }}/logs
+
+          # Verify the main.js file exists
+          ls -la ${{ env.DEPLOY_PATH }}/dist/
+          echo "Main.js exists: $(test -f ${{ env.DEPLOY_PATH }}/dist/main.js && echo 'YES' || echo 'NO')"
 
       - name: Start application with PM2
         run: |
