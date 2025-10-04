@@ -288,12 +288,7 @@ jobs:
       - name: Create systemd service
         run: |
           # Try to create systemd service, if that fails, skip it
-          if sudo tee /etc/systemd/system/${{ env.SERVICE_NAME }}.service > /dev/null << EOF 2>/dev/null; then
-            echo "✅ Systemd service created successfully"
-          else
-            echo "⚠️  Systemd service creation requires sudo - skipping"
-            echo "ℹ️  PM2 will manage the application without systemd"
-          fi
+          cat > /tmp/systemd-service.conf << 'EOF'
           [Unit]
           Description=Sunoo Backend Staging Service
           After=network.target
@@ -311,6 +306,17 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
+
+          if sudo cp /tmp/systemd-service.conf /etc/systemd/system/${{ env.SERVICE_NAME }}.service 2>/dev/null; then
+            echo "✅ Systemd service created successfully"
+            sudo systemctl daemon-reload
+          else
+            echo "⚠️  Systemd service creation requires sudo - skipping"
+            echo "ℹ️  PM2 will manage the application without systemd"
+          fi
+
+          # Clean up temp file
+          rm -f /tmp/systemd-service.conf
 
       - name: Enable and start service
         run: |
