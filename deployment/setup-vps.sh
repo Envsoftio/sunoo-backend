@@ -27,14 +27,13 @@ sudo mkdir -p /opt/sunoo-backend-staging
 sudo mkdir -p /opt/sunoo-backend/logs
 sudo mkdir -p /opt/sunoo-backend-staging/logs
 
-# Create deploy user
-echo "👤 Creating deploy user..."
-sudo useradd -m -s /bin/bash deploy || true
-sudo usermod -aG sudo deploy
+# Note: Using vishnu user for deployment (already exists with sudo access)
+echo "👤 Using vishnu user for deployment..."
+echo "✅ Vishnu user already exists with sudo access"
 
-# Set permissions
+# Set permissions for vishnu user
 echo "🔐 Setting permissions..."
-sudo chown -R deploy:deploy /opt/sunoo-backend*
+sudo chown -R vishnu:vishnu /opt/sunoo-backend*
 sudo chmod -R 755 /opt/sunoo-backend*
 
 # Create systemd service directories
