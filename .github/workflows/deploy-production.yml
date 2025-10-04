@@ -46,28 +46,25 @@ jobs:
             echo "✅ Node.js already installed: $(node --version)"
           fi
 
-          # Check if PM2 is already installed locally
-          if [ -f "./node_modules/.bin/pm2" ]; then
-            echo "✅ PM2 already installed locally: $(npx pm2 --version)"
+          # Check if PM2 is available globally for vishnu user
+          if sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && command -v pm2 &> /dev/null'; then
+            echo "✅ PM2 already installed globally for vishnu user"
           else
-            echo "📦 Installing PM2 locally..."
-            npm install pm2
+            echo "📦 Installing PM2 globally for vishnu user..."
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && npm install -g pm2'
           fi
 
-          # Check if NestJS CLI is already installed locally
-          if [ -f "./node_modules/.bin/nest" ]; then
-            echo "✅ NestJS CLI already installed locally: $(npx nest --version)"
+          # Check if NestJS CLI is available globally for vishnu user
+          if sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && command -v nest &> /dev/null'; then
+            echo "✅ NestJS CLI already installed globally for vishnu user"
           else
-            echo "📦 Installing NestJS CLI locally..."
-            npm install @nestjs/cli
+            echo "📦 Installing NestJS CLI globally for vishnu user..."
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && npm install -g @nestjs/cli'
           fi
-
-          # Add local node_modules to PATH for this session
-          echo "export PATH=\"./node_modules/.bin:\$PATH\"" >> $GITHUB_ENV
 
           # Verify installations
-          echo "✅ PM2 ready: $(npx pm2 --version)"
-          echo "✅ NestJS CLI ready: $(npx nest --version)"
+          echo "✅ PM2 ready: $(sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 --version')"
+          echo "✅ NestJS CLI ready: $(sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nest --version')"
 
       - name: Build application
         run: |
@@ -260,8 +257,8 @@ jobs:
         run: |
           # Try to stop systemd service, if that fails, just use PM2
           sudo systemctl stop ${{ env.SERVICE_NAME }} 2>/dev/null || true
-          npx pm2 stop ${{ env.SERVICE_NAME }} || true
-          npx pm2 delete ${{ env.SERVICE_NAME }} || true
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 stop ${{ env.SERVICE_NAME }}' || true
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 delete ${{ env.SERVICE_NAME }}' || true
 
       - name: Deploy application
         run: |
@@ -287,25 +284,25 @@ jobs:
       - name: Start application with PM2
         run: |
           cd ${{ env.DEPLOY_PATH }}
-          npx pm2 start ecosystem.config.js --env production
-          npx pm2 save
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ecosystem.config.js --env production'
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           # Try to setup PM2 startup, but don't fail if it requires sudo
-          npx pm2 startup 2>/dev/null || echo "⚠️  PM2 startup setup requires sudo - skipping"
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 startup systemd -u vishnu --hp /home/vishnu' 2>/dev/null || echo "⚠️  PM2 startup setup requires sudo - skipping"
 
       - name: Skip systemd service creation
         run: |
           echo "ℹ️  Skipping systemd service creation - PM2 is managing the application"
           echo "✅ Application is running with PM2 cluster mode"
           echo "📋 PM2 processes:"
-          npx pm2 list
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 list'
 
       - name: Enable and start service
         run: |
           # Try to start systemd service, if that fails, use PM2
           if ! sudo systemctl daemon-reload 2>/dev/null; then
             echo "⚠️  Systemd service management failed, using PM2..."
-            npx pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env production
-            npx pm2 save
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env production'
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           else
             sudo systemctl enable ${{ env.SERVICE_NAME }}
             sudo systemctl start ${{ env.SERVICE_NAME }}
