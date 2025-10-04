@@ -70,7 +70,28 @@ jobs:
           echo "✅ NestJS CLI ready: $(npx nest --version)"
 
       - name: Build application
-        run: npm run build
+        run: |
+          echo "🔨 Building application..."
+          npm run build
+
+          # Verify build output
+          echo "📁 Checking build output..."
+          ls -la
+          if [ -d "dist" ]; then
+            echo "✅ dist directory exists"
+            ls -la dist/
+            if [ -f "dist/main.js" ]; then
+              echo "✅ main.js exists in dist/"
+            else
+              echo "❌ main.js NOT found in dist/"
+              echo "Contents of dist/:"
+              find dist/ -type f -name "*.js" | head -10
+            fi
+          else
+            echo "❌ dist directory does not exist"
+            echo "Current directory contents:"
+            ls -la
+          fi
 
       - name: Run database migrations
         run: npm run migration:run
