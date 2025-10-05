@@ -27,6 +27,10 @@ export class JsonExceptionFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null
       ) {
+        // Preserve the original error response for authentication errors
+        if (status === HttpStatus.UNAUTHORIZED) {
+          return response.status(status).json(exceptionResponse);
+        }
         message = (exceptionResponse as any).message || exception.message;
       }
     } else if (exception instanceof SyntaxError) {

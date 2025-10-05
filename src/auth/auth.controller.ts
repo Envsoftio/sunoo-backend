@@ -249,7 +249,17 @@ export class AuthController {
     try {
       return await this.authService.login(loginDto, req);
     } catch (error) {
-      // Handle password reset required error
+      // Handle default password migration required error
+      if (error.code === 'DEFAULT_PASSWORD_MIGRATION_REQUIRED') {
+        throw new UnauthorizedException({
+          message: error.message,
+          code: error.code,
+          requiresPasswordReset: error.requiresPasswordReset,
+          isMigrationRequired: error.isMigrationRequired,
+        });
+      }
+
+      // Handle password reset required error (normal forgot password)
       if (error.code === 'PASSWORD_RESET_REQUIRED') {
         throw new UnauthorizedException({
           message: error.message,

@@ -113,8 +113,9 @@ export class AuthService {
     if (user.hasDefaultPassword) {
       throw new UnauthorizedException({
         message: 'Please reset your password to continue',
-        code: 'PASSWORD_RESET_REQUIRED',
+        code: 'DEFAULT_PASSWORD_MIGRATION_REQUIRED',
         requiresPasswordReset: true,
+        isMigrationRequired: true,
       });
     }
 
@@ -290,7 +291,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'Invalid credentials',
-            code: 'invalid_credentials',
+            code: 'INVALID_CREDENTIALS',
           },
         };
       }
@@ -300,7 +301,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'Account is deactivated',
-            code: 'account_deactivated',
+            code: 'ACCOUNT_DEACTIVATED',
           },
         };
       }
@@ -310,7 +311,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'Email not verified',
-            code: 'email_not_confirmed',
+            code: 'EMAIL_NOT_CONFIRMED',
           },
         };
       }
@@ -321,8 +322,9 @@ export class AuthService {
           success: false,
           error: {
             message: 'Please reset your password to continue',
-            code: 'password_reset_required',
+            code: 'DEFAULT_PASSWORD_MIGRATION_REQUIRED',
             requiresPasswordReset: true,
+            isMigrationRequired: true,
           },
         };
       }
@@ -361,7 +363,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Login failed',
-          code: 'login_failed',
+          code: 'LOGIN_FAILED',
         },
       };
     }
@@ -439,7 +441,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'User not found',
-            code: 'user_not_found',
+            code: 'USER_NOT_FOUND',
           },
         };
       }
@@ -453,7 +455,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to get profile',
-          code: 'profile_fetch_failed',
+          code: 'PROFILE_FETCH_FAILED',
         },
       };
     }
@@ -470,7 +472,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'User not found',
-            code: 'user_not_found',
+            code: 'USER_NOT_FOUND',
           },
         };
       }
@@ -509,7 +511,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to process password reset request',
-          code: 'reset_request_failed',
+          code: 'RESET_REQUEST_FAILED',
         },
       };
     }
@@ -532,7 +534,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'Invalid or expired reset token',
-            code: 'invalid_reset_token',
+            code: 'INVALID_RESET_TOKEN',
           },
         };
       }
@@ -558,7 +560,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to reset password',
-          code: 'reset_failed',
+          code: 'RESET_FAILED',
         },
       };
     }
@@ -572,7 +574,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'User not found',
-            code: 'user_not_found',
+            code: 'USER_NOT_FOUND',
           },
         };
       }
@@ -587,7 +589,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'Current password is incorrect',
-            code: 'invalid_current_password',
+            code: 'INVALID_CURRENT_PASSWORD',
           },
         };
       }
@@ -611,7 +613,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to change password',
-          code: 'change_password_failed',
+          code: 'CHANGE_PASSWORD_FAILED',
         },
       };
     }
@@ -634,7 +636,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to update user',
-          code: 'update_failed',
+          code: 'UPDATE_FAILED',
         },
       };
     }
@@ -655,7 +657,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to get subscriptions',
-          code: 'subscription_fetch_failed',
+          code: 'SUBSCRIPTION_FETCH_FAILED',
         },
       };
     }
@@ -677,7 +679,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to cancel subscription',
-          code: 'subscription_cancel_failed',
+          code: 'SUBSCRIPTION_CANCEL_FAILED',
         },
       };
     }
@@ -702,7 +704,7 @@ export class AuthService {
           success: false,
           error: {
             message: 'User not found',
-            code: 'user_not_found',
+            code: 'USER_NOT_FOUND',
           },
         };
       }
@@ -726,7 +728,7 @@ export class AuthService {
         success: false,
         error: {
           message: 'Failed to check user',
-          code: 'user_check_failed',
+          code: 'USER_CHECK_FAILED',
         },
       };
     }
