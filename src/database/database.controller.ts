@@ -1,6 +1,13 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { DatabaseService } from './database.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('Database')
 @Controller('database')
@@ -8,7 +15,9 @@ export class DatabaseController {
   constructor(private readonly databaseService: DatabaseService) {}
 
   @Get('test')
-  @ApiOperation({ summary: 'Test database connection' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Test database connection (Admin only)' })
   @ApiResponse({
     status: 200,
     description: 'Database connection test result',
@@ -29,7 +38,9 @@ export class DatabaseController {
   }
 
   @Get('tables')
-  @ApiOperation({ summary: 'Get database tables information' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get database tables information (Admin only)' })
   @ApiResponse({
     status: 200,
     description: 'List of database tables',
@@ -55,7 +66,9 @@ export class DatabaseController {
   }
 
   @Get('stats')
-  @ApiOperation({ summary: 'Get database statistics' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get database statistics (Admin only)' })
   @ApiResponse({
     status: 200,
     description: 'Database statistics',
@@ -66,6 +79,9 @@ export class DatabaseController {
         totalConnections: { type: 'number' },
         databaseSize: { type: 'string' },
         uptime: { type: 'string' },
+        uptimeSeconds: { type: 'number' },
+        totalTablesFormatted: { type: 'string' },
+        totalConnectionsFormatted: { type: 'string' },
       },
     },
   })
@@ -73,9 +89,10 @@ export class DatabaseController {
     return this.databaseService.getDatabaseStats();
   }
 
-
   @Get('health')
-  @ApiOperation({ summary: 'Comprehensive database health check' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Comprehensive database health check (Admin only)' })
   @ApiResponse({
     status: 200,
     description: 'Complete database health status',

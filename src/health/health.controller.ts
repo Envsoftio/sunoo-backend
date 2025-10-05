@@ -1,7 +1,14 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, HttpStatus, Res, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { HealthService, HealthStatus } from './health.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('Health')
 @Controller('health')
@@ -19,6 +26,7 @@ export class HealthController {
         status: { type: 'string', example: 'ok' },
         timestamp: { type: 'string', example: '2024-01-01T00:00:00.000Z' },
         uptime: { type: 'number', example: 3600 },
+        uptimeFormatted: { type: 'string', example: '1 hour' },
         environment: { type: 'string', example: 'development' },
       },
     },
@@ -28,7 +36,11 @@ export class HealthController {
   }
 
   @Get('detailed')
-  @ApiOperation({ summary: 'Detailed health check with system metrics' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Detailed health check with system metrics (Admin only)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Comprehensive health status with system metrics',
@@ -48,6 +60,7 @@ export class HealthController {
               properties: {
                 status: { type: 'string', enum: ['up', 'down', 'degraded'] },
                 responseTime: { type: 'number' },
+                responseTimeFormatted: { type: 'string' },
                 message: { type: 'string' },
                 details: { type: 'object' },
               },
@@ -77,12 +90,16 @@ export class HealthController {
             platform: { type: 'string' },
             arch: { type: 'string' },
             cpuUsage: { type: 'number' },
+            cpuUsageFormatted: { type: 'string' },
             memoryUsage: {
               type: 'object',
               properties: {
                 used: { type: 'number' },
                 total: { type: 'number' },
                 percentage: { type: 'number' },
+                usedFormatted: { type: 'string' },
+                totalFormatted: { type: 'string' },
+                percentageFormatted: { type: 'string' },
               },
             },
           },

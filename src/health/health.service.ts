@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../database/database.service';
+import { FormatUtil } from '../utils/format.util';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -29,6 +30,7 @@ export interface HealthStatus {
 export interface ServiceHealth {
   status: 'up' | 'down' | 'degraded';
   responseTime?: number;
+  responseTimeFormatted?: string;
   message?: string;
   details?: any;
 }
@@ -117,6 +119,7 @@ export class HealthService {
       return {
         status: result.status === 'connected' ? 'up' : 'down',
         responseTime,
+        responseTimeFormatted: FormatUtil.formatResponseTime(responseTime),
         message: result.message,
         details: {
           database: result.database,
@@ -125,9 +128,11 @@ export class HealthService {
         },
       };
     } catch (error) {
+      const responseTime = Date.now() - startTime;
       return {
         status: 'down',
-        responseTime: Date.now() - startTime,
+        responseTime,
+        responseTimeFormatted: FormatUtil.formatResponseTime(responseTime),
         message: error.message,
       };
     }
@@ -158,6 +163,13 @@ export class HealthService {
           systemUsed: Math.round(usedMem / 1024 / 1024), // MB
           systemFree: Math.round(freeMem / 1024 / 1024), // MB
           percentage: Math.round(memoryPercentage * 100) / 100,
+          // Human readable formats
+          heapUsedFormatted: FormatUtil.formatBytes(memUsage.heapUsed),
+          heapTotalFormatted: FormatUtil.formatBytes(memUsage.heapTotal),
+          systemTotalFormatted: FormatUtil.formatBytes(totalMem),
+          systemUsedFormatted: FormatUtil.formatBytes(usedMem),
+          systemFreeFormatted: FormatUtil.formatBytes(freeMem),
+          percentageFormatted: FormatUtil.formatPercentage(memoryPercentage),
         },
       };
     } catch (error) {
@@ -202,15 +214,28 @@ export class HealthService {
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
 
+    const cpuUsage = process.cpuUsage();
+    const totalCpuUsage = cpuUsage.user + cpuUsage.system;
+
     return {
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
-      cpuUsage: process.cpuUsage().user + process.cpuUsage().system,
+      cpuUsage: totalCpuUsage,
+      cpuUsageFormatted: FormatUtil.formatCpuUsage(
+        cpuUsage.user,
+        cpuUsage.system
+      ),
       memoryUsage: {
         used: Math.round(usedMem / 1024 / 1024), // MB
         total: Math.round(totalMem / 1024 / 1024), // MB
         percentage: Math.round((usedMem / totalMem) * 100 * 100) / 100,
+        // Human readable formats
+        usedFormatted: FormatUtil.formatBytes(usedMem),
+        totalFormatted: FormatUtil.formatBytes(totalMem),
+        percentageFormatted: FormatUtil.formatPercentage(
+          (usedMem / totalMem) * 100
+        ),
       },
     };
   }
@@ -228,10 +253,12 @@ export class HealthService {
   }
 
   getSimpleHealth() {
+    const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000);
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      uptime: Math.floor((Date.now() - this.startTime) / 1000),
+      uptime: uptimeSeconds,
+      uptimeFormatted: FormatUtil.formatUptime(uptimeSeconds),
       environment: this.configService.get('app.nodeEnv', 'development'),
     };
   }

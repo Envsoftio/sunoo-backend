@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { FormatUtil } from '../utils/format.util';
 
 @Injectable()
 export class DatabaseService {
@@ -81,6 +82,9 @@ export class DatabaseService {
     totalConnections: number;
     databaseSize: string;
     uptime: string;
+    uptimeSeconds: number;
+    totalTablesFormatted: string;
+    totalConnectionsFormatted: string;
   }> {
     try {
       const [tableCount, connections, dbSize, uptime] = await Promise.all([
@@ -103,11 +107,18 @@ export class DatabaseService {
         `),
       ]);
 
+      const uptimeSeconds = parseInt(uptime[0]?.uptime_seconds || '0');
+      const totalTables = parseInt(tableCount[0]?.count || '0');
+      const totalConnections = parseInt(connections[0]?.count || '0');
+
       return {
-        totalTables: parseInt(tableCount[0]?.count || '0'),
-        totalConnections: parseInt(connections[0]?.count || '0'),
+        totalTables,
+        totalConnections,
         databaseSize: dbSize[0]?.size || 'unknown',
-        uptime: `${Math.floor(parseInt(uptime[0]?.uptime_seconds || '0') / 3600)} hours`,
+        uptime: FormatUtil.formatUptime(uptimeSeconds),
+        uptimeSeconds, // Keep raw value for detailed analysis
+        totalTablesFormatted: FormatUtil.formatNumber(totalTables),
+        totalConnectionsFormatted: FormatUtil.formatNumber(totalConnections),
       };
     } catch (error) {
       throw new Error(`Failed to get database stats: ${error.message}`);
