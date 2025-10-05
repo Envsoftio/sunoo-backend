@@ -115,66 +115,7 @@ jobs:
             find . -name "*.js" -type f | head -10
             exit 1
           fi
-
-      # - name: Run database migrations
-      #   run: npm run migration:run
-      #   env:
-          # Production environment variables
-          NODE_ENV: production
-          PORT: 3005
-
-          # Database Configuration
-          DB_HOST: ${{ secrets.PROD_DB_HOST }}
-          DB_PORT: ${{ secrets.PROD_DB_PORT }}
-          DB_USERNAME: ${{ secrets.PROD_DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-          DB_NAME: ${{ secrets.PROD_DB_NAME }}
-
-          # Redis Configuration
-          REDIS_HOST: ${{ secrets.PROD_REDIS_HOST }}
-          REDIS_PORT: ${{ secrets.PROD_REDIS_PORT }}
-          REDIS_PASSWORD: ${{ secrets.PROD_REDIS_PASSWORD }}
-
-          # JWT Configuration
-          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
-          JWT_EXPIRES_IN: ${{ secrets.PROD_JWT_EXPIRES_IN }}
-          JWT_ACCESS_EXPIRES_IN: ${{ secrets.PROD_JWT_ACCESS_EXPIRES_IN }}
-          JWT_REFRESH_EXPIRES_IN: ${{ secrets.PROD_JWT_REFRESH_EXPIRES_IN }}
-          JWT_ISSUER: ${{ secrets.PROD_JWT_ISSUER }}
-          JWT_AUDIENCE: ${{ secrets.PROD_JWT_AUDIENCE }}
-          JWT_ALGORITHM: ${{ secrets.PROD_JWT_ALGORITHM }}
-
-          # Email Configuration
-          SMTP_HOST: ${{ secrets.PROD_SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.PROD_SMTP_PORT }}
-          SMTP_SECURE: ${{ secrets.PROD_SMTP_SECURE }}
-          SMTP_USER: ${{ secrets.PROD_SMTP_USER }}
-          SMTP_PASS: ${{ secrets.PROD_SMTP_PASS }}
-          EMAIL_FROM_NAME: ${{ secrets.PROD_EMAIL_FROM_NAME }}
-          EMAIL_FROM_EMAIL: ${{ secrets.PROD_EMAIL_FROM_EMAIL }}
-          EMAIL_BASE_URL: ${{ secrets.PROD_EMAIL_BASE_URL }}
-          EMAIL_APP_NAME: ${{ secrets.PROD_EMAIL_APP_NAME }}
-          EMAIL_APP_URL: ${{ secrets.PROD_EMAIL_APP_URL }}
-
-          # Application Configuration
-          CORS_ORIGIN: ${{ secrets.PROD_CORS_ORIGIN }}
-
-          # Rate Limiting & Security
-          THROTTLE_TTL: ${{ secrets.PROD_THROTTLE_TTL }}
-          THROTTLE_LIMIT: ${{ secrets.PROD_THROTTLE_LIMIT }}
-          ACCOUNT_LOCKOUT_ATTEMPTS: ${{ secrets.PROD_ACCOUNT_LOCKOUT_ATTEMPTS }}
-          ACCOUNT_LOCKOUT_DURATION: ${{ secrets.PROD_ACCOUNT_LOCKOUT_DURATION }}
-
-          # Swagger Configuration
-          SWAGGER_TITLE: "Sunoo Backend API - Production"
-          SWAGGER_DESCRIPTION: "Production API documentation for Sunoo Backend"
-          SWAGGER_VERSION: "1.0.0"
-
-          # External Services
-          AWS_S3_HLS_URL: ${{ secrets.PROD_AWS_S3_HLS_URL }}
-          RAZORPAY_KEY_ID: ${{ secrets.PROD_RAZORPAY_KEY_ID }}
-          RAZORPAY_SECRET: ${{ secrets.PROD_RAZORPAY_SECRET }}
-
+      #
       - name: Create production environment file
         run: |
           cat > .env.production << EOF
@@ -257,8 +198,8 @@ jobs:
         run: |
           # Try to stop systemd service, if that fails, just use PM2
           sudo systemctl stop ${{ env.SERVICE_NAME }} 2>/dev/null || true
-          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 stop ${{ env.SERVICE_NAME }}' || true
-          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 delete ${{ env.SERVICE_NAME }}' || true
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 stop sunoo-backend-prod' || true
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 delete sunoo-backend-prod' || true
 
       - name: Deploy application
         run: |
@@ -284,7 +225,7 @@ jobs:
       - name: Start application with PM2
         run: |
           cd ${{ env.DEPLOY_PATH }}
-          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ecosystem.config.js --env production'
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start sunoo-backend-prod'
           sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           # Try to setup PM2 startup, but don't fail if it requires sudo
           sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 startup systemd -u vishnu --hp /home/vishnu' 2>/dev/null || echo "⚠️  PM2 startup setup requires sudo - skipping"
@@ -301,7 +242,7 @@ jobs:
           # Try to start systemd service, if that fails, use PM2
           if ! sudo systemctl daemon-reload 2>/dev/null; then
             echo "⚠️  Systemd service management failed, using PM2..."
-            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ${{ env.DEPLOY_PATH }}/ecosystem.config.js --env production'
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start sunoo-backend-prod'
             sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           else
             sudo systemctl enable ${{ env.SERVICE_NAME }}
