@@ -16,7 +16,6 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
 import { Multer } from 'multer';
 import {
   ApiTags,
@@ -53,15 +52,6 @@ export class AdminController {
     return this.adminService.deleteUser(body.email);
   }
 
-  @Post('makeNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Make user a narrator (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User made narrator successfully' })
-  async makeNarrator(@Body() body: { email: string }) {
-    return this.adminService.makeNarrator(body.email);
-  }
 
   // Analytics
   @Post('getUserRegistrationsByPeriod')
@@ -108,89 +98,7 @@ export class AdminController {
     return this.adminService.getAllFeedbacks();
   }
 
-  @Post('updateNarratorPassword')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update narrator password (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Password updated successfully' })
-  async updateNarratorPassword(
-    @Body() body: { userId: string; new_password: string }
-  ) {
-    return this.adminService.updateNarratorPassword(
-      body.userId,
-      body.new_password
-    );
-  }
 
-  // Additional admin endpoints for frontend compatibility
-  @Get('getAllNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all narrators (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrators retrieved successfully' })
-  async getAllNarrators() {
-    return this.adminService.getAllNarrators();
-  }
-
-  @Get('getNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get narrator (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrator retrieved successfully' })
-  async getNarrator(@Query('id') id: string) {
-    return this.adminService.getNarrator(id);
-  }
-
-  @Post('addNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Add narrator (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrator added successfully' })
-  async addNarrator(@Body() body: any) {
-    return this.adminService.addNarrator(body);
-  }
-
-  @Post('editNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Edit narrator (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrator edited successfully' })
-  async editNarrator(@Body() body: { payload: any; id: string }) {
-    return this.adminService.editNarrator(body.payload, body.id);
-  }
-
-  @Post('deleteNarrator')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete narrator (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrator deleted successfully' })
-  async deleteNarrator(@Body() body: { email: string }) {
-    return this.adminService.deleteNarrator(body.email);
-  }
-
-  @Post('updateNarratorProfile')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update narrator profile (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  async updateNarratorProfile(@Body() body: { userId: string }) {
-    return this.adminService.updateNarratorProfile(body.userId);
-  }
-
-  @Post('updateNarratorName')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update narrator name (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Name updated successfully' })
-  async updateNarratorName(@Body() body: { userId: string; name: string }) {
-    return this.adminService.updateNarratorName(body.userId, body.name);
-  }
 
 
   @Get('getUserBookLikes')
@@ -372,14 +280,6 @@ export class AdminController {
     return await this.adminService.getAuthorCount();
   }
 
-  @Get('narrator-count')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get total narrator count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Narrator count retrieved successfully' })
-  async getNarratorCount() {
-    return await this.adminService.getNarratorCount();
-  }
 
   @Get('user-likes-count')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -525,7 +425,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Chapters uploaded successfully' })
   @UseInterceptors(FileInterceptor('file'))
   async bulkUploadChapters(@Param('storyId') storyId: string, @UploadedFile() file: Multer.File) {
-    return await this.adminService.bulkUploadChapters(storyId, file);
+    return this.adminService.bulkUploadChapters(storyId, file);
   }
 
   // Author Management APIs

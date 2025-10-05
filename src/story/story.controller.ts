@@ -458,23 +458,6 @@ export class StoryController {
     return this.storyService.getAuthorById(id);
   }
 
-  @Get('narrators')
-  @ApiOperation({ summary: 'Get all narrators' })
-  @ApiResponse({ status: 200, description: 'Narrators retrieved successfully' })
-  getAllNarrators(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number
-  ) {
-    return this.storyService.getAllNarrators(page, limit);
-  }
-
-  @Get('narrators/:id')
-  @ApiOperation({ summary: 'Get narrator by ID' })
-  @ApiResponse({ status: 200, description: 'Narrator retrieved successfully' })
-  getNarratorById(@Query('id') id: string) {
-    return this.storyService.getNarratorById(id);
-  }
-
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get story by slug' })
   @ApiResponse({ status: 200, description: 'Story retrieved successfully' })

@@ -12,7 +12,6 @@ import { StoryCast } from '../entities/story-cast.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Book } from '../entities/book.entity';
 import { Author } from '../entities/author.entity';
-import { Narrator } from '../entities/narrator.entity';
 import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
@@ -41,8 +40,6 @@ export class AdminService {
     private bookRepository: Repository<Book>,
     @InjectRepository(Author)
     private authorRepository: Repository<Author>,
-    @InjectRepository(Narrator)
-    private narratorRepository: Repository<Narrator>,
     @InjectRepository(UserProgress)
     private userProgressRepository: Repository<UserProgress>,
     @InjectRepository(Chapter)
@@ -88,21 +85,6 @@ export class AdminService {
     }
   }
 
-  async makeNarrator(email: string) {
-    try {
-      const user = await this.userRepository.findOne({ where: { email } });
-      if (!user) {
-        return { success: false, message: 'User not found' };
-      }
-
-      user.role = 'narrator';
-      await this.userRepository.save(user);
-
-      return { success: true, message: 'User made narrator successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
   // Analytics
   async getUserRegistrationsByPeriod(period: string) {
@@ -290,108 +272,12 @@ export class AdminService {
     }
   }
 
-  // Additional methods for frontend compatibility
-  async getAllNarrators() {
-    try {
-      const narrators = await this.userRepository.find({
-        where: { role: 'narrator' },
-        select: ['id', 'email', 'name', 'isActive', 'created_at', 'updated_at'],
-        order: { created_at: 'DESC' },
-      });
-      return { success: true, data: narrators };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
-  async getNarrator(id: string) {
-    try {
-      const narrator = await this.userRepository.findOne({
-        where: { id, role: 'narrator' },
-        select: ['id', 'email', 'name', 'isActive', 'created_at', 'updated_at'],
-      });
-      if (!narrator) {
-        return { success: false, message: 'Narrator not found' };
-      }
-      return { success: true, data: narrator };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
-  async addNarrator(narratorData: any) {
-    try {
-      const bcrypt = require('bcrypt');
-      const hashedPassword = await bcrypt.hash(narratorData.password, 10);
 
-      const narrator = this.userRepository.create({
-        ...narratorData,
-        password: hashedPassword,
-        role: 'narrator',
-      });
 
-      const savedNarrator = await this.userRepository.save(narrator);
-      return { success: true, data: savedNarrator };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
-  async editNarrator(narratorData: any, id: string) {
-    try {
-      const narrator = await this.userRepository.findOne({ where: { id } });
-      if (!narrator) {
-        return { success: false, message: 'Narrator not found' };
-      }
 
-      await this.userRepository.update(id, narratorData);
-      return { success: true, message: 'Narrator updated successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async deleteNarrator(email: string) {
-    try {
-      const narrator = await this.userRepository.findOne({ where: { email, role: 'narrator' } });
-      if (!narrator) {
-        return { success: false, message: 'Narrator not found' };
-      }
-
-      await this.userRepository.delete(narrator.id);
-      return { success: true, message: 'Narrator deleted successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async updateNarratorProfile(userId: string) {
-    try {
-      const narrator = await this.userRepository.findOne({ where: { id: userId, role: 'narrator' } });
-      if (!narrator) {
-        return { success: false, message: 'Narrator not found' };
-      }
-
-      // Update profile logic here
-      return { success: true, message: 'Profile updated successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async updateNarratorName(userId: string, name: string) {
-    try {
-      const narrator = await this.userRepository.findOne({ where: { id: userId, role: 'narrator' } });
-      if (!narrator) {
-        return { success: false, message: 'Narrator not found' };
-      }
-
-      await this.userRepository.update(userId, { name });
-      return { success: true, message: 'Name updated successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
 
   async getUserActivities(startDate?: Date, endDate?: Date) {
@@ -695,7 +581,6 @@ export class AdminService {
     try {
       const [
         userCount,
-        narratorCount,
         authorCount,
         bookCount,
         feedbackCount,
@@ -703,7 +588,6 @@ export class AdminService {
         subscriptionCounts
       ] = await Promise.all([
         this.userRepository.count(),
-        this.narratorRepository.count(),
         this.authorRepository.count(),
         this.bookRepository.count(),
         this.feedbackRepository.count(),
@@ -715,7 +599,6 @@ export class AdminService {
         success: true,
         data: {
           userCount,
-          narratorCount,
           authorCount,
           bookCount,
           feedbackCount,
@@ -755,14 +638,6 @@ export class AdminService {
     }
   }
 
-  async getNarratorCount() {
-    try {
-      const count = await this.narratorRepository.count();
-      return { success: true, data: { count } };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
   async getUserLikesCount() {
     try {

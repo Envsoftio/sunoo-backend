@@ -1201,20 +1201,6 @@ export class StoryService {
     return { success: true, data: null };
   }
 
-  getAllNarrators(_page = 1, _limit = 10) {
-    // This would need to be implemented based on your narrator system
-    return {
-      success: true,
-      data: [],
-      pagination: { page: _page, limit: _limit, total: 0, pages: 0 },
-    };
-  }
-
-  getNarratorById(_id: string) {
-    // This would need to be implemented based on your narrator system
-    return { success: true, data: null };
-  }
-
   async getStoryBySlug(slug: string, userId?: string) {
     try {
       // Use query builder to ensure proper slug matching
