@@ -69,7 +69,6 @@ This folder contains all the deployment and setup scripts for the Sunoo Backend 
 - Closes ports 80, 5432, 3306, 8080
 - Provides security-focused configuration
 
-
 ## 🚀 **Deployment Workflow**
 
 ### **1. Initial VPS Setup**
@@ -156,13 +155,14 @@ git push origin develop # Staging
    ```
 
 4. **Check deployment status**:
+
    ```bash
    # Check PM2 processes
    sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 list'
-   
+
    # Check Nginx status
    sudo systemctl status nginx
-   
+
    # Check firewall
    sudo ufw status verbose
    ```

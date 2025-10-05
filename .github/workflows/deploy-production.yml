@@ -225,7 +225,7 @@ jobs:
       - name: Start application with PM2
         run: |
           cd ${{ env.DEPLOY_PATH }}
-          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start sunoo-backend-prod'
+          sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ecosystem.config.js --only sunoo-backend-prod'
           sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           # Try to setup PM2 startup, but don't fail if it requires sudo
           sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 startup systemd -u vishnu --hp /home/vishnu' 2>/dev/null || echo "⚠️  PM2 startup setup requires sudo - skipping"
@@ -242,7 +242,7 @@ jobs:
           # Try to start systemd service, if that fails, use PM2
           if ! sudo systemctl daemon-reload 2>/dev/null; then
             echo "⚠️  Systemd service management failed, using PM2..."
-            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start sunoo-backend-prod'
+            sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 start ecosystem.config.js --only sunoo-backend-prod'
             sudo -u vishnu bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && pm2 save'
           else
             sudo systemctl enable ${{ env.SERVICE_NAME }}
