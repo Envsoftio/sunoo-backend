@@ -26,6 +26,7 @@ import {
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/superadmin.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('Admin')
 @Controller('api/admin')
@@ -34,7 +35,7 @@ export class AdminController {
 
   // User Management
   @Get('getUsers')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
@@ -473,6 +474,16 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Completion rates retrieved successfully' })
   async getStoryCompletionRates() {
     return await this.adminService.getStoryCompletionRates();
+  }
+
+  @Post('send-email')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send email to users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Email sent successfully' })
+  async sendEmail(@Body() body: { to: any; templateKey: string; dynamicFields: any }) {
+    return await this.adminService.sendEmail(body.to, body.templateKey, body.dynamicFields);
   }
 
 }

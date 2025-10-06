@@ -15,6 +15,8 @@ import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
 import { AudiobookListener } from '../entities/audiobook-listener.entity';
+import { EmailService } from '../email/email.service';
+import { ZeptomailService } from '../email/zeptomail.service';
 
 @Injectable()
 export class AdminService {
@@ -44,7 +46,9 @@ export class AdminService {
     @InjectRepository(BookRating)
     private bookRatingRepository: Repository<BookRating>,
     @InjectRepository(AudiobookListener)
-    private audiobookListenerRepository: Repository<AudiobookListener>
+    private audiobookListenerRepository: Repository<AudiobookListener>,
+    private emailService: EmailService,
+    private zeptomailService: ZeptomailService
   ) {}
 
   // User Management
@@ -59,10 +63,49 @@ export class AdminService {
           'isActive',
           'created_at',
           'updated_at',
+          'email_notifications_enabled',
+          'marketing_emails_enabled',
+          'new_content_emails_enabled',
+          'subscription_emails_enabled',
         ],
+        relations: ['subscriptions'],
         order: { created_at: 'DESC' },
       });
-      return { success: true, data: users };
+
+      // Process users to add subscription status
+      const processedUsers = users.map(user => {
+        let subscriptionStatus = 'none';
+
+        if (user.subscriptions && user.subscriptions.length > 0) {
+          // Find the most recent active subscription
+          const activeSubscription = user.subscriptions.find(sub =>
+            sub.status === 'active' &&
+            (!sub.end_date || new Date(sub.end_date) > new Date())
+          );
+
+          if (activeSubscription) {
+            subscriptionStatus = 'active';
+          } else {
+            // Check for authorized subscription
+            const authorizedSubscription = user.subscriptions.find(sub =>
+              sub.status === 'authorized'
+            );
+            if (authorizedSubscription) {
+              subscriptionStatus = 'authorized';
+            } else {
+              subscriptionStatus = 'cancelled';
+            }
+          }
+        }
+
+        return {
+          ...user,
+          subscription_status: subscriptionStatus,
+          is_subscribed: subscriptionStatus === 'active'
+        };
+      });
+
+      return { success: true, data: processedUsers };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -1218,6 +1261,46 @@ export class AdminService {
       };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  async sendEmail(user: any, templateKey: string, dynamicFields: any) {
+    try {
+      console.log('Sending email to:', user.email, 'with template:', templateKey, 'and fields:', dynamicFields);
+
+      // Use Zeptomail service to send email with template
+      const emailSent = await this.zeptomailService.sendEmailWithTemplate({
+        to: user.email,
+        templateKey: templateKey,
+        dynamicFields: dynamicFields,
+        userName: user.name,
+        userEmail: user.email
+      });
+
+      if (emailSent) {
+        return {
+          success: true,
+          message: 'Email sent successfully',
+          data: {
+            recipient: user.email,
+            template: templateKey,
+            sentAt: new Date().toISOString()
+          }
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Failed to send email',
+          error: 'Zeptomail service returned false'
+        };
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return {
+        success: false,
+        message: 'Failed to send email',
+        error: error.message
+      };
     }
   }
 }

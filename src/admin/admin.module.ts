@@ -15,6 +15,7 @@ import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
 import { AudiobookListener } from '../entities/audiobook-listener.entity';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AudiobookListener } from '../entities/audiobook-listener.entity';
       BookRating,
       AudiobookListener,
     ]),
+    EmailModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],
