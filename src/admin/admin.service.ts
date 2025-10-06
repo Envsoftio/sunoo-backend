@@ -696,11 +696,12 @@ export class AdminService {
         .leftJoinAndSelect('book.category', 'category')
         .leftJoinAndSelect('book.chapters', 'chapters')
         .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners');
+        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
+        .where('book.deleted_at IS NULL'); // Exclude soft-deleted stories
 
       // Apply search filter
       if (search) {
-        query = query.where(
+        query = query.andWhere(
           '(book.title ILIKE :search OR book.bookDescription ILIKE :search)',
           { search: `%${search}%` }
         );
@@ -781,7 +782,7 @@ export class AdminService {
   async getStory(id: string) {
     try {
       const story = await this.bookRepository.findOne({
-        where: { id },
+        where: { id, deleted_at: IsNull() },
         relations: [
           'category',
           'chapters',
@@ -839,7 +840,7 @@ export class AdminService {
 
   async updateStory(id: string, storyData: any) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id } });
+      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
@@ -853,7 +854,7 @@ export class AdminService {
 
       await this.bookRepository.update(id, storyData);
       const updatedStory = await this.bookRepository.findOne({
-        where: { id },
+        where: { id, deleted_at: IsNull() },
         relations: ['category', 'chapters']
       });
 
@@ -865,19 +866,18 @@ export class AdminService {
 
   async deleteStory(id: string) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id } });
+      const story = await this.bookRepository.findOne({
+        where: { id, deleted_at: IsNull() }
+      });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
 
-      // Delete related data first
-      await this.chapterRepository.delete({ bookId: id });
-      await this.bookmarkRepository.delete({ bookId: id });
-      await this.bookRatingRepository.delete({ bookId: id });
-      await this.audiobookListenerRepository.delete({ bookId: id });
-      await this.userProgressRepository.delete({ bookId: id });
+      // Soft delete: set deleted_at timestamp instead of removing the record
+      await this.bookRepository.update(id, {
+        deleted_at: new Date()
+      });
 
-      await this.bookRepository.delete(id);
       return { success: true, message: 'Story deleted successfully' };
     } catch (error) {
       return { success: false, message: error.message };
@@ -886,7 +886,7 @@ export class AdminService {
 
   async toggleStoryPublish(id: string, isPublished: boolean) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id } });
+      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
@@ -907,7 +907,7 @@ export class AdminService {
 
   async updateStoryCover(id: string, coverUrl: string) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id } });
+      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
@@ -942,7 +942,7 @@ export class AdminService {
 
   async addChapter(storyId: string, chapterData: any) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id: storyId } });
+      const story = await this.bookRepository.findOne({ where: { id: storyId, deleted_at: IsNull() } });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }

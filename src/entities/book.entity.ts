@@ -24,6 +24,10 @@ export class Book {
 
   @Column({ type: 'timestamp with time zone', default: () => 'now()' })
   updated_at: Date;
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  deleted_at?: Date;
+
   @Column()
   title: string;
 
