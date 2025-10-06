@@ -11,7 +11,6 @@ import { CastMember } from '../entities/cast-member.entity';
 import { StoryCast } from '../entities/story-cast.entity';
 import { Bookmark } from '../entities/bookmark.entity';
 import { Book } from '../entities/book.entity';
-import { Author } from '../entities/author.entity';
 import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
@@ -38,8 +37,6 @@ export class AdminService {
     private bookmarkRepository: Repository<Bookmark>,
     @InjectRepository(Book)
     private bookRepository: Repository<Book>,
-    @InjectRepository(Author)
-    private authorRepository: Repository<Author>,
     @InjectRepository(UserProgress)
     private userProgressRepository: Repository<UserProgress>,
     @InjectRepository(Chapter)
@@ -581,14 +578,12 @@ export class AdminService {
     try {
       const [
         userCount,
-        authorCount,
         bookCount,
         feedbackCount,
         userLikesCount,
         subscriptionCounts
       ] = await Promise.all([
         this.userRepository.count(),
-        this.authorRepository.count(),
         this.bookRepository.count(),
         this.feedbackRepository.count(),
         this.bookmarkRepository.count(),
@@ -599,7 +594,6 @@ export class AdminService {
         success: true,
         data: {
           userCount,
-          authorCount,
           bookCount,
           feedbackCount,
           userLikesCount,
@@ -629,14 +623,6 @@ export class AdminService {
     }
   }
 
-  async getAuthorCount() {
-    try {
-      const count = await this.authorRepository.count();
-      return { success: true, data: { count } };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
 
   async getUserLikesCount() {
@@ -993,104 +979,6 @@ export class AdminService {
     }
   }
 
-  // Author Management Methods
-  async getAuthors(page: number = 1, limit: number = 10, search: string = '') {
-    try {
-      const offset = (page - 1) * limit;
-
-      let query = this.authorRepository.createQueryBuilder('author');
-
-      if (search) {
-        query = query.where(
-          '(author.name ILIKE :search OR author.bio ILIKE :search)',
-          { search: `%${search}%` }
-        );
-      }
-
-      query = query.orderBy('author.created_at', 'DESC');
-
-      const total = await query.getCount();
-
-      const authors = await query
-        .skip(offset)
-        .take(limit)
-        .getMany();
-
-      const totalPages = Math.ceil(total / limit);
-
-      return {
-        success: true,
-        data: authors,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages
-        }
-      };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async getAuthor(id: string) {
-    try {
-      const author = await this.authorRepository.findOne({ where: { id } });
-      if (!author) {
-        return { success: false, message: 'Author not found' };
-      }
-      return { success: true, data: author };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async createAuthor(authorData: any) {
-    try {
-      const author = this.authorRepository.create({
-        ...authorData,
-        created_at: new Date(),
-        updated_at: new Date()
-      });
-
-      const savedAuthor = await this.authorRepository.save(author);
-      return { success: true, data: savedAuthor, message: 'Author created successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async updateAuthor(id: string, authorData: any) {
-    try {
-      const author = await this.authorRepository.findOne({ where: { id } });
-      if (!author) {
-        return { success: false, message: 'Author not found' };
-      }
-
-      authorData.updated_at = new Date();
-
-      await this.authorRepository.update(id, authorData);
-      const updatedAuthor = await this.authorRepository.findOne({ where: { id } });
-
-      return { success: true, data: updatedAuthor, message: 'Author updated successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
-
-  async deleteAuthor(id: string) {
-    try {
-      const author = await this.authorRepository.findOne({ where: { id } });
-      if (!author) {
-        return { success: false, message: 'Author not found' };
-      }
-
-      await this.authorRepository.delete(id);
-      return { success: true, message: 'Author deleted successfully' };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
-  }
 
   // Story Analytics Methods
   async getStoryAnalyticsOverview() {

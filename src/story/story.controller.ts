@@ -444,19 +444,6 @@ export class StoryController {
     return await this.storyService.getCategoryStats();
   }
 
-  @Get('authors')
-  @ApiOperation({ summary: 'Get all authors' })
-  @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
-  getAllAuthors(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.storyService.getAllAuthors(page, limit);
-  }
-
-  @Get('authors/:id')
-  @ApiOperation({ summary: 'Get author by ID' })
-  @ApiResponse({ status: 200, description: 'Author retrieved successfully' })
-  getAuthorById(@Query('id') id: string) {
-    return this.storyService.getAuthorById(id);
-  }
 
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get story by slug' })

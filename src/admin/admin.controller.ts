@@ -271,14 +271,6 @@ export class AdminController {
     return await this.adminService.getBookCount();
   }
 
-  @Get('author-count')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get total author count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Author count retrieved successfully' })
-  async getAuthorCount() {
-    return await this.adminService.getAuthorCount();
-  }
 
 
   @Get('user-likes-count')
@@ -424,62 +416,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Bulk upload chapters (Admin only)' })
   @ApiResponse({ status: 200, description: 'Chapters uploaded successfully' })
   @UseInterceptors(FileInterceptor('file'))
-  async bulkUploadChapters(@Param('storyId') storyId: string, @UploadedFile() file: Multer.File) {
+  bulkUploadChapters(@Param('storyId') storyId: string, @UploadedFile() file: Multer.File) {
     return this.adminService.bulkUploadChapters(storyId, file);
   }
 
-  // Author Management APIs
-  @Get('authors')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all authors (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Authors retrieved successfully' })
-  async getAuthors(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('search') search: string = ''
-  ) {
-    return await this.adminService.getAuthors(page, limit, search);
-  }
-
-  @Get('authors/:id')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get author by ID (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Author retrieved successfully' })
-  async getAuthor(@Param('id') id: string) {
-    return await this.adminService.getAuthor(id);
-  }
-
-  @Post('authors')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create author (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Author created successfully' })
-  async createAuthor(@Body() body: any) {
-    return await this.adminService.createAuthor(body);
-  }
-
-  @Post('authors/:id')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update author (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Author updated successfully' })
-  async updateAuthor(@Param('id') id: string, @Body() body: any) {
-    return await this.adminService.updateAuthor(id, body);
-  }
-
-  @Delete('authors/:id')
-  @UseGuards(JwtAuthGuard, SuperAdminGuard)
-  @ApiBearerAuth()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Delete author (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Author deleted successfully' })
-  async deleteAuthor(@Param('id') id: string) {
-    return await this.adminService.deleteAuthor(id);
-  }
 
   // Story Analytics APIs
   @Get('stories/analytics/overview')

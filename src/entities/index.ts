@@ -2,7 +2,6 @@ export { BaseEntity } from './base.entity';
 export { User } from './user.entity';
 export { Book } from './book.entity';
 export { Category } from './category.entity';
-export { Author } from './author.entity';
 export { Chapter } from './chapter.entity';
 export { Subscription } from './subscription.entity';
 export { Plan } from './plan.entity';
