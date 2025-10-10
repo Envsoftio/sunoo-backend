@@ -363,6 +363,93 @@ export class AuthController {
     }
   }
 
+  // Sunoo-compatible login endpoint
+  @Post('sunoo-login')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
+  @ApiOperation({
+    summary: 'Sunoo-compatible login with country detection',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid credentials',
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async sunooLogin(@Body() loginDto: LoginDto, @Request() req) {
+    const clientIP = this.getClientIp(req);
+    const userAgent = req.headers['user-agent'];
+
+    return await this.authService.handleLogin(loginDto, clientIP, userAgent);
+  }
+
+  // Sunoo-compatible registration endpoint
+  @Post('sunoo-register')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
+  @ApiOperation({
+    summary: 'Sunoo-compatible registration with country detection',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration successful',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email already exists',
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async sunooRegister(@Body() registerDto: RegisterDto, @Request() req) {
+    const clientIP = this.getClientIp(req);
+    const userAgent = req.headers['user-agent'];
+
+    return await this.authService.handleSignup(
+      registerDto,
+      clientIP,
+      userAgent
+    );
+  }
+
+  // Get user country information
+  @Get('country-info')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user country information' })
+  @ApiResponse({ status: 200, description: 'Country information retrieved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getCountryInfo(@Request() req) {
+    const user = await this.authService.getProfile(req.user.id);
+    if (!user.success || !user.data) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      success: true,
+      data: {
+        country: user.data.country || 'United States',
+        currency: this.getCurrencyForCountry(
+          user.data.country || 'United States'
+        ),
+      },
+    };
+  }
+
+  // Get IP provider health status
+  @Get('ip-providers-health')
+  @ApiOperation({ summary: 'Get IP provider health status' })
+  @ApiResponse({
+    status: 200,
+    description: 'IP provider health status retrieved',
+  })
+  async getIpProvidersHealth() {
+    return this.authService.getIpProvidersHealth();
+  }
+
   // Helper method to get client IP
   private getClientIp(request: any): string {
     return (
@@ -373,5 +460,23 @@ export class AuthController {
       request.ip ||
       'unknown'
     );
+  }
+
+  // Helper method to get currency for country
+  private getCurrencyForCountry(country: string): string {
+    const countryCurrencyMap = {
+      'United States': 'USD',
+      Canada: 'CAD',
+      Australia: 'AUD',
+      India: 'INR',
+      Pakistan: 'PKR',
+      'New Zealand': 'NZD',
+      'United Kingdom': 'GBP',
+      Germany: 'EUR',
+      France: 'EUR',
+      Singapore: 'SGD',
+    };
+
+    return countryCurrencyMap[country] || 'USD';
   }
 }

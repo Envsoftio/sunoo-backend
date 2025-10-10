@@ -303,6 +303,7 @@ export class SubscriptionService {
     customer_notify: number;
     notify_info: any;
     notes: any;
+    offer_id?: string;
   }) {
     try {
       const response =
@@ -530,6 +531,80 @@ export class SubscriptionService {
 
       return { success: true, data: invoices };
     } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getSupportedCountries() {
+    try {
+      // Get all unique currencies from plans table
+      const plans = await this.planRepository.find({
+        select: ['currency'],
+        where: { liveMode: true }, // Only active plans
+      });
+
+      // Extract unique currencies
+      const currencies = [
+        ...new Set(plans.map(plan => plan.currency).filter(Boolean)),
+      ];
+
+      // Map currencies to countries
+      const currencyToCountryMap = {
+        USD: { country: 'United States', countryCode: 'US' },
+        CAD: { country: 'Canada', countryCode: 'CA' },
+        AUD: { country: 'Australia', countryCode: 'AU' },
+        INR: { country: 'India', countryCode: 'IN' },
+        PKR: { country: 'Pakistan', countryCode: 'PK' },
+        NZD: { country: 'New Zealand', countryCode: 'NZ' },
+        GBP: { country: 'United Kingdom', countryCode: 'GB' },
+        EUR: { country: 'Germany', countryCode: 'DE' },
+        SGD: { country: 'Singapore', countryCode: 'SG' },
+      };
+
+      const supportedCountries = currencies.map(currency => ({
+        currency,
+        ...(currencyToCountryMap[
+          currency as keyof typeof currencyToCountryMap
+        ] || {
+          country: 'Unknown',
+          countryCode: 'XX',
+        }),
+      }));
+
+      return {
+        success: true,
+        data: {
+          countries: supportedCountries,
+          currencies: currencies,
+        },
+      };
+    } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to get supported countries',
+        { error: error.message }
+      );
+      return { success: false, message: error.message };
+    }
+  }
+
+  getIpProvidersHealth() {
+    try {
+      // This would need to be injected, but for now we'll create a simple response
+      return {
+        success: true,
+        data: {
+          message:
+            'IP provider health check not implemented in subscription service',
+          note: 'Use the country detection service directly for health checks',
+        },
+      };
+    } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to get IP provider health status',
+        { error: error.message }
+      );
       return { success: false, message: error.message };
     }
   }

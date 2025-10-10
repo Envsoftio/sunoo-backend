@@ -222,4 +222,24 @@ export class SubscriptionController {
     const userId = req.user.id;
     return this.subscriptionService.getUserSubscriptionInvoices(userId);
   }
+
+  @Get('supported-countries')
+  @ApiOperation({ summary: 'Get supported countries from plans table' })
+  @ApiResponse({
+    status: 200,
+    description: 'Supported countries retrieved successfully',
+  })
+  async getSupportedCountries() {
+    return this.subscriptionService.getSupportedCountries();
+  }
+
+  @Get('ip-providers-health')
+  @ApiOperation({ summary: 'Get IP provider health status' })
+  @ApiResponse({
+    status: 200,
+    description: 'IP provider health status retrieved successfully',
+  })
+  getIpProvidersHealth() {
+    return this.subscriptionService.getIpProvidersHealth();
+  }
 }

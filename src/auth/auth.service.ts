@@ -27,6 +27,7 @@ import { RateLimitService } from './services/rate-limit.service';
 import { AccountLockoutService } from './services/account-lockout.service';
 import { PasswordValidationService } from './services/password-validation.service';
 import { SecureJwtService } from './services/secure-jwt.service';
+import { CountryDetectionService } from '../common/services/country-detection.service';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,8 @@ export class AuthService {
     private rateLimitService: RateLimitService,
     private accountLockoutService: AccountLockoutService,
     private passwordValidationService: PasswordValidationService,
-    private secureJwtService: SecureJwtService
+    private secureJwtService: SecureJwtService,
+    private countryDetectionService: CountryDetectionService
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -283,7 +285,7 @@ export class AuthService {
   }
 
   // Sunoo-compatible methods
-  async handleLogin(loginDto: LoginDto) {
+  async handleLogin(loginDto: LoginDto, clientIP?: string, userAgent?: string) {
     try {
       const user = await this.validateUser(loginDto.email, loginDto.password);
       if (!user) {
@@ -329,6 +331,9 @@ export class AuthService {
         };
       }
 
+      // Detect and update user's country if not already set or if it's been a while
+      await this.updateUserCountryIfNeeded(user, clientIP, userAgent);
+
       // Update last login
       await this.userRepository.update(user.id, { lastLoginAt: new Date() });
 
@@ -369,7 +374,11 @@ export class AuthService {
     }
   }
 
-  async handleSignup(registerDto: RegisterDto) {
+  async handleSignup(
+    registerDto: RegisterDto,
+    clientIP?: string,
+    userAgent?: string
+  ) {
     try {
       const existingUser = await this.userRepository.findOne({
         where: { email: registerDto.email },
@@ -382,6 +391,21 @@ export class AuthService {
         };
       }
 
+      // Detect country during registration
+      let detectedCountry = 'United States'; // Default fallback
+      try {
+        const countryInfo = await this.countryDetectionService.detectCountry(
+          clientIP,
+          userAgent
+        );
+        detectedCountry = countryInfo.country;
+        console.log(
+          `Country detected during registration: ${detectedCountry} (${countryInfo.currency}) via ${countryInfo.source}`
+        );
+      } catch (error) {
+        console.warn('Country detection failed during registration:', error);
+      }
+
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
       const user = this.userRepository.create({
@@ -390,6 +414,7 @@ export class AuthService {
         name: registerDto.name,
         role: 'user',
         isEmailVerified: false, // Will be verified via email
+        country: detectedCountry,
       });
 
       await this.userRepository.save(user);
@@ -397,8 +422,12 @@ export class AuthService {
       return {
         status: 201,
         message: 'Signup successful',
+        data: {
+          country: detectedCountry,
+        },
       };
-    } catch {
+    } catch (error) {
+      console.error('Registration error:', error);
       return {
         status: 400,
         message: 'Signup failed',
@@ -769,5 +798,49 @@ export class AuthService {
       request?.headers?.['x-real-ip'] ||
       '127.0.0.1'
     );
+  }
+
+  /**
+   * Update user's country if needed
+   */
+  private async updateUserCountryIfNeeded(
+    user: User,
+    clientIP?: string,
+    userAgent?: string
+  ): Promise<void> {
+    try {
+      // Only update country if:
+      // 1. User doesn't have a country set, OR
+      // 2. User's last login was more than 30 days ago (re-detect for accuracy)
+      const shouldUpdateCountry =
+        !user.country ||
+        !user.lastLoginAt ||
+        Date.now() - user.lastLoginAt.getTime() > 30 * 24 * 60 * 60 * 1000; // 30 days
+
+      if (shouldUpdateCountry) {
+        const countryInfo = await this.countryDetectionService.detectCountry(
+          clientIP,
+          userAgent
+        );
+
+        await this.userRepository.update(user.id, {
+          country: countryInfo.country,
+        });
+
+        console.log(
+          `Updated country for user ${user.email}: ${countryInfo.country} (${countryInfo.currency}) via ${countryInfo.source}`
+        );
+      }
+    } catch (error) {
+      // Don't fail login if country detection fails
+      console.error('Failed to update user country:', error);
+    }
+  }
+
+  /**
+   * Get IP provider health status
+   */
+  async getIpProvidersHealth() {
+    return this.countryDetectionService.getProviderHealthStatus();
   }
 }
