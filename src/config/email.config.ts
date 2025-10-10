@@ -21,6 +21,7 @@ export default registerAs('email', () => ({
     name: process.env.EMAIL_FROM_NAME || 'Sunoo Team',
     email: process.env.EMAIL_FROM_EMAIL || 'noreply@sunoo.app',
   },
+  adminEmail: process.env.ADMIN_EMAIL || 'hello@sunoo.app',
   templates: {
     baseUrl: process.env.EMAIL_BASE_URL || 'http://localhost:3005',
     appName: process.env.EMAIL_APP_NAME || 'Sunoo',

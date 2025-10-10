@@ -136,6 +136,28 @@ export class EmailService {
     });
   }
 
+  async sendFeedbackNotification(
+    feedbackData: any,
+    adminEmail: string
+  ): Promise<boolean> {
+    const template = this.loadTemplate('feedback');
+    const data = {
+      name: feedbackData.name,
+      email: feedbackData.email,
+      type: feedbackData.type,
+      message: feedbackData.message,
+      submittedAt: new Date().toLocaleString(),
+      appName: this.emailConfig.templates.appName,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: adminEmail,
+      subject: `New ${feedbackData.type} Feedback - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

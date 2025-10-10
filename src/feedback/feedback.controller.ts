@@ -6,6 +6,8 @@ import {
   Query,
   UseGuards,
   Request,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +18,7 @@ import {
 import { FeedbackService } from './feedback.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/superadmin.guard';
+import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
 
 @ApiTags('Feedback')
 @Controller('api/feedback')
@@ -23,10 +26,12 @@ export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
   @Post('submit')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({ summary: 'Submit feedback' })
   @ApiResponse({ status: 201, description: 'Feedback submitted successfully' })
-  async submitFeedback(@Body() body: any) {
-    return await this.feedbackService.submitFeedback(body);
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  async submitFeedback(@Body() submitFeedbackDto: SubmitFeedbackDto) {
+    return await this.feedbackService.submitFeedback(submitFeedbackDto);
   }
 
   @Get('stats')
