@@ -158,6 +158,91 @@ export class EmailService {
     });
   }
 
+  async sendSupportTicketCreatedEmail(
+    userEmail: string,
+    userName: string,
+    ticketData: any
+  ): Promise<boolean> {
+    const template = this.loadTemplate('support-ticket-created');
+    const data = {
+      userName,
+      userEmail,
+      ticketId: ticketData.id,
+      title: ticketData.title,
+      message: ticketData.description,
+      status: ticketData.status,
+      priority: ticketData.priority,
+      category: ticketData.category,
+      createdAt: new Date(ticketData.created_at).toLocaleString(),
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: userEmail,
+      subject: `Support Ticket Created - #${ticketData.id} - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
+  async sendSupportTicketUpdatedEmail(
+    userEmail: string,
+    userName: string,
+    ticketData: any,
+    message?: string
+  ): Promise<boolean> {
+    const template = this.loadTemplate('support-ticket-updated');
+    const data = {
+      userName,
+      userEmail,
+      ticketId: ticketData.id,
+      title: ticketData.title,
+      status: ticketData.status,
+      message,
+      resolution: ticketData.resolution,
+      updatedAt: new Date(ticketData.updated_at).toLocaleString(),
+      isResolved:
+        ticketData.status === 'resolved' || ticketData.status === 'closed',
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: userEmail,
+      subject: `Support Ticket Updated - #${ticketData.id} - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
+  async sendSupportTicketAdminNotification(
+    ticketData: any,
+    userData: any
+  ): Promise<boolean> {
+    const template = this.loadTemplate('support-ticket-admin-notification');
+    const data = {
+      ticketId: ticketData.id,
+      title: ticketData.title,
+      message: ticketData.description,
+      priority: ticketData.priority,
+      category: ticketData.category,
+      createdAt: new Date(ticketData.created_at).toLocaleString(),
+      userName: userData.name,
+      userEmail: userData.email,
+      userId: userData.id,
+      appName: this.emailConfig.templates.appName,
+      adminUrl: this.emailConfig.templates.baseUrl,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: this.emailConfig.adminEmail,
+      subject: `New Support Ticket - #${ticketData.id} - ${ticketData.priority.toUpperCase()} - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

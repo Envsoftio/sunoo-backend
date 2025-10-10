@@ -12,6 +12,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { AdminModule } from './admin/admin.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { GenreModule } from './genre/genre.module';
+import { SupportTicketModule } from './support-ticket/support-ticket.module';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
@@ -38,6 +39,7 @@ import emailConfig from './config/email.config';
     AdminModule,
     FeedbackModule,
     GenreModule,
+    SupportTicketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

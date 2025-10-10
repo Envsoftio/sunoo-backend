@@ -9,6 +9,7 @@ import { UserProgress } from './user-progress.entity';
 import { ChapterBookmark } from './chapter-bookmark.entity';
 import { Feedback } from './feedback.entity';
 import { UserSession } from './user-session.entity';
+import { SupportTicket } from './support-ticket.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -116,4 +117,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => UserSession, session => session.user)
   sessions: UserSession[];
+
+  @OneToMany(() => SupportTicket, supportTicket => supportTicket.user)
+  supportTickets: SupportTicket[];
 }

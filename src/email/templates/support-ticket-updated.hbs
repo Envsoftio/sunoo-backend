@@ -1,0 +1,161 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Support Ticket Updated - {{appName}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #cb0002;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #cb0002;
+      }
+      .ticket-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .ticket-id {
+        font-size: 18px;
+        font-weight: bold;
+        color: #cb0002;
+      }
+      .status {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .status.open {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status.in_progress {
+        background-color: #cce5ff;
+        color: #004085;
+      }
+      .status.resolved {
+        background-color: #d1ecf1;
+        color: #0c5460;
+      }
+      .status.closed {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .update-content {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .admin-message {
+        background-color: #e7f3ff;
+        border-left: 4px solid #cb0002;
+        padding: 15px;
+        margin: 15px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #cb0002;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <div class='logo'>{{appName}}</div>
+        <p>Support Ticket Updated</p>
+      </div>
+
+      <h2>Hello {{userName}},</h2>
+
+      <p>Your support ticket has been updated. Here are the latest details:</p>
+
+      <div class='ticket-info'>
+        <div class='ticket-id'>Ticket ID: #{{ticketId}}</div>
+        <div style='margin-top: 10px;'>
+          <span class='status {{status}}'>{{status}}</span>
+        </div>
+        <div style='margin-top: 15px;'>
+          <strong>Subject:</strong>
+          {{title}}<br />
+          <strong>Updated:</strong>
+          {{updatedAt}}
+        </div>
+      </div>
+
+      {{#if message}}
+        <div class='update-content'>
+          <h3>New Message:</h3>
+          <div class='admin-message'>
+            <p><strong>From Support Team:</strong></p>
+            <p>{{message}}</p>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if resolution}}
+        <div class='update-content'>
+          <h3>Resolution:</h3>
+          <p>{{resolution}}</p>
+        </div>
+      {{/if}}
+
+      <div style='text-align: center;'>
+        <a href='{{appUrl}}/support-tickets/{{ticketId}}' class='btn'>View
+          Ticket</a>
+      </div>
+
+      <p><strong>Current Status:</strong> {{status}}</p>
+      {{#if isResolved}}
+        <p>This ticket has been resolved. If you need further assistance, please
+          don't hesitate to create a new ticket.</p>
+      {{/if}}
+
+      <div class='footer'>
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        <p>Best regards,<br />The {{appName}} Support Team</p>
+        <p><a href='{{appUrl}}'>Visit {{appName}}</a>
+          |
+          <a href='{{appUrl}}/support-tickets'>Support Center</a></p>
+      </div>
+    </div>
+  </body>
+</html>

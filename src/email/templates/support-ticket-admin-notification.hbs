@@ -1,0 +1,174 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>New Support Ticket - {{appName}} Admin</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #cb0002;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      .logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #cb0002;
+      }
+      .alert {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .ticket-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .ticket-id {
+        font-size: 18px;
+        font-weight: bold;
+        color: #cb0002;
+      }
+      .priority {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-left: 10px;
+      }
+      .priority.low {
+        background-color: #e2e3e5;
+        color: #383d41;
+      }
+      .priority.medium {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .priority.high {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .priority.urgent {
+        background-color: #f5c6cb;
+        color: #721c24;
+      }
+      .user-info {
+        background-color: #e7f3ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .message-content {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #cb0002;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <div class='logo'>{{appName}}</div>
+        <p>New Support Ticket Received</p>
+      </div>
+
+      <div class='alert'>
+        <strong>⚠️ New Support Ticket Alert</strong><br />
+        A new support ticket has been created and requires your attention.
+      </div>
+
+      <div class='ticket-info'>
+        <div class='ticket-id'>Ticket ID: #{{ticketId}}</div>
+        <div style='margin-top: 10px;'>
+          <span class='priority {{priority}}'>{{priority}}</span>
+        </div>
+        <div style='margin-top: 15px;'>
+          <strong>Subject:</strong>
+          {{title}}<br />
+          <strong>Category:</strong>
+          {{category}}<br />
+          <strong>Created:</strong>
+          {{createdAt}}
+        </div>
+      </div>
+
+      <div class='user-info'>
+        <h3>User Information:</h3>
+        <p><strong>Name:</strong>
+          {{userName}}<br />
+          <strong>Email:</strong>
+          {{userEmail}}<br />
+          <strong>User ID:</strong>
+          {{userId}}</p>
+      </div>
+
+      <div class='message-content'>
+        <h3>Ticket Description:</h3>
+        <p>{{message}}</p>
+      </div>
+
+      <div style='text-align: center;'>
+        <a
+          href='{{adminUrl}}/admin/support-tickets/{{ticketId}}'
+          class='btn'
+        >View & Respond to Ticket</a>
+      </div>
+
+      <p><strong>Action Required:</strong></p>
+      <ul>
+        <li>Review the ticket details</li>
+        <li>Assign appropriate priority level</li>
+        <li>Respond to the user within 24 hours</li>
+        <li>Update ticket status as needed</li>
+      </ul>
+
+      <div class='footer'>
+        <p>This is an automated notification from the
+          {{appName}}
+          support system.</p>
+        <p><a href='{{adminUrl}}/admin/support-tickets'>Admin Support Dashboard</a></p>
+      </div>
+    </div>
+  </body>
+</html>

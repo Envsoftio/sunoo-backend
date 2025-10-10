@@ -14,3 +14,4 @@ export { Feedback } from './feedback.entity';
 export { CastMember } from './cast-member.entity';
 export { StoryCast } from './story-cast.entity';
 export { UserSession } from './user-session.entity';
+export { SupportTicket, SupportTicketMessage, TicketStatus, TicketPriority, TicketCategory } from './support-ticket.entity';
