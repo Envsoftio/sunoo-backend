@@ -63,7 +63,8 @@ export class LoggerService implements NestLoggerService {
             winston.format.colorize(),
             winston.format.simple(),
             winston.format.printf(({ timestamp, level, message, context }) => {
-              return `${timestamp} [${context || 'Application'}] ${level}: ${message}`;
+              const ctx = typeof context === 'string' ? context : 'Application';
+              return `${String(timestamp)} [${ctx}] ${String(level)}: ${String(message)}`;
             })
           ),
         }),
@@ -118,9 +119,14 @@ export class LoggerService implements NestLoggerService {
                 event,
                 subscriptionId,
               }) => {
-                const eventInfo = event ? `[${event}]` : '';
-                const subInfo = subscriptionId ? `[${subscriptionId}]` : '';
-                return `${timestamp} [${context || 'Webhook'}]${eventInfo}${subInfo} ${level}: ${message}`;
+                const eventInfo =
+                  event && typeof event === 'string' ? `[${event}]` : '';
+                const subInfo =
+                  subscriptionId && typeof subscriptionId === 'string'
+                    ? `[${subscriptionId}]`
+                    : '';
+                const ctx = typeof context === 'string' ? context : 'Webhook';
+                return `${String(timestamp)} [${ctx}]${eventInfo}${subInfo} ${String(level)}: ${String(message)}`;
               }
             )
           ),

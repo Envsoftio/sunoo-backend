@@ -1,6 +1,4 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Subscription } from './subscription.entity';
-import { Payment } from './payment.entity';
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('plans')
 export class Plan {

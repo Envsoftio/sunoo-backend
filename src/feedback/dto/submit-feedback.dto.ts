@@ -38,7 +38,7 @@ export class SubmitFeedbackDto {
   @MinLength(10, { message: 'Message must be at least 10 characters long' })
   @MaxLength(2000, { message: 'Message cannot exceed 2000 characters' })
   @Transform(({ value }) => value?.trim())
-  @Matches(/^[a-zA-Z0-9\s\-'.,!?@#$%^&*()[\]{}|;:"'\\/<>=\+\-_`~\s\n\r\t]+$/, {
+  @Matches(/^[a-zA-Z0-9\s\-'.,!?@#$%^&*()[\]{}|;:"'\\/<>=+\-_`~\s\n\r\t]+$/, {
     message: 'Message contains potentially dangerous characters',
   })
   message: string;

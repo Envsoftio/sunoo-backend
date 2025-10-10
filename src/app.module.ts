@@ -14,6 +14,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { GenreModule } from './genre/genre.module';
 import { SupportTicketModule } from './support-ticket/support-ticket.module';
 import { LoggerModule } from './common/logger/logger.module';
+import { DatabaseLoggerService } from './common/logger/database-logger.service';
 import { getDatabaseConfig } from './config/database.config';
 import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
@@ -27,9 +28,12 @@ import emailConfig from './config/email.config';
       envFilePath: ['.env.local', '.env'],
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: getDatabaseConfig,
-      inject: [ConfigService],
+      imports: [ConfigModule, LoggerModule],
+      useFactory: (
+        configService: ConfigService,
+        databaseLogger: DatabaseLoggerService
+      ) => getDatabaseConfig(configService, databaseLogger),
+      inject: [ConfigService, DatabaseLoggerService],
     }),
     LoggerModule,
     AuthModule,
@@ -44,6 +48,6 @@ import emailConfig from './config/email.config';
     SupportTicketModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DatabaseLoggerService],
 })
 export class AppModule {}

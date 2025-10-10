@@ -6,10 +6,22 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
 import { JsonExceptionFilter } from './filters/json-exception.filter';
+import { LoggerService } from './common/logger/logger.service';
+import { LoggerInterceptor } from './common/logger/logger.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: false, // Disable default NestJS logger
+  });
   const configService = app.get(ConfigService);
+  const loggerService = app.get(LoggerService);
+  const loggerInterceptor = app.get(LoggerInterceptor);
+
+  // Set Winston as the global logger
+  app.useLogger(loggerService);
+
+  // Use global logger interceptor for all routes
+  app.useGlobalInterceptors(loggerInterceptor);
 
   // Enhanced security middleware
   const securityConfig = configService.get('security');
@@ -80,7 +92,14 @@ async function bootstrap() {
   const port = configService.get('app.port');
   await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/api`);
+  // Use Winston logger instead of console.log
+  loggerService.log(
+    `🚀 Application is running on: http://localhost:${port}`,
+    'Bootstrap'
+  );
+  loggerService.log(
+    `📚 Swagger documentation: http://localhost:${port}/api`,
+    'Bootstrap'
+  );
 }
 void bootstrap();

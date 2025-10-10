@@ -6,7 +6,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { Plan } from './plan.entity';
 
 @Entity('payments')
 export class Payment {
