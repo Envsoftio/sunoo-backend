@@ -6,13 +6,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Like, Between } from 'typeorm';
+import { Repository, FindOptionsWhere, DataSource } from 'typeorm';
 import {
   SupportTicket,
   SupportTicketMessage,
   TicketStatus,
-  TicketPriority,
-  TicketCategory,
 } from '../entities/support-ticket.entity';
 import { User } from '../entities/user.entity';
 import {
@@ -35,7 +33,8 @@ export class SupportTicketService {
     private supportTicketMessageRepository: Repository<SupportTicketMessage>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private dataSource: DataSource
   ) {}
 
   async createTicket(
@@ -55,29 +54,35 @@ export class SupportTicketService {
 
     const savedTicket = await this.supportTicketRepository.save(ticket);
 
-    // Send email notifications
-    try {
-      // Send confirmation email to user
-      await this.emailService.sendSupportTicketCreatedEmail(
-        user.email,
-        user.name,
-        savedTicket
-      );
+    // Send email notifications asynchronously (non-blocking)
+    setImmediate(() => {
+      void (async () => {
+        try {
+          // Send confirmation email to user
+          await this.emailService.sendSupportTicketCreatedEmail(
+            user.email,
+            user.name,
+            savedTicket
+          );
 
-      // Send notification email to admin
-      await this.emailService.sendSupportTicketAdminNotification(
-        savedTicket,
-        user
-      );
+          // Send notification email to admin
+          await this.emailService.sendSupportTicketAdminNotification(
+            savedTicket,
+            user
+          );
 
-      this.logger.log(`Email notifications sent for ticket #${savedTicket.id}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to send email notifications for ticket #${savedTicket.id}:`,
-        error
-      );
-      // Don't throw error - ticket creation should succeed even if emails fail
-    }
+          this.logger.log(
+            `Email notifications sent for ticket #${savedTicket.id}`
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to send email notifications for ticket #${savedTicket.id}:`,
+            error
+          );
+          // Don't throw error - ticket creation should succeed even if emails fail
+        }
+      })();
+    });
 
     return savedTicket;
   }
@@ -120,7 +125,11 @@ export class SupportTicketService {
     const queryBuilder = this.supportTicketRepository
       .createQueryBuilder('ticket')
       .leftJoinAndSelect('ticket.user', 'user')
-      .leftJoinAndSelect('ticket.messages', 'messages')
+      .leftJoinAndSelect(
+        'ticket.messages',
+        'messages',
+        'messages.created_at = (SELECT MAX(m.created_at) FROM support_ticket_messages m WHERE m."ticketId" = ticket.id)'
+      )
       .leftJoinAndSelect('messages.user', 'messageUser')
       .where(where);
 
@@ -137,6 +146,31 @@ export class SupportTicketService {
       .skip(skip)
       .take(limit)
       .getManyAndCount();
+
+    // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
+    if (!isAdmin) {
+      tickets.forEach(ticket => {
+        if (ticket.messages && ticket.messages.length > 0) {
+          ticket.messages = ticket.messages.map(message => {
+            if (
+              message.user &&
+              (message.user.role === 'admin' ||
+                message.user.role === 'superadmin')
+            ) {
+              return {
+                ...message,
+                user: {
+                  ...message.user,
+                  name: 'Sunoo',
+                  email: 'support@sunoo.app',
+                },
+              };
+            }
+            return message;
+          });
+        }
+      });
+    }
 
     return { tickets, total };
   }
@@ -160,6 +194,26 @@ export class SupportTicketService {
       throw new ForbiddenException(
         'You can only view your own support tickets'
       );
+    }
+
+    // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
+    if (!isAdmin && ticket.messages) {
+      ticket.messages = ticket.messages.map(message => {
+        if (
+          message.user &&
+          (message.user.role === 'admin' || message.user.role === 'superadmin')
+        ) {
+          return {
+            ...message,
+            user: {
+              ...message.user,
+              name: 'Sunoo',
+              email: 'support@sunoo.app',
+            },
+          };
+        }
+        return message;
+      });
     }
 
     return ticket;
@@ -195,28 +249,32 @@ export class SupportTicketService {
     Object.assign(ticket, updateTicketDto);
     const updatedTicket = await this.supportTicketRepository.save(ticket);
 
-    // Send email notification if status changed and user is not the one making the change
+    // Send email notification asynchronously if status changed and user is not the one making the change
     if (previousStatus !== updatedTicket.status && isAdmin) {
-      try {
-        const user = await this.userRepository.findOne({
-          where: { id: updatedTicket.userId },
-        });
-        if (user) {
-          await this.emailService.sendSupportTicketUpdatedEmail(
-            user.email,
-            user.name,
-            updatedTicket
-          );
-          this.logger.log(
-            `Status update email sent for ticket #${updatedTicket.id}`
-          );
-        }
-      } catch (error) {
-        this.logger.error(
-          `Failed to send status update email for ticket #${updatedTicket.id}:`,
-          error
-        );
-      }
+      setImmediate(() => {
+        void (async () => {
+          try {
+            const user = await this.userRepository.findOne({
+              where: { id: updatedTicket.userId },
+            });
+            if (user) {
+              await this.emailService.sendSupportTicketUpdatedEmail(
+                user.email,
+                user.name,
+                updatedTicket
+              );
+              this.logger.log(
+                `Status update email sent for ticket #${updatedTicket.id}`
+              );
+            }
+          } catch (error) {
+            this.logger.error(
+              `Failed to send status update email for ticket #${updatedTicket.id}:`,
+              error
+            );
+          }
+        })();
+      });
     }
 
     return updatedTicket;
@@ -244,13 +302,35 @@ export class SupportTicketService {
     userId: string,
     isAdmin: boolean = false
   ): Promise<SupportTicketMessage[]> {
-    const ticket = await this.findTicketById(ticketId, userId, isAdmin);
+    await this.findTicketById(ticketId, userId, isAdmin);
 
-    return await this.supportTicketMessageRepository.find({
+    const messages = await this.supportTicketMessageRepository.find({
       where: { ticketId },
       relations: ['user'],
       order: { created_at: 'ASC' },
     });
+
+    // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
+    if (!isAdmin) {
+      return messages.map(message => {
+        if (
+          message.user &&
+          (message.user.role === 'admin' || message.user.role === 'superadmin')
+        ) {
+          return {
+            ...message,
+            user: {
+              ...message.user,
+              name: 'Sunoo',
+              email: 'support@sunoo.app',
+            },
+          };
+        }
+        return message;
+      });
+    }
+
+    return messages;
   }
 
   async addMessage(
@@ -259,64 +339,106 @@ export class SupportTicketService {
     userId: string,
     isAdmin: boolean = false
   ): Promise<SupportTicketMessage> {
-    const ticket = await this.findTicketById(ticketId, userId, isAdmin);
+    const message = await this.dataSource.transaction(async manager => {
+      const ticket = await manager.findOne(SupportTicket, {
+        where: { id: ticketId },
+        relations: ['user'],
+      });
 
-    // Check if ticket is closed
-    if (ticket.status === TicketStatus.CLOSED) {
-      throw new BadRequestException('Cannot add messages to closed tickets');
-    }
-
-    const newMessage = this.supportTicketMessageRepository.create({
-      ...createMessageDto,
-      ticketId,
-      userId,
-    });
-
-    const savedMessage =
-      await this.supportTicketMessageRepository.save(newMessage);
-
-    // Update ticket response count and last response info
-    ticket.responseCount += 1;
-    ticket.lastResponseAt = new Date();
-    ticket.lastResponseBy = userId;
-
-    // If user is responding, change status to in_progress if it was open
-    if (!isAdmin && ticket.status === TicketStatus.OPEN) {
-      ticket.status = TicketStatus.IN_PROGRESS;
-    }
-
-    await this.supportTicketRepository.save(ticket);
-
-    const message = await this.supportTicketMessageRepository.findOne({
-      where: { id: savedMessage.id },
-      relations: ['user', 'ticket'],
-    });
-
-    if (!message) {
-      throw new NotFoundException('Message not found after creation');
-    }
-
-    // Send email notification if admin is responding
-    if (isAdmin) {
-      try {
-        const user = await this.userRepository.findOne({
-          where: { id: ticket.userId },
-        });
-        if (user) {
-          await this.emailService.sendSupportTicketUpdatedEmail(
-            user.email,
-            user.name,
-            ticket,
-            createMessageDto.content
-          );
-          this.logger.log(`Admin response email sent for ticket #${ticket.id}`);
-        }
-      } catch (error) {
-        this.logger.error(
-          `Failed to send admin response email for ticket #${ticket.id}:`,
-          error
-        );
+      if (!ticket) {
+        throw new NotFoundException('Support ticket not found');
       }
+
+      // Check if user has access to this ticket
+      if (!isAdmin && ticket.userId !== userId) {
+        throw new ForbiddenException('You do not have access to this ticket');
+      }
+
+      // Check if ticket is closed
+      if (ticket.status === TicketStatus.CLOSED) {
+        throw new BadRequestException('Cannot add messages to closed tickets');
+      }
+
+      const newMessage = manager.create(SupportTicketMessage, {
+        ...createMessageDto,
+        ticketId,
+        userId,
+      });
+
+      const savedMessage = await manager.save(SupportTicketMessage, newMessage);
+
+      // Update ticket response count and last response info
+      ticket.responseCount += 1;
+      ticket.lastResponseAt = new Date();
+      ticket.lastResponseBy = userId;
+
+      // If user is responding, change status to in_progress if it was open
+      if (!isAdmin && ticket.status === TicketStatus.OPEN) {
+        ticket.status = TicketStatus.IN_PROGRESS;
+      }
+
+      await manager.save(SupportTicket, ticket);
+
+      const message = await manager.findOne(SupportTicketMessage, {
+        where: { id: savedMessage.id },
+        relations: ['user', 'ticket'],
+      });
+
+      if (!message) {
+        throw new NotFoundException('Message not found after creation');
+      }
+
+      return message;
+    });
+
+    // Send email notification asynchronously (non-blocking)
+    if (isAdmin && !createMessageDto.isInternal) {
+      setImmediate(() => {
+        void (async () => {
+          try {
+            const user = await this.userRepository.findOne({
+              where: { id: message.ticket.userId },
+            });
+            if (user) {
+              await this.emailService.sendSupportTicketUpdatedEmail(
+                user.email,
+                user.name,
+                message.ticket,
+                createMessageDto.content
+              );
+              this.logger.log(
+                `Admin response email sent for ticket #${message.ticket.id}`
+              );
+            }
+          } catch (error) {
+            this.logger.error(
+              `Failed to send admin response email for ticket #${message.ticket.id}:`,
+              error
+            );
+            // Don't throw error - message should be saved even if email fails
+          }
+        })();
+      });
+    } else if (isAdmin && createMessageDto.isInternal) {
+      this.logger.log(
+        `Internal note added to ticket #${message.ticket.id} - no email sent to user`
+      );
+    }
+
+    // Transform admin message to show "Sunoo" instead of admin name for non-admin users
+    if (
+      isAdmin &&
+      message.user &&
+      (message.user.role === 'admin' || message.user.role === 'superadmin')
+    ) {
+      return {
+        ...message,
+        user: {
+          ...message.user,
+          name: 'Sunoo',
+          email: 'support@sunoo.app',
+        },
+      };
     }
 
     return message;
@@ -385,16 +507,13 @@ export class SupportTicketService {
       where.userId = userId;
     }
 
-    const [total, open, inProgress, resolved, closed] = await Promise.all([
+    const [total, open, inProgress, closed] = await Promise.all([
       this.supportTicketRepository.count({ where }),
       this.supportTicketRepository.count({
         where: { ...where, status: TicketStatus.OPEN },
       }),
       this.supportTicketRepository.count({
         where: { ...where, status: TicketStatus.IN_PROGRESS },
-      }),
-      this.supportTicketRepository.count({
-        where: { ...where, status: TicketStatus.RESOLVED },
       }),
       this.supportTicketRepository.count({
         where: { ...where, status: TicketStatus.CLOSED },
@@ -405,7 +524,6 @@ export class SupportTicketService {
       total,
       open,
       inProgress,
-      resolved,
       closed,
     };
   }

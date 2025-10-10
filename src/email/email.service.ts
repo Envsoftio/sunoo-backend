@@ -181,7 +181,7 @@ export class EmailService {
     const html = template(data);
     return this.sendEmail({
       to: userEmail,
-      subject: `Support Ticket Created - #${ticketData.id} - ${this.emailConfig.templates.appName}`,
+      subject: `Support Ticket Created - ${ticketData.title} - ${this.emailConfig.templates.appName}`,
       html,
     });
   }
@@ -202,8 +202,7 @@ export class EmailService {
       message,
       resolution: ticketData.resolution,
       updatedAt: new Date(ticketData.updated_at).toLocaleString(),
-      isResolved:
-        ticketData.status === 'resolved' || ticketData.status === 'closed',
+      isResolved: ticketData.status === 'closed',
       appName: this.emailConfig.templates.appName,
       appUrl: this.emailConfig.templates.appUrl,
     };
@@ -211,7 +210,7 @@ export class EmailService {
     const html = template(data);
     return this.sendEmail({
       to: userEmail,
-      subject: `Support Ticket Updated - #${ticketData.id} - ${this.emailConfig.templates.appName}`,
+      subject: `Support Ticket Updated - ${ticketData.title} - ${this.emailConfig.templates.appName}`,
       html,
     });
   }
@@ -238,7 +237,7 @@ export class EmailService {
     const html = template(data);
     return this.sendEmail({
       to: this.emailConfig.adminEmail,
-      subject: `New Support Ticket - #${ticketData.id} - ${ticketData.priority.toUpperCase()} - ${this.emailConfig.templates.appName}`,
+      subject: `New Support Ticket - ${ticketData.title} - ${ticketData.priority.toUpperCase()} - ${this.emailConfig.templates.appName}`,
       html,
     });
   }

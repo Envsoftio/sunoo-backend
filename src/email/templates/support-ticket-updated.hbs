@@ -57,10 +57,6 @@
         background-color: #cce5ff;
         color: #004085;
       }
-      .status.resolved {
-        background-color: #d1ecf1;
-        color: #0c5460;
-      }
       .status.closed {
         background-color: #f8d7da;
         color: #721c24;
@@ -109,7 +105,10 @@
       <p>Your support ticket has been updated. Here are the latest details:</p>
 
       <div class='ticket-info'>
-        <div class='ticket-id'>Ticket ID: #{{ticketId}}</div>
+        <div class='ticket-id'>{{title}}</div>
+        <div style='margin-top: 5px; font-size: 14px; color: #6c757d;'>
+          Ticket ID: #{{ticketId}}
+        </div>
         <div style='margin-top: 10px;'>
           <span class='status {{status}}'>{{status}}</span>
         </div>

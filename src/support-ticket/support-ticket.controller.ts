@@ -70,6 +70,16 @@ export class SupportTicketController {
     );
   }
 
+  @Get(':id/messages')
+  async getMessages(@Param('id') ticketId: string, @Request() req) {
+    const isAdmin = req.user.role === 'superadmin' || req.user.role === 'admin';
+    return await this.supportTicketService.getMessages(
+      ticketId,
+      req.user.id,
+      isAdmin
+    );
+  }
+
   @Patch(':id')
   async updateTicket(
     @Param('id') id: string,

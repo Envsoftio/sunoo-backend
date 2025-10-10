@@ -5,7 +5,6 @@ import { User } from './user.entity';
 export enum TicketStatus {
   OPEN = 'open',
   IN_PROGRESS = 'in_progress',
-  RESOLVED = 'resolved',
   CLOSED = 'closed',
 }
 
@@ -83,7 +82,9 @@ export class SupportTicket extends BaseEntity {
   @Column()
   userId: string;
 
-  @OneToMany(() => SupportTicketMessage, message => message.ticket, { cascade: true })
+  @OneToMany(() => SupportTicketMessage, message => message.ticket, {
+    cascade: true,
+  })
   messages: SupportTicketMessage[];
 }
 
@@ -102,7 +103,9 @@ export class SupportTicketMessage extends BaseEntity {
   attachmentName?: string;
 
   // Relationships
-  @ManyToOne(() => SupportTicket, ticket => ticket.messages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SupportTicket, ticket => ticket.messages, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ticketId' })
   ticket: SupportTicket;
 
