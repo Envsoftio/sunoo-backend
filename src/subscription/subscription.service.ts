@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { RazorpayService } from './razorpay.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -12,18 +13,34 @@ export class SubscriptionService {
     private planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
-    private razorpayService: RazorpayService
+    private razorpayService: RazorpayService,
+    private loggerService: LoggerService
   ) {}
 
   async getAllPlans() {
     try {
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Fetching all subscription plans'
+      );
+
       const plans = await this.planRepository.find({
         where: {},
         order: { amount: 'ASC' },
       });
 
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Successfully fetched all plans',
+        { count: plans.length }
+      );
       return { status: 201, plans };
     } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to fetch plans',
+        { error: error.message }
+      );
       return { status: 400, message: error.message };
     }
   }
@@ -62,19 +79,55 @@ export class SubscriptionService {
       const { planId, razorpaySubscriptionId, razorpayPaymentId } =
         subscriptionData;
 
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Creating new subscription',
+        {
+          userId,
+          planId,
+          razorpaySubscriptionId,
+          razorpayPaymentId,
+        }
+      );
+
       // Check if plan exists
       const plan = await this.planRepository.findOne({
         where: { id: planId },
       });
 
       if (!plan) {
+        this.loggerService.logSubscriptionEvent('warn', 'Plan not found', {
+          planId,
+          userId,
+        });
         return { success: false, message: 'Plan not found' };
       }
 
+      this.loggerService.logSubscriptionEvent('debug', 'Plan found', {
+        planId,
+        planName: plan.planName,
+        userId,
+      });
+
       // Cancel any existing active subscriptions
-      await this.subscriptionRepository.update(
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Cancelling existing active subscriptions',
+        { userId }
+      );
+
+      const cancelledResult = await this.subscriptionRepository.update(
         { user_id: userId, status: 'active' },
         { status: 'cancelled', cancelledAt: new Date() }
+      );
+
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Cancelled existing subscriptions',
+        {
+          userId,
+          cancelledCount: cancelledResult.affected,
+        }
       );
 
       // Create new subscription
@@ -91,10 +144,31 @@ export class SubscriptionService {
         isTrial: false,
       });
 
-      await this.subscriptionRepository.save(subscription);
+      const savedSubscription =
+        await this.subscriptionRepository.save(subscription);
 
-      return { success: true, data: subscription };
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Subscription created successfully',
+        {
+          userId,
+          subscriptionId: savedSubscription.id,
+          planId,
+          razorpaySubscriptionId,
+        }
+      );
+
+      return { success: true, data: savedSubscription };
     } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to create subscription',
+        {
+          userId,
+          planId: subscriptionData?.planId,
+          error: error.message,
+        }
+      );
       return { success: false, message: error.message };
     }
   }
@@ -287,21 +361,85 @@ export class SubscriptionService {
     trialEndDate?: Date;
   }) {
     try {
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Upserting subscription',
+        {
+          subscriptionId: subscriptionData.subscription_id,
+          userId: subscriptionData.user_id,
+          status: subscriptionData.status,
+        }
+      );
+
       const existingSubscription = await this.subscriptionRepository.findOne({
         where: { subscription_id: subscriptionData.subscription_id },
       });
 
       if (existingSubscription) {
+        this.loggerService.logSubscriptionEvent(
+          'debug',
+          'Updating existing subscription',
+          {
+            subscriptionId: subscriptionData.subscription_id,
+            existingStatus: existingSubscription.status,
+            newStatus: subscriptionData.status,
+          }
+        );
+
         Object.assign(existingSubscription, subscriptionData);
-        await this.subscriptionRepository.save(existingSubscription);
-        return { success: true, data: existingSubscription };
+        const updatedSubscription =
+          await this.subscriptionRepository.save(existingSubscription);
+
+        this.loggerService.logSubscriptionEvent(
+          'info',
+          'Subscription updated successfully',
+          {
+            subscriptionId: subscriptionData.subscription_id,
+            userId: subscriptionData.user_id,
+            status: updatedSubscription.status,
+          }
+        );
+
+        return { success: true, data: updatedSubscription };
       } else {
+        this.loggerService.logSubscriptionEvent(
+          'debug',
+          'Creating new subscription',
+          {
+            subscriptionId: subscriptionData.subscription_id,
+            userId: subscriptionData.user_id,
+            status: subscriptionData.status,
+          }
+        );
+
         const subscription =
           this.subscriptionRepository.create(subscriptionData);
-        await this.subscriptionRepository.save(subscription);
-        return { success: true, data: subscription };
+        const savedSubscription =
+          await this.subscriptionRepository.save(subscription);
+
+        this.loggerService.logSubscriptionEvent(
+          'info',
+          'New subscription created successfully',
+          {
+            subscriptionId: subscriptionData.subscription_id,
+            userId: subscriptionData.user_id,
+            status: savedSubscription.status,
+            id: savedSubscription.id,
+          }
+        );
+
+        return { success: true, data: savedSubscription };
       }
     } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to upsert subscription',
+        {
+          subscriptionId: subscriptionData.subscription_id,
+          userId: subscriptionData.user_id,
+          error: error.message,
+        }
+      );
       return { success: false, message: error.message };
     }
   }

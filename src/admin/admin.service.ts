@@ -78,17 +78,18 @@ export class AdminService {
 
         if (user.subscriptions && user.subscriptions.length > 0) {
           // Find the most recent active subscription
-          const activeSubscription = user.subscriptions.find(sub =>
-            sub.status === 'active' &&
-            (!sub.end_date || new Date(sub.end_date) > new Date())
+          const activeSubscription = user.subscriptions.find(
+            sub =>
+              sub.status === 'active' &&
+              (!sub.end_date || new Date(sub.end_date) > new Date())
           );
 
           if (activeSubscription) {
             subscriptionStatus = 'active';
           } else {
             // Check for authorized subscription
-            const authorizedSubscription = user.subscriptions.find(sub =>
-              sub.status === 'authorized'
+            const authorizedSubscription = user.subscriptions.find(
+              sub => sub.status === 'authorized'
             );
             if (authorizedSubscription) {
               subscriptionStatus = 'authorized';
@@ -101,7 +102,7 @@ export class AdminService {
         return {
           ...user,
           subscription_status: subscriptionStatus,
-          is_subscribed: subscriptionStatus === 'active'
+          is_subscribed: subscriptionStatus === 'active',
         };
       });
 
@@ -124,7 +125,6 @@ export class AdminService {
       return { success: false, message: error.message };
     }
   }
-
 
   // Analytics
   async getUserRegistrationsByPeriod(period: string) {
@@ -167,7 +167,7 @@ export class AdminService {
       // Transform data to match frontend expectations
       const transformedData = registrations.map(item => ({
         period: item.period,
-        count: parseInt(item.count)
+        count: parseInt(item.count),
       }));
 
       return { success: true, data: transformedData };
@@ -220,7 +220,9 @@ export class AdminService {
         .addSelect('subscription.status', 'status')
         .addSelect('COUNT(*)', 'count')
         .where('subscription.created_at >= :dateFilter', { dateFilter })
-        .groupBy(`TO_CHAR(subscription.created_at, '${dateFormat}'), subscription.status`)
+        .groupBy(
+          `TO_CHAR(subscription.created_at, '${dateFormat}'), subscription.status`
+        )
         .orderBy('period', 'ASC')
         .getRawMany();
 
@@ -233,7 +235,7 @@ export class AdminService {
           period: period.period,
           active: 0,
           authorized: 0,
-          cancelled: 0
+          cancelled: 0,
         });
       });
 
@@ -306,19 +308,15 @@ export class AdminService {
         { isActive: false }
       );
 
-      return { success: true, message: 'Password updated successfully. All sessions have been invalidated.' };
+      return {
+        success: true,
+        message:
+          'Password updated successfully. All sessions have been invalidated.',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
-
-
-
-
-
-
-
-
 
   async getUserActivities(startDate?: Date, endDate?: Date) {
     try {
@@ -346,12 +344,14 @@ export class AdminService {
           'book.title',
           'chapter.id',
           'chapter.name',
-          'chapter.playbackTime'
+          'chapter.playbackTime',
         ])
         .orderBy('session.updated_at', 'DESC');
 
       if (startDate) {
-        query = query.andWhere('session.updated_at >= :startDate', { startDate });
+        query = query.andWhere('session.updated_at >= :startDate', {
+          startDate,
+        });
       }
       if (endDate) {
         query = query.andWhere('session.updated_at <= :endDate', { endDate });
@@ -366,16 +366,18 @@ export class AdminService {
         isActive: activity.isActive,
         created_at: activity.created_at,
         updated_at: activity.updated_at,
-        User: activity.user ? {
-          id: activity.user.id,
-          name: activity.user.name,
-          email: activity.user.email,
-          imageURL: activity.user.imageURL
-        } : null,
+        User: activity.user
+          ? {
+              id: activity.user.id,
+              name: activity.user.name,
+              email: activity.user.email,
+              imageURL: activity.user.imageURL,
+            }
+          : null,
         // Add progress data if available
         progress_time: 0, // Default value
         Books: null,
-        Chapters: null
+        Chapters: null,
       }));
 
       return { success: true, data: transformedActivities };
@@ -387,17 +389,23 @@ export class AdminService {
 
   async getSubscriptionCounts() {
     try {
-      const active = await this.subscriptionRepository.count({ where: { status: 'active' } });
-      const authorized = await this.subscriptionRepository.count({ where: { status: 'authorized' } });
-      const cancelled = await this.subscriptionRepository.count({ where: { status: 'cancelled' } });
+      const active = await this.subscriptionRepository.count({
+        where: { status: 'active' },
+      });
+      const authorized = await this.subscriptionRepository.count({
+        where: { status: 'authorized' },
+      });
+      const cancelled = await this.subscriptionRepository.count({
+        where: { status: 'cancelled' },
+      });
 
       return {
         success: true,
         data: {
           active,
           authorized,
-          cancelled
-        }
+          cancelled,
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -440,7 +448,8 @@ export class AdminService {
         storyCast.role = cast.role;
         storyCast.picture = cast.picture_url || cast.picture;
         // Only set cast_id if it's provided and not empty
-        storyCast.cast_id = (cast.cast_id && cast.cast_id !== '') ? cast.cast_id : '';
+        storyCast.cast_id =
+          cast.cast_id && cast.cast_id !== '' ? cast.cast_id : '';
         return storyCast;
       });
 
@@ -455,7 +464,7 @@ export class AdminService {
   async getCastMembers() {
     try {
       const castMembers = await this.castMemberRepository.find({
-        order: { created_at: 'DESC' }
+        order: { created_at: 'DESC' },
       });
 
       return { success: true, data: castMembers };
@@ -464,7 +473,13 @@ export class AdminService {
     }
   }
 
-  async getUserBookLikes(page: number, limit: number, search: string, sortBy: string, sortOrder: string) {
+  async getUserBookLikes(
+    page: number,
+    limit: number,
+    search: string,
+    sortBy: string,
+    sortOrder: string
+  ) {
     try {
       const offset = (page - 1) * limit;
 
@@ -485,7 +500,9 @@ export class AdminService {
 
       // Apply sorting
       const validSortFields = ['created_at', 'user.name', 'book.title'];
-      const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+      const sortField = validSortFields.includes(sortBy)
+        ? sortBy
+        : 'created_at';
       const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
       query = query.orderBy(`bookmark.${sortField}`, sortDirection);
@@ -494,10 +511,7 @@ export class AdminService {
       const total = await query.getCount();
 
       // Apply pagination
-      const bookmarks = await query
-        .skip(offset)
-        .take(limit)
-        .getMany();
+      const bookmarks = await query.skip(offset).take(limit).getMany();
 
       // Transform data to match expected format
       const transformedData = bookmarks.map(bookmark => ({
@@ -509,7 +523,7 @@ export class AdminService {
           id: bookmark.user?.id,
           name: bookmark.user?.name,
           email: bookmark.user?.email,
-          joinedAt: bookmark.user?.created_at
+          joinedAt: bookmark.user?.created_at,
         },
         book: {
           id: bookmark.book?.id,
@@ -517,8 +531,8 @@ export class AdminService {
           language: bookmark.book?.language,
           duration: bookmark.book?.duration,
           coverUrl: bookmark.book?.bookCoverUrl,
-          category: bookmark.book?.category?.name
-        }
+          category: bookmark.book?.category?.name,
+        },
       }));
 
       const totalPages = Math.ceil(total / limit);
@@ -530,8 +544,8 @@ export class AdminService {
           page,
           limit,
           total,
-          totalPages
-        }
+          totalPages,
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -550,7 +564,11 @@ export class AdminService {
         // Create new category
         const category = this.categoryRepository.create(data);
         await this.categoryRepository.save(category);
-        return { success: true, message: 'Category created successfully', data: category };
+        return {
+          success: true,
+          message: 'Category created successfully',
+          data: category,
+        };
       }
     } catch (error) {
       return { success: false, message: error.message };
@@ -560,7 +578,7 @@ export class AdminService {
   async getCategories() {
     try {
       const categories = await this.categoryRepository.find({
-        order: { sort_order: 'ASC' }
+        order: { sort_order: 'ASC' },
       });
       return { success: true, data: categories };
     } catch (error) {
@@ -582,17 +600,30 @@ export class AdminService {
     try {
       const castMember = this.castMemberRepository.create(data);
       const savedCastMember = await this.castMemberRepository.save(castMember);
-      return { success: true, message: 'Cast member created successfully', data: savedCastMember };
+      return {
+        success: true,
+        message: 'Cast member created successfully',
+        data: savedCastMember,
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
 
-  async updateCastMember(id: string, data: { name: string; bio: string; picture: string }) {
+  async updateCastMember(
+    id: string,
+    data: { name: string; bio: string; picture: string }
+  ) {
     try {
       await this.castMemberRepository.update(id, data);
-      const updatedCastMember = await this.castMemberRepository.findOne({ where: { id } });
-      return { success: true, message: 'Cast member updated successfully', data: updatedCastMember };
+      const updatedCastMember = await this.castMemberRepository.findOne({
+        where: { id },
+      });
+      return {
+        success: true,
+        message: 'Cast member updated successfully',
+        data: updatedCastMember,
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -610,7 +641,11 @@ export class AdminService {
   async uploadCastPicture(id: string, pictureKey: string) {
     try {
       await this.castMemberRepository.update(id, { picture: pictureKey });
-      return { success: true, message: 'Picture uploaded successfully', data: { pictureKey } };
+      return {
+        success: true,
+        message: 'Picture uploaded successfully',
+        data: { pictureKey },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -624,13 +659,13 @@ export class AdminService {
         bookCount,
         feedbackCount,
         userLikesCount,
-        subscriptionCounts
+        subscriptionCounts,
       ] = await Promise.all([
         this.userRepository.count(),
         this.bookRepository.count(),
         this.feedbackRepository.count(),
         this.bookmarkRepository.count(),
-        this.getSubscriptionCounts()
+        this.getSubscriptionCounts(),
       ]);
 
       return {
@@ -640,8 +675,10 @@ export class AdminService {
           bookCount,
           feedbackCount,
           userLikesCount,
-          subscriptionCounts: subscriptionCounts.success ? subscriptionCounts.data : null
-        }
+          subscriptionCounts: subscriptionCounts.success
+            ? subscriptionCounts.data
+            : null,
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -665,8 +702,6 @@ export class AdminService {
       return { success: false, message: error.message };
     }
   }
-
-
 
   async getUserLikesCount() {
     try {
@@ -720,12 +755,21 @@ export class AdminService {
       // Apply published status filter
       if (isPublished !== '') {
         const published = isPublished === 'true';
-        query = query.andWhere('book.isPublished = :isPublished', { isPublished: published });
+        query = query.andWhere('book.isPublished = :isPublished', {
+          isPublished: published,
+        });
       }
 
       // Apply sorting
-      const validSortFields = ['created_at', 'updated_at', 'title', 'isPublished'];
-      const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+      const validSortFields = [
+        'created_at',
+        'updated_at',
+        'title',
+        'isPublished',
+      ];
+      const sortField = validSortFields.includes(sortBy)
+        ? sortBy
+        : 'created_at';
       const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
       query = query.orderBy(`book.${sortField}`, sortDirection);
@@ -734,17 +778,15 @@ export class AdminService {
       const total = await query.getCount();
 
       // Apply pagination
-      const stories = await query
-        .skip(offset)
-        .take(limit)
-        .getMany();
+      const stories = await query.skip(offset).take(limit).getMany();
 
       // Process stories with additional data
       const processedStories = stories.map(story => {
         const ratings = story.bookRatings || [];
         const averageRating =
           ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
+            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+              ratings.length
             : 0;
 
         const totalListeners =
@@ -758,7 +800,7 @@ export class AdminService {
           averageRating: Math.round(averageRating * 10) / 10,
           listeners: totalListeners,
           chapterCount: story.chapters?.length || 0,
-          category: story.category?.name || 'Uncategorized'
+          category: story.category?.name || 'Uncategorized',
         };
       });
 
@@ -771,8 +813,8 @@ export class AdminService {
           page,
           limit,
           total,
-          totalPages
-        }
+          totalPages,
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -787,8 +829,8 @@ export class AdminService {
           'category',
           'chapters',
           'bookRatings',
-          'audiobookListeners'
-        ]
+          'audiobookListeners',
+        ],
       });
 
       if (!story) {
@@ -798,7 +840,8 @@ export class AdminService {
       const ratings = story.bookRatings || [];
       const averageRating =
         ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
+          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            ratings.length
           : 0;
 
       const totalListeners =
@@ -814,8 +857,8 @@ export class AdminService {
           averageRating: Math.round(averageRating * 10) / 10,
           listeners: totalListeners,
           chapterCount: story.chapters?.length || 0,
-          category: story.category?.id || ''
-        }
+          category: story.category?.id || '',
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -828,11 +871,15 @@ export class AdminService {
         ...storyData,
         slug: storyData.title?.toLowerCase().replace(/\s+/g, '-') || '',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       const savedStory = await this.bookRepository.save(story);
-      return { success: true, data: savedStory, message: 'Story created successfully' };
+      return {
+        success: true,
+        data: savedStory,
+        message: 'Story created successfully',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -840,7 +887,9 @@ export class AdminService {
 
   async updateStory(id: string, storyData: any) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
+      const story = await this.bookRepository.findOne({
+        where: { id, deleted_at: IsNull() },
+      });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
@@ -855,10 +904,14 @@ export class AdminService {
       await this.bookRepository.update(id, storyData);
       const updatedStory = await this.bookRepository.findOne({
         where: { id, deleted_at: IsNull() },
-        relations: ['category', 'chapters']
+        relations: ['category', 'chapters'],
       });
 
-      return { success: true, data: updatedStory, message: 'Story updated successfully' };
+      return {
+        success: true,
+        data: updatedStory,
+        message: 'Story updated successfully',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -867,7 +920,7 @@ export class AdminService {
   async deleteStory(id: string) {
     try {
       const story = await this.bookRepository.findOne({
-        where: { id, deleted_at: IsNull() }
+        where: { id, deleted_at: IsNull() },
       });
       if (!story) {
         return { success: false, message: 'Story not found' };
@@ -875,7 +928,7 @@ export class AdminService {
 
       // Soft delete: set deleted_at timestamp instead of removing the record
       await this.bookRepository.update(id, {
-        deleted_at: new Date()
+        deleted_at: new Date(),
       });
 
       return { success: true, message: 'Story deleted successfully' };
@@ -886,19 +939,21 @@ export class AdminService {
 
   async toggleStoryPublish(id: string, isPublished: boolean) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
+      const story = await this.bookRepository.findOne({
+        where: { id, deleted_at: IsNull() },
+      });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
 
       await this.bookRepository.update(id, {
         isPublished,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return {
         success: true,
-        message: `Story ${isPublished ? 'published' : 'unpublished'} successfully`
+        message: `Story ${isPublished ? 'published' : 'unpublished'} successfully`,
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -907,14 +962,16 @@ export class AdminService {
 
   async updateStoryCover(id: string, coverUrl: string) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id, deleted_at: IsNull() } });
+      const story = await this.bookRepository.findOne({
+        where: { id, deleted_at: IsNull() },
+      });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
 
       await this.bookRepository.update(id, {
         bookCoverUrl: coverUrl,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return { success: true, message: 'Story cover updated successfully' };
@@ -929,9 +986,9 @@ export class AdminService {
       const chapters = await this.chapterRepository.find({
         where: {
           bookId: storyId,
-          deleted_at: IsNull()  // Exclude soft-deleted chapters
+          deleted_at: IsNull(), // Exclude soft-deleted chapters
         },
-        order: { order: 'ASC' }
+        order: { order: 'ASC' },
       });
 
       return { success: true, data: chapters };
@@ -942,7 +999,9 @@ export class AdminService {
 
   async addChapter(storyId: string, chapterData: any) {
     try {
-      const story = await this.bookRepository.findOne({ where: { id: storyId, deleted_at: IsNull() } });
+      const story = await this.bookRepository.findOne({
+        where: { id: storyId, deleted_at: IsNull() },
+      });
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
@@ -951,11 +1010,15 @@ export class AdminService {
         ...chapterData,
         bookId: storyId,
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       const savedChapter = await this.chapterRepository.save(chapter);
-      return { success: true, data: savedChapter, message: 'Chapter added successfully' };
+      return {
+        success: true,
+        data: savedChapter,
+        message: 'Chapter added successfully',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -964,7 +1027,7 @@ export class AdminService {
   async updateChapter(id: string, chapterData: any) {
     try {
       const chapter = await this.chapterRepository.findOne({
-        where: { id, deleted_at: IsNull() }
+        where: { id, deleted_at: IsNull() },
       });
       if (!chapter) {
         return { success: false, message: 'Chapter not found' };
@@ -974,10 +1037,14 @@ export class AdminService {
 
       await this.chapterRepository.update(id, chapterData);
       const updatedChapter = await this.chapterRepository.findOne({
-        where: { id, deleted_at: IsNull() }
+        where: { id, deleted_at: IsNull() },
       });
 
-      return { success: true, data: updatedChapter, message: 'Chapter updated successfully' };
+      return {
+        success: true,
+        data: updatedChapter,
+        message: 'Chapter updated successfully',
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -986,7 +1053,7 @@ export class AdminService {
   async deleteChapter(id: string) {
     try {
       const chapter = await this.chapterRepository.findOne({
-        where: { id, deleted_at: IsNull() }
+        where: { id, deleted_at: IsNull() },
       });
       if (!chapter) {
         return { success: false, message: 'Chapter not found' };
@@ -994,7 +1061,7 @@ export class AdminService {
 
       // Soft delete: set deleted_at timestamp instead of removing the record
       await this.chapterRepository.update(id, {
-        deleted_at: new Date()
+        deleted_at: new Date(),
       });
 
       return { success: true, message: 'Chapter deleted successfully' };
@@ -1015,13 +1082,12 @@ export class AdminService {
       return {
         success: true,
         message: 'Bulk upload functionality needs to be implemented',
-        data: { uploadedCount: 0 }
+        data: { uploadedCount: 0 },
       };
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
-
 
   // Story Analytics Methods
   async getStoryAnalyticsOverview() {
@@ -1032,7 +1098,7 @@ export class AdminService {
         totalChapters,
         totalListeners,
         averageRating,
-        totalBookmarks
+        totalBookmarks,
       ] = await Promise.all([
         this.bookRepository.count(),
         this.bookRepository.count({ where: { isPublished: true } }),
@@ -1047,7 +1113,7 @@ export class AdminService {
           .select('AVG(rating.rating)', 'average')
           .getRawOne()
           .then(result => parseFloat(result.average) || 0),
-        this.bookmarkRepository.count()
+        this.bookmarkRepository.count(),
       ]);
 
       return {
@@ -1059,15 +1125,18 @@ export class AdminService {
           totalChapters,
           totalListeners,
           averageRating: Math.round(averageRating * 10) / 10,
-          totalBookmarks
-        }
+          totalBookmarks,
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
     }
   }
 
-  async getPopularStoriesAnalytics(period: string = 'week', limit: number = 10) {
+  async getPopularStoriesAnalytics(
+    period: string = 'week',
+    limit: number = 10
+  ) {
     try {
       let dateFilter: Date;
       const now = new Date();
@@ -1102,7 +1171,8 @@ export class AdminService {
         const ratings = story.bookRatings || [];
         const averageRating =
           ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
+            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+              ratings.length
             : 0;
 
         const totalListeners =
@@ -1115,7 +1185,7 @@ export class AdminService {
           ...story,
           averageRating: Math.round(averageRating * 10) / 10,
           listeners: totalListeners,
-          category: story.category?.name || 'Uncategorized'
+          category: story.category?.name || 'Uncategorized',
         };
       });
 
@@ -1152,7 +1222,10 @@ export class AdminService {
         .orderBy('listener.created_at', 'DESC')
         .getMany();
 
-      const totalListeners = listeners.reduce((sum, listener) => sum + (listener.count || 0), 0);
+      const totalListeners = listeners.reduce(
+        (sum, listener) => sum + (listener.count || 0),
+        0
+      );
 
       return {
         success: true,
@@ -1166,13 +1239,15 @@ export class AdminService {
             userId: listener.userId,
             count: listener.count,
             createdAt: listener.created_at,
-            user: listener.user ? {
-              id: listener.user.id,
-              name: listener.user.name,
-              email: listener.user.email
-            } : null
-          }))
-        }
+            user: listener.user
+              ? {
+                  id: listener.user.id,
+                  name: listener.user.name,
+                  email: listener.user.email,
+                }
+              : null,
+          })),
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -1184,17 +1259,18 @@ export class AdminService {
       const ratings = await this.bookRatingRepository.find({
         where: { bookId: storyId },
         relations: ['user'],
-        order: { created_at: 'DESC' }
+        order: { created_at: 'DESC' },
       });
 
       const totalRatings = ratings.length;
-      const averageRating = totalRatings > 0
-        ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / totalRatings
-        : 0;
+      const averageRating =
+        totalRatings > 0
+          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / totalRatings
+          : 0;
 
       const ratingDistribution = [1, 2, 3, 4, 5].map(star => ({
         stars: star,
-        count: ratings.filter(r => r.rating === star).length
+        count: ratings.filter(r => r.rating === star).length,
       }));
 
       return {
@@ -1209,13 +1285,15 @@ export class AdminService {
             rating: rating.rating,
             comment: rating.comment,
             createdAt: rating.created_at,
-            user: rating.user ? {
-              id: rating.user.id,
-              name: rating.user.name,
-              email: rating.user.email
-            } : null
-          }))
-        }
+            user: rating.user
+              ? {
+                  id: rating.user.id,
+                  name: rating.user.name,
+                  email: rating.user.email,
+                }
+              : null,
+          })),
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -1233,10 +1311,12 @@ export class AdminService {
 
       const completionRates = stories.map(story => {
         const totalChapters = story.chapters?.length || 0;
-        const completedProgress = story.userProgress?.filter(p => p.progress >= 0.9).length || 0;
+        const completedProgress =
+          story.userProgress?.filter(p => p.progress >= 0.9).length || 0;
         const totalProgress = story.userProgress?.length || 0;
 
-        const completionRate = totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0;
+        const completionRate =
+          totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0;
 
         return {
           storyId: story.id,
@@ -1244,20 +1324,26 @@ export class AdminService {
           totalChapters,
           totalProgress,
           completedProgress,
-          completionRate: Math.round(completionRate * 10) / 10
+          completionRate: Math.round(completionRate * 10) / 10,
         };
       });
 
-      const averageCompletionRate = completionRates.length > 0
-        ? completionRates.reduce((sum, story) => sum + story.completionRate, 0) / completionRates.length
-        : 0;
+      const averageCompletionRate =
+        completionRates.length > 0
+          ? completionRates.reduce(
+              (sum, story) => sum + story.completionRate,
+              0
+            ) / completionRates.length
+          : 0;
 
       return {
         success: true,
         data: {
           averageCompletionRate: Math.round(averageCompletionRate * 10) / 10,
-          completionRates: completionRates.sort((a, b) => b.completionRate - a.completionRate)
-        }
+          completionRates: completionRates.sort(
+            (a, b) => b.completionRate - a.completionRate
+          ),
+        },
       };
     } catch (error) {
       return { success: false, message: error.message };
@@ -1266,7 +1352,14 @@ export class AdminService {
 
   async sendEmail(user: any, templateKey: string, dynamicFields: any) {
     try {
-      console.log('Sending email to:', user.email, 'with template:', templateKey, 'and fields:', dynamicFields);
+      console.log(
+        'Sending email to:',
+        user.email,
+        'with template:',
+        templateKey,
+        'and fields:',
+        dynamicFields
+      );
 
       // Use Zeptomail service to send email with template
       const emailSent = await this.zeptomailService.sendEmailWithTemplate({
@@ -1274,7 +1367,7 @@ export class AdminService {
         templateKey: templateKey,
         dynamicFields: dynamicFields,
         userName: user.name,
-        userEmail: user.email
+        userEmail: user.email,
       });
 
       if (emailSent) {
@@ -1284,14 +1377,14 @@ export class AdminService {
           data: {
             recipient: user.email,
             template: templateKey,
-            sentAt: new Date().toISOString()
-          }
+            sentAt: new Date().toISOString(),
+          },
         };
       } else {
         return {
           success: false,
           message: 'Failed to send email',
-          error: 'Zeptomail service returned false'
+          error: 'Zeptomail service returned false',
         };
       }
     } catch (error) {
@@ -1299,7 +1392,7 @@ export class AdminService {
       return {
         success: false,
         message: 'Failed to send email',
-        error: error.message
+        error: error.message,
       };
     }
   }

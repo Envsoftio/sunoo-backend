@@ -7,7 +7,7 @@ import { Payment } from '../entities/payment.entity';
 export class PaymentService {
   constructor(
     @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
+    private paymentRepository: Repository<Payment>
   ) {}
 
   async createPayment(paymentData: {

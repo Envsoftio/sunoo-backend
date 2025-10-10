@@ -6,10 +6,7 @@ import { Feedback } from '../entities/feedback.entity';
 import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Feedback]),
-    EmailModule
-  ],
+  imports: [TypeOrmModule.forFeature([Feedback]), EmailModule],
   controllers: [FeedbackController],
   providers: [FeedbackService],
   exports: [FeedbackService],

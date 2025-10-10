@@ -5,7 +5,6 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
-  Logger,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -14,17 +13,17 @@ import { RazorpayService } from './razorpay.service';
 import { SubscriptionService } from './subscription.service';
 import { PaymentService } from './payment.service';
 import { NotificationService } from './notification.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @ApiTags('Webhooks')
 @Controller('api/webhooks')
 export class WebhookController {
-  private readonly logger = new Logger(WebhookController.name);
-
   constructor(
     private readonly razorpayService: RazorpayService,
     private readonly subscriptionService: SubscriptionService,
     private readonly paymentService: PaymentService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly loggerService: LoggerService
   ) {}
 
   @Post('razorpay')
@@ -35,112 +34,285 @@ export class WebhookController {
     @Body() body: any,
     @Headers('x-razorpay-signature') signature: string
   ) {
+    const startTime = Date.now();
+    const event = body?.event;
+    const subscriptionId = this.extractSubscriptionId(body);
+
     try {
+      // Log incoming webhook request
+      this.loggerService.logWebhookRequest(event, subscriptionId, body, {
+        'x-razorpay-signature': signature,
+      });
+
       // Verify webhook signature (skip in development mode)
       const bodyString = JSON.stringify(body);
       if (
         process.env.NODE_ENV === 'production' &&
         !this.razorpayService.verifyWebhookSignature(bodyString, signature)
       ) {
-        this.logger.warn('Invalid webhook signature');
+        this.loggerService.logWebhookError(
+          event,
+          subscriptionId,
+          new Error('Invalid webhook signature'),
+          body,
+          { 'x-razorpay-signature': signature }
+        );
         throw new BadRequestException('Invalid signature');
       } else if (process.env.NODE_ENV !== 'production') {
-        this.logger.log('Skipping signature verification in development mode');
+        this.loggerService.logWebhookEvent(
+          'info',
+          'Skipping signature verification in development mode',
+          { event, subscriptionId },
+          'WebhookController'
+        );
       }
 
-      this.logger.log(`Received webhook event: ${body.event}`);
+      this.loggerService.logWebhookEvent(
+        'info',
+        `Processing webhook event: ${event}`,
+        { event, subscriptionId, payload: body },
+        'WebhookController'
+      );
 
+      let result;
       switch (body.event) {
         case 'subscription.authenticated':
-          return await this.handleSubscriptionAuthenticated(body);
+          result = await this.handleSubscriptionAuthenticated(body);
+          break;
         case 'subscription.activated':
-          return await this.handleSubscriptionActivated(body);
+          result = await this.handleSubscriptionActivated(body);
+          break;
         case 'subscription.charged':
-          return await this.handleSubscriptionCharged(body);
+          result = await this.handleSubscriptionCharged(body);
+          break;
         case 'subscription.cancelled':
-          return await this.handleSubscriptionCancelled(body);
+          result = await this.handleSubscriptionCancelled(body);
+          break;
         case 'subscription.resumed':
-          return await this.handleSubscriptionResumed(body);
+          result = await this.handleSubscriptionResumed(body);
+          break;
         case 'subscription.pending':
-          return await this.handleSubscriptionPending(body);
+          result = await this.handleSubscriptionPending(body);
+          break;
         case 'subscription.halted':
-          return await this.handleSubscriptionHalted(body);
+          result = await this.handleSubscriptionHalted(body);
+          break;
         case 'payment.authorized':
-          return await this.handlePaymentAuthorized(body);
+          result = await this.handlePaymentAuthorized(body);
+          break;
         case 'payment.failed':
-          return await this.handlePaymentFailed(body);
+          result = await this.handlePaymentFailed(body);
+          break;
         default:
-          this.logger.log(`Unhandled event type: ${body.event}`);
-          return { message: `Unhandled event type: ${body.event}` };
+          this.loggerService.logWebhookEvent(
+            'warn',
+            `Unhandled event type: ${body.event}`,
+            { event: body.event, subscriptionId, payload: body },
+            'WebhookController'
+          );
+          result = { message: `Unhandled event type: ${body.event}` };
       }
+
+      const processingTime = Date.now() - startTime;
+      this.loggerService.logWebhookResponse(
+        event,
+        subscriptionId,
+        true,
+        'Webhook processed successfully',
+        processingTime
+      );
+
+      return result;
     } catch (error) {
-      this.logger.error('Error processing webhook:', error);
+      const processingTime = Date.now() - startTime;
+      this.loggerService.logWebhookError(event, subscriptionId, error, body, {
+        'x-razorpay-signature': signature,
+      });
+
+      this.loggerService.logWebhookResponse(
+        event,
+        subscriptionId,
+        false,
+        `Webhook processing failed: ${error.message}`,
+        processingTime
+      );
+
       throw new InternalServerErrorException('Webhook processing failed');
     }
   }
 
-  private async handleSubscriptionAuthenticated(body: any) {
-    const subscriptionDetails = body.payload.subscription.entity;
-
-    const subscriptionData = {
-      subscription_id: subscriptionDetails.id,
-      user_id: subscriptionDetails.notes?.user_id,
-      plan_id: subscriptionDetails.plan_id,
-      status: subscriptionDetails.status,
-      start_date: subscriptionDetails.start_at
-        ? new Date(subscriptionDetails.start_at * 1000)
-        : undefined,
-      end_date: subscriptionDetails.end_at
-        ? new Date(subscriptionDetails.end_at * 1000)
-        : undefined,
-      next_billing_date: subscriptionDetails.next_billing_at
-        ? new Date(subscriptionDetails.next_billing_at * 1000)
-        : undefined,
-      metadata: subscriptionDetails,
-      isTrial: subscriptionDetails.notes?.onTrial === 'true',
-      trialEndDate:
-        subscriptionDetails.notes?.onTrial === 'true'
-          ? new Date(subscriptionDetails.start_at * 1000)
-          : undefined,
-    };
-
-    const result =
-      await this.subscriptionService.upsertSubscription(subscriptionData);
-
-    // Emit notification to user
-    if (result.success && subscriptionDetails.notes?.user_id) {
-      this.notificationService.emitSubscriptionCreated(
-        subscriptionDetails.notes.user_id,
-        subscriptionData
-      );
+  private extractSubscriptionId(body: any): string {
+    if (body?.payload?.subscription?.entity?.id) {
+      return body.payload.subscription.entity.id;
     }
-
-    return { message: 'subscription.authenticated processed successfully' };
+    if (body?.payload?.payment?.entity?.subscription_id) {
+      return body.payload.payment.entity.subscription_id;
+    }
+    return 'unknown';
   }
 
-  private async handleSubscriptionActivated(body: any) {
+  private async handleSubscriptionAuthenticated(body: any) {
     const subscriptionDetails = body.payload.subscription.entity;
+    const subscriptionId = subscriptionDetails.id;
+    const userId = subscriptionDetails.notes?.user_id;
 
-    await this.subscriptionService.updateSubscriptionStatus(
-      subscriptionDetails.id,
-      'active',
-      {
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing subscription.authenticated event',
+      { subscriptionId, userId, planId: subscriptionDetails.plan_id },
+      'WebhookController'
+    );
+
+    try {
+      const subscriptionData = {
+        subscription_id: subscriptionDetails.id,
+        user_id: subscriptionDetails.notes?.user_id,
+        plan_id: subscriptionDetails.plan_id,
+        status: subscriptionDetails.status,
+        start_date: subscriptionDetails.start_at
+          ? new Date(subscriptionDetails.start_at * 1000)
+          : undefined,
+        end_date: subscriptionDetails.end_at
+          ? new Date(subscriptionDetails.end_at * 1000)
+          : undefined,
         next_billing_date: subscriptionDetails.next_billing_at
           ? new Date(subscriptionDetails.next_billing_at * 1000)
           : undefined,
         metadata: subscriptionDetails,
+        isTrial: subscriptionDetails.notes?.onTrial === 'true',
+        trialEndDate:
+          subscriptionDetails.notes?.onTrial === 'true'
+            ? new Date(subscriptionDetails.start_at * 1000)
+            : undefined,
+      };
+
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Upserting subscription data',
+        { subscriptionId, subscriptionData },
+        'WebhookController'
+      );
+
+      const result =
+        await this.subscriptionService.upsertSubscription(subscriptionData);
+
+      if (result.success) {
+        this.loggerService.logWebhookEvent(
+          'info',
+          'Subscription upserted successfully',
+          { subscriptionId, userId, result },
+          'WebhookController'
+        );
+
+        // Emit notification to user
+        if (subscriptionDetails.notes?.user_id) {
+          this.loggerService.logWebhookEvent(
+            'debug',
+            'Emitting subscription created notification',
+            { userId, subscriptionId },
+            'WebhookController'
+          );
+
+          this.notificationService.emitSubscriptionCreated(
+            subscriptionDetails.notes.user_id,
+            subscriptionData
+          );
+        }
+      } else {
+        this.loggerService.logWebhookEvent(
+          'error',
+          'Failed to upsert subscription',
+          { subscriptionId, userId, error: result.message },
+          'WebhookController'
+        );
       }
+
+      return { message: 'subscription.authenticated processed successfully' };
+    } catch (error) {
+      this.loggerService.logWebhookError(
+        'subscription.authenticated',
+        subscriptionId,
+        error,
+        body
+      );
+      throw error;
+    }
+  }
+
+  private async handleSubscriptionActivated(body: any) {
+    const subscriptionDetails = body.payload.subscription.entity;
+    const subscriptionId = subscriptionDetails.id;
+    const userId = subscriptionDetails.notes?.user_id;
+
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing subscription.activated event',
+      { subscriptionId, userId, status: subscriptionDetails.status },
+      'WebhookController'
     );
 
-    // Emit notification to user
-    if (subscriptionDetails.notes?.user_id) {
-      this.notificationService.emitSubscriptionActivated(
-        subscriptionDetails.notes.user_id,
-        subscriptionDetails
-      );
-    }
+    try {
+      const updateData = {
+        next_billing_date: subscriptionDetails.next_billing_at
+          ? new Date(subscriptionDetails.next_billing_at * 1000)
+          : undefined,
+        metadata: subscriptionDetails,
+      };
 
-    return { message: 'subscription.activated processed successfully' };
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Updating subscription status to active',
+        { subscriptionId, updateData },
+        'WebhookController'
+      );
+
+      const result = await this.subscriptionService.updateSubscriptionStatus(
+        subscriptionDetails.id,
+        'active',
+        updateData
+      );
+
+      if (result.success) {
+        this.loggerService.logWebhookEvent(
+          'info',
+          'Subscription status updated to active successfully',
+          { subscriptionId, userId },
+          'WebhookController'
+        );
+
+        // Emit notification to user
+        if (subscriptionDetails.notes?.user_id) {
+          this.loggerService.logWebhookEvent(
+            'debug',
+            'Emitting subscription activated notification',
+            { userId, subscriptionId },
+            'WebhookController'
+          );
+
+          this.notificationService.emitSubscriptionActivated(
+            subscriptionDetails.notes.user_id,
+            subscriptionDetails
+          );
+        }
+      } else {
+        this.loggerService.logWebhookEvent(
+          'error',
+          'Failed to update subscription status',
+          { subscriptionId, userId, error: result.message },
+          'WebhookController'
+        );
+      }
+
+      return { message: 'subscription.activated processed successfully' };
+    } catch (error) {
+      this.loggerService.logWebhookError(
+        'subscription.activated',
+        subscriptionId,
+        error,
+        body
+      );
+      throw error;
+    }
   }
 
   private async handleSubscriptionCharged(body: any) {
@@ -257,45 +429,120 @@ export class WebhookController {
 
   private async handlePaymentAuthorized(body: any) {
     const paymentDetails = body.payload.payment.entity;
-    let invoice = null;
+    const paymentId = paymentDetails.id;
+    const userId = paymentDetails.notes?.user_id;
+    const subscriptionId = paymentDetails.subscription_id;
 
-    if (paymentDetails?.invoice_id) {
-      try {
-        invoice = await this.razorpayService.getInvoice(
-          paymentDetails.invoice_id
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to fetch invoice ${paymentDetails.invoice_id}:`,
-          error.message
-        );
-        // Continue without invoice data
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing payment.authorized event',
+      { paymentId, userId, subscriptionId, amount: paymentDetails.amount },
+      'WebhookController'
+    );
+
+    try {
+      let invoice = null;
+
+      if (paymentDetails?.invoice_id) {
+        try {
+          this.loggerService.logWebhookEvent(
+            'debug',
+            'Fetching invoice details',
+            { paymentId, invoiceId: paymentDetails.invoice_id },
+            'WebhookController'
+          );
+
+          invoice = await this.razorpayService.getInvoice(
+            paymentDetails.invoice_id
+          );
+
+          this.loggerService.logWebhookEvent(
+            'debug',
+            'Invoice details fetched successfully',
+            {
+              paymentId,
+              invoiceId: paymentDetails.invoice_id,
+              subscriptionId: (invoice as any)?.subscription_id,
+            },
+            'WebhookController'
+          );
+        } catch (error) {
+          this.loggerService.logWebhookEvent(
+            'warn',
+            'Failed to fetch invoice details',
+            {
+              paymentId,
+              invoiceId: paymentDetails.invoice_id,
+              error: error.message,
+            },
+            'WebhookController'
+          );
+          // Continue without invoice data
+        }
       }
-    }
 
-    const paymentData = {
-      payment_id: paymentDetails.id,
-      status: paymentDetails.status,
-      amount: paymentDetails.amount.toString(),
-      currency: paymentDetails.currency,
-      invoice_id: paymentDetails.invoice_id,
-      plan_id: paymentDetails.plan_id,
-      user_id: paymentDetails.notes?.user_id,
-      subscription_id: (invoice as any)?.subscription_id || '',
-      metadata: paymentDetails,
-    };
+      const paymentData = {
+        payment_id: paymentDetails.id,
+        status: paymentDetails.status,
+        amount: paymentDetails.amount.toString(),
+        currency: paymentDetails.currency,
+        invoice_id: paymentDetails.invoice_id,
+        plan_id: paymentDetails.plan_id,
+        user_id: paymentDetails.notes?.user_id,
+        subscription_id: (invoice as any)?.subscription_id || '',
+        metadata: paymentDetails,
+      };
 
-    const result = await this.paymentService.createPayment(paymentData);
-
-    // Emit notification to user
-    if (result.success && paymentDetails.notes?.user_id) {
-      this.notificationService.emitPaymentSuccess(
-        paymentDetails.notes.user_id,
-        paymentData
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Creating payment record',
+        { paymentId, paymentData },
+        'WebhookController'
       );
-    }
 
-    return { message: 'payment.authorized processed successfully' };
+      const result = await this.paymentService.createPayment(paymentData);
+
+      if (result.success) {
+        this.loggerService.logWebhookEvent(
+          'info',
+          'Payment record created successfully',
+          { paymentId, userId, subscriptionId },
+          'WebhookController'
+        );
+
+        // Emit notification to user
+        if (paymentDetails.notes?.user_id) {
+          this.loggerService.logWebhookEvent(
+            'debug',
+            'Emitting payment success notification',
+            { userId, paymentId },
+            'WebhookController'
+          );
+
+          this.notificationService.emitPaymentSuccess(
+            paymentDetails.notes.user_id,
+            paymentData
+          );
+        }
+      } else {
+        this.loggerService.logWebhookEvent(
+          'error',
+          'Failed to create payment record',
+          { paymentId, userId, error: result.message },
+          'WebhookController'
+        );
+      }
+
+      return { message: 'payment.authorized processed successfully' };
+    } catch (error) {
+      this.loggerService.logWebhookError(
+        'payment.authorized',
+        paymentId,
+        error,
+        body
+      );
+      throw error;
+    }
   }
 
   private async handlePaymentFailed(body: any) {

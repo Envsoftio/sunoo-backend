@@ -444,7 +444,6 @@ export class StoryController {
     return await this.storyService.getCategoryStats();
   }
 
-
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get story by slug' })
   @ApiResponse({ status: 200, description: 'Story retrieved successfully' })

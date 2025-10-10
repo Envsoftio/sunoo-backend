@@ -1,6 +1,17 @@
-import { IsString, IsEnum, IsOptional, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNotEmpty,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
-import { TicketStatus, TicketPriority, TicketCategory } from '../entities/support-ticket.entity';
+import {
+  TicketStatus,
+  TicketPriority,
+  TicketCategory,
+} from '../entities/support-ticket.entity';
 
 export class CreateSupportTicketDto {
   @IsString()
@@ -95,22 +106,22 @@ export class UpdateSupportTicketMessageDto {
 export class SupportTicketQueryDto {
   @IsEnum(TicketStatus)
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   status?: TicketStatus;
 
   @IsEnum(TicketPriority)
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   priority?: TicketPriority;
 
   @IsEnum(TicketCategory)
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   category?: TicketCategory;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? undefined : value)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   search?: string;
 
   @IsOptional()
@@ -121,11 +132,11 @@ export class SupportTicketQueryDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? 'created_at' : value)
+  @Transform(({ value }) => (value === '' ? 'created_at' : value))
   sortBy?: string = 'created_at';
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value === '' ? 'DESC' : value)
+  @Transform(({ value }) => (value === '' ? 'DESC' : value))
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

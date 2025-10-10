@@ -15,6 +15,8 @@ module.exports = {
         out_file: './logs/out.log',
         error_file: './logs/error.log',
         log_date_format: 'DD-MM-YYYY HH:mm:ss',
+        // Winston logging configuration
+        LOG_LEVEL: 'info',
       },
       // PM2 configuration
       max_memory_restart: '1G',
@@ -63,6 +65,8 @@ module.exports = {
         out_file: './logs/out.log',
         error_file: './logs/error.log',
         log_date_format: 'DD-MM-YYYY HH:mm:ss',
+        // Winston logging configuration
+        LOG_LEVEL: 'debug',
       },
       // PM2 configuration
       max_memory_restart: '1G',

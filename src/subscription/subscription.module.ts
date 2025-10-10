@@ -8,6 +8,7 @@ import { SseController } from './sse.controller';
 import { RazorpayService } from './razorpay.service';
 import { PaymentService } from './payment.service';
 import { NotificationService } from './notification.service';
+import { LoggerService } from '../common/logger/logger.service';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { Payment } from '../entities/payment.entity';
@@ -22,6 +23,7 @@ import { Payment } from '../entities/payment.entity';
     RazorpayService,
     PaymentService,
     NotificationService,
+    LoggerService,
   ],
   controllers: [SubscriptionController, WebhookController, SseController],
   exports: [

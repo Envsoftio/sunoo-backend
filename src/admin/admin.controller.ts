@@ -53,7 +53,6 @@ export class AdminController {
     return this.adminService.deleteUser(body.email);
   }
 
-
   // Analytics
   @Post('getUserRegistrationsByPeriod')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -99,14 +98,14 @@ export class AdminController {
     return this.adminService.getAllFeedbacks();
   }
 
-
-
-
   @Get('getUserBookLikes')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user book likes (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User book likes retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User book likes retrieved successfully',
+  })
   async getUserBookLikes(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -128,16 +127,25 @@ export class AdminController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get user activities (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User activities retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User activities retrieved successfully',
+  })
   async getUserActivities(@Body() body: { startDate?: Date; endDate?: Date }) {
-    return await this.adminService.getUserActivities(body.startDate, body.endDate);
+    return await this.adminService.getUserActivities(
+      body.startDate,
+      body.endDate
+    );
   }
 
   @Get('subscription-counts')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get subscription counts (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Subscription counts retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription counts retrieved successfully',
+  })
   async getSubscriptionCounts() {
     return this.adminService.getSubscriptionCounts();
   }
@@ -146,11 +154,13 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get story casts (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Story casts retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Story casts retrieved successfully',
+  })
   getStoryCasts(@Query('story_id') storyId: string) {
     return this.adminService.getStoryCasts(storyId);
   }
-
 
   @Post('story-casts')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -166,7 +176,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get cast members (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Cast members retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cast members retrieved successfully',
+  })
   async getCastMembers() {
     return this.adminService.getCastMembers();
   }
@@ -177,7 +190,9 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Create cast member (Admin only)' })
   @ApiResponse({ status: 200, description: 'Cast member created successfully' })
-  async createCastMember(@Body() body: { name: string; bio: string; picture: string }) {
+  async createCastMember(
+    @Body() body: { name: string; bio: string; picture: string }
+  ) {
     return await this.adminService.createCastMember(body);
   }
 
@@ -210,7 +225,10 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Upload cast member picture (Admin only)' })
   @ApiResponse({ status: 200, description: 'Picture uploaded successfully' })
-  async uploadCastPicture(@Param('id') id: string, @Body() body: { picture: string }) {
+  async uploadCastPicture(
+    @Param('id') id: string,
+    @Body() body: { picture: string }
+  ) {
     return await this.adminService.uploadCastPicture(id, body.picture);
   }
 
@@ -229,7 +247,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all categories (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   async getCategories() {
     return this.adminService.getCategories();
   }
@@ -249,7 +270,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get dashboard statistics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard stats retrieved successfully',
+  })
   async getDashboardStats() {
     return await this.adminService.getDashboardStats();
   }
@@ -258,7 +282,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get total user count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User count retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User count retrieved successfully',
+  })
   async getUserCount() {
     return await this.adminService.getUserCount();
   }
@@ -267,18 +294,22 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get total book count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Book count retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Book count retrieved successfully',
+  })
   async getBookCount() {
     return await this.adminService.getBookCount();
   }
-
-
 
   @Get('user-likes-count')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get total user likes count (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User likes count retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User likes count retrieved successfully',
+  })
   async getUserLikesCount() {
     return await this.adminService.getUserLikesCount();
   }
@@ -355,8 +386,14 @@ export class AdminController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish/unpublish story (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Story publish status updated successfully' })
-  async toggleStoryPublish(@Param('id') id: string, @Body() body: { isPublished: boolean }) {
+  @ApiResponse({
+    status: 200,
+    description: 'Story publish status updated successfully',
+  })
+  async toggleStoryPublish(
+    @Param('id') id: string,
+    @Body() body: { isPublished: boolean }
+  ) {
     return await this.adminService.toggleStoryPublish(id, body.isPublished);
   }
 
@@ -366,7 +403,10 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update story cover (Admin only)' })
   @ApiResponse({ status: 200, description: 'Story cover updated successfully' })
-  async updateStoryCover(@Param('id') id: string, @Body() body: { coverUrl: string }) {
+  async updateStoryCover(
+    @Param('id') id: string,
+    @Body() body: { coverUrl: string }
+  ) {
     return await this.adminService.updateStoryCover(id, body.coverUrl);
   }
 
@@ -417,10 +457,12 @@ export class AdminController {
   @ApiOperation({ summary: 'Bulk upload chapters (Admin only)' })
   @ApiResponse({ status: 200, description: 'Chapters uploaded successfully' })
   @UseInterceptors(FileInterceptor('file'))
-  bulkUploadChapters(@Param('storyId') storyId: string, @UploadedFile() file: Multer.File) {
+  bulkUploadChapters(
+    @Param('storyId') storyId: string,
+    @UploadedFile() file: Multer.File
+  ) {
     return this.adminService.bulkUploadChapters(storyId, file);
   }
-
 
   // Story Analytics APIs
   @Get('stories/analytics/overview')
@@ -436,7 +478,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get popular stories analytics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Popular stories analytics retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Popular stories analytics retrieved successfully',
+  })
   async getPopularStoriesAnalytics(
     @Query('period') period: string = 'week',
     @Query('limit') limit: number = 10
@@ -448,7 +493,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get story listeners analytics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Listeners analytics retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Listeners analytics retrieved successfully',
+  })
   async getStoryListenersAnalytics(
     @Query('storyId') storyId: string,
     @Query('period') period: string = 'week'
@@ -460,10 +508,11 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get story ratings analytics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Ratings analytics retrieved successfully' })
-  async getStoryRatingsAnalytics(
-    @Query('storyId') storyId: string
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Ratings analytics retrieved successfully',
+  })
+  async getStoryRatingsAnalytics(@Query('storyId') storyId: string) {
     return await this.adminService.getStoryRatingsAnalytics(storyId);
   }
 
@@ -471,7 +520,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get story completion rates (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Completion rates retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Completion rates retrieved successfully',
+  })
   async getStoryCompletionRates() {
     return await this.adminService.getStoryCompletionRates();
   }
@@ -482,8 +534,13 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send email to users (Admin only)' })
   @ApiResponse({ status: 200, description: 'Email sent successfully' })
-  async sendEmail(@Body() body: { to: any; templateKey: string; dynamicFields: any }) {
-    return await this.adminService.sendEmail(body.to, body.templateKey, body.dynamicFields);
+  async sendEmail(
+    @Body() body: { to: any; templateKey: string; dynamicFields: any }
+  ) {
+    return await this.adminService.sendEmail(
+      body.to,
+      body.templateKey,
+      body.dynamicFields
+    );
   }
-
 }
