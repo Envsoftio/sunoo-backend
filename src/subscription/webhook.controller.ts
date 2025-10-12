@@ -39,10 +39,18 @@ export class WebhookController {
     const subscriptionId = this.extractSubscriptionId(body);
 
     try {
-      // Log incoming webhook request
+      // Log incoming webhook request with full payload details
       this.loggerService.logWebhookRequest(event, subscriptionId, body, {
         'x-razorpay-signature': signature,
       });
+
+      // Log comprehensive Razorpay payload details
+      this.loggerService.logRazorpayPayload(
+        event,
+        subscriptionId,
+        body,
+        'WebhookController'
+      );
 
       // Verify webhook signature (skip in development mode)
       const bodyString = JSON.stringify(body);
@@ -156,10 +164,40 @@ export class WebhookController {
     const subscriptionId = subscriptionDetails.id;
     const userId = subscriptionDetails.notes?.user_id;
 
+    // Log detailed subscription payload
     this.loggerService.logWebhookEvent(
       'info',
       'Processing subscription.authenticated event',
-      { subscriptionId, userId, planId: subscriptionDetails.plan_id },
+      {
+        subscriptionId,
+        userId,
+        planId: subscriptionDetails.plan_id,
+        fullSubscriptionPayload: subscriptionDetails,
+        subscriptionMetadata: {
+          id: subscriptionDetails.id,
+          planId: subscriptionDetails.plan_id,
+          status: subscriptionDetails.status,
+          startAt: subscriptionDetails.start_at,
+          endAt: subscriptionDetails.end_at,
+          nextBillingAt: subscriptionDetails.next_billing_at,
+          currentStart: subscriptionDetails.current_start,
+          currentEnd: subscriptionDetails.current_end,
+          endedAt: subscriptionDetails.ended_at,
+          quantity: subscriptionDetails.quantity,
+          notes: subscriptionDetails.notes,
+          chargeAt: subscriptionDetails.charge_at,
+          shortUrl: subscriptionDetails.short_url,
+          hasOffer: !!subscriptionDetails.offer_id,
+          offerId: subscriptionDetails.offer_id,
+          customerNotify: subscriptionDetails.customer_notify,
+          totalCount: subscriptionDetails.total_count,
+          paidCount: subscriptionDetails.paid_count,
+          remainingCount: subscriptionDetails.remaining_count,
+          createdAt: subscriptionDetails.created_at,
+          entity: subscriptionDetails.entity,
+          source: subscriptionDetails.source,
+        },
+      },
       'WebhookController'
     );
 
@@ -318,6 +356,43 @@ export class WebhookController {
   private async handleSubscriptionCharged(body: any) {
     const chargeDetails = body.payload.subscription.entity;
 
+    // Log detailed subscription charged payload
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing subscription.charged event',
+      {
+        subscriptionId: chargeDetails.id,
+        userId: chargeDetails.notes?.user_id,
+        planId: chargeDetails.plan_id,
+        fullChargePayload: chargeDetails,
+        chargeMetadata: {
+          id: chargeDetails.id,
+          planId: chargeDetails.plan_id,
+          status: chargeDetails.status,
+          startAt: chargeDetails.start_at,
+          endAt: chargeDetails.end_at,
+          nextBillingAt: chargeDetails.next_billing_at,
+          chargeAt: chargeDetails.charge_at,
+          currentStart: chargeDetails.current_start,
+          currentEnd: chargeDetails.current_end,
+          endedAt: chargeDetails.ended_at,
+          quantity: chargeDetails.quantity,
+          notes: chargeDetails.notes,
+          shortUrl: chargeDetails.short_url,
+          hasOffer: !!chargeDetails.offer_id,
+          offerId: chargeDetails.offer_id,
+          customerNotify: chargeDetails.customer_notify,
+          totalCount: chargeDetails.total_count,
+          paidCount: chargeDetails.paid_count,
+          remainingCount: chargeDetails.remaining_count,
+          createdAt: chargeDetails.created_at,
+          entity: chargeDetails.entity,
+          source: chargeDetails.source,
+        },
+      },
+      'WebhookController'
+    );
+
     await this.subscriptionService.updateSubscriptionStatus(
       chargeDetails.id,
       chargeDetails.status,
@@ -433,10 +508,17 @@ export class WebhookController {
     const userId = paymentDetails.notes?.user_id;
     const subscriptionId = paymentDetails.subscription_id;
 
+    // Log detailed payment payload
     this.loggerService.logWebhookEvent(
       'info',
       'Processing payment.authorized event',
-      { paymentId, userId, subscriptionId, amount: paymentDetails.amount },
+      {
+        paymentId,
+        userId,
+        subscriptionId,
+        amount: paymentDetails.amount,
+        fullPaymentPayload: paymentDetails,
+      },
       'WebhookController'
     );
 
@@ -547,6 +629,51 @@ export class WebhookController {
 
   private async handlePaymentFailed(body: any) {
     const failureDetails = body.payload.payment.entity;
+
+    // Log detailed payment failure payload
+    this.loggerService.logWebhookEvent(
+      'error',
+      'Processing payment.failed event',
+      {
+        paymentId: failureDetails.id,
+        userId: failureDetails.notes?.user_id,
+        subscriptionId: failureDetails.subscription_id,
+        fullPaymentPayload: failureDetails,
+        failureMetadata: {
+          id: failureDetails.id,
+          amount: failureDetails.amount,
+          currency: failureDetails.currency,
+          status: failureDetails.status,
+          method: failureDetails.method,
+          description: failureDetails.description,
+          errorCode: failureDetails.error_code,
+          errorDescription: failureDetails.error_description,
+          errorSource: failureDetails.error_source,
+          errorStep: failureDetails.error_step,
+          errorReason: failureDetails.error_reason,
+          acquirerData: failureDetails.acquirer_data,
+          card: failureDetails.card,
+          bank: failureDetails.bank,
+          wallet: failureDetails.wallet,
+          vpa: failureDetails.vpa,
+          emi: failureDetails.emi,
+          international: failureDetails.international,
+          orderId: failureDetails.order_id,
+          subscriptionId: failureDetails.subscription_id,
+          customerId: failureDetails.customer_id,
+          tokenId: failureDetails.token_id,
+          recurring: failureDetails.recurring,
+          save: failureDetails.save,
+          createdAt: failureDetails.created_at,
+          captured: failureDetails.captured,
+          capturedAt: failureDetails.captured_at,
+          entity: failureDetails.entity,
+          source: failureDetails.source,
+          notes: failureDetails.notes,
+        },
+      },
+      'WebhookController'
+    );
 
     const paymentData = {
       payment_id: failureDetails.id,

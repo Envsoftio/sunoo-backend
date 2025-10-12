@@ -206,6 +206,121 @@ export class RazorpayService {
     }
   }
 
+  async pauseSubscription(subscriptionId: string) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/subscriptions/${subscriptionId}/pause`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: this.getAuthHeader(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pause_at: 'now',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Razorpay API error: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      this.logger.error('Error pausing subscription:', error);
+      throw error;
+    }
+  }
+
+  async resumeSubscription(subscriptionId: string) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/subscriptions/${subscriptionId}/resume`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: this.getAuthHeader(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resume_at: 'now',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Razorpay API error: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      this.logger.error('Error resuming subscription:', error);
+      throw error;
+    }
+  }
+
+  async updateSubscription(subscriptionId: string, updateData: any) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/subscriptions/${subscriptionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: this.getAuthHeader(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Razorpay API error: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      this.logger.error('Error updating subscription:', error);
+      throw error;
+    }
+  }
+
+  async retryPayment(subscriptionId: string) {
+    try {
+      // For halted subscriptions, we need to resume the subscription first
+      // Razorpay doesn't have a direct "retry payment" endpoint
+      // Instead, we resume the subscription which will trigger payment retry
+
+      this.logger.log(
+        `Attempting to resume subscription ${subscriptionId} for payment retry`
+      );
+
+      // First, try to resume the subscription
+      const resumeResponse = await this.resumeSubscription(subscriptionId);
+
+      this.logger.log(`Subscription resume response:`, resumeResponse);
+
+      return {
+        success: true,
+        message: 'Payment retry initiated by resuming subscription',
+        data: resumeResponse,
+      };
+    } catch (error) {
+      this.logger.error('Error retrying payment:', error);
+
+      // If resume fails, provide helpful error message
+      if (error.message.includes('Not Found')) {
+        throw new Error(
+          'Subscription not found. Please check if the subscription ID is correct.'
+        );
+      } else if (error.message.includes('already active')) {
+        throw new Error('Subscription is already active. No retry needed.');
+      } else {
+        throw new Error(`Failed to retry payment: ${error.message}`);
+      }
+    }
+  }
+
   verifyWebhookSignature(body: string, signature: string): boolean {
     try {
       const crypto = require('crypto');

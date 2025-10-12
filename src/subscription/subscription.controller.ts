@@ -242,4 +242,52 @@ export class SubscriptionController {
   getIpProvidersHealth() {
     return this.subscriptionService.getIpProvidersHealth();
   }
+
+  @Post('resume-halted-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resume a halted subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription resumed successfully',
+  })
+  async resumeHaltedSubscription(
+    @Body() body: { subscriptionId: string },
+    @Request() req
+  ) {
+    return this.subscriptionService.resumeHaltedSubscription(
+      req.user.id,
+      body.subscriptionId
+    );
+  }
+
+  @Post('retry-halted-payment')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Retry payment for a halted subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment retry initiated successfully',
+  })
+  async retryHaltedPayment(
+    @Body() body: { subscriptionId: string },
+    @Request() req
+  ) {
+    return this.subscriptionService.retryHaltedPayment(
+      req.user.id,
+      body.subscriptionId
+    );
+  }
+
+  @Get('halted-subscription-details')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get details of halted subscription' })
+  @ApiResponse({
+    status: 200,
+    description: 'Halted subscription details retrieved successfully',
+  })
+  async getHaltedSubscriptionDetails(@Request() req) {
+    return this.subscriptionService.getHaltedSubscriptionDetails(req.user.id);
+  }
 }

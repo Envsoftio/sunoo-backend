@@ -270,6 +270,39 @@ export class LoggerService implements NestLoggerService {
     });
   }
 
+  // Comprehensive payload logging for Razorpay webhooks
+  logRazorpayPayload(
+    event: string,
+    subscriptionId: string,
+    payload: any,
+    context: string = 'RazorpayWebhook'
+  ) {
+    this.webhookLogger.info('Razorpay payload details', {
+      event,
+      subscriptionId,
+      context,
+      payloadStructure: {
+        hasEvent: !!payload.event,
+        hasPayload: !!payload.payload,
+        hasSubscription: !!payload.payload?.subscription,
+        hasPayment: !!payload.payload?.payment,
+        hasOrder: !!payload.payload?.order,
+        hasCustomer: !!payload.payload?.customer,
+        hasPlan: !!payload.payload?.plan,
+        payloadKeys: Object.keys(payload.payload || {}),
+        subscriptionKeys: Object.keys(
+          payload.payload?.subscription?.entity || {}
+        ),
+        paymentKeys: Object.keys(payload.payload?.payment?.entity || {}),
+      },
+      razorpayEventId: payload.id,
+      createdAt: payload.created_at,
+      accountId: payload.account_id,
+      fullPayload: this.sanitizePayload(payload),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // Sanitize sensitive data from payload
   private sanitizePayload(payload: any): any {
     if (!payload) return payload;

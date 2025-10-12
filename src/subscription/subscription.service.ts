@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { RazorpayService } from './razorpay.service';
@@ -249,12 +249,18 @@ export class SubscriptionService {
   async getUserSubscription(userId: string) {
     try {
       const subscription = await this.subscriptionRepository.findOne({
-        where: { user_id: userId, status: 'active' },
+        where: {
+          user_id: userId,
+          status: In(['active', 'pending', 'authenticated', 'halted']),
+        },
         order: { created_at: 'DESC' },
       });
 
       if (!subscription) {
-        return { success: false, message: 'No active subscription found' };
+        return {
+          success: false,
+          message: 'No active, pending, or halted subscription found',
+        };
       }
 
       return { success: true, data: subscription };
@@ -266,11 +272,17 @@ export class SubscriptionService {
   async updateSubscription(userId: string, updateData: any) {
     try {
       const subscription = await this.subscriptionRepository.findOne({
-        where: { user_id: userId, status: 'active' },
+        where: {
+          user_id: userId,
+          status: In(['active', 'pending', 'authenticated']),
+        },
       });
 
       if (!subscription) {
-        return { success: false, message: 'No active subscription found' };
+        return {
+          success: false,
+          message: 'No active or pending subscription found',
+        };
       }
 
       Object.assign(subscription, updateData);
@@ -509,14 +521,20 @@ export class SubscriptionService {
   // Get subscription invoices for a user
   async getUserSubscriptionInvoices(userId: string) {
     try {
-      // Get user's active subscription
+      // Get user's active or pending subscription
       const subscription = await this.subscriptionRepository.findOne({
-        where: { user_id: userId, status: 'active' },
+        where: {
+          user_id: userId,
+          status: In(['active', 'pending']),
+        },
         order: { created_at: 'DESC' },
       });
 
       if (!subscription) {
-        return { success: false, message: 'No active subscription found' };
+        return {
+          success: false,
+          message: 'No active or pending subscription found',
+        };
       }
 
       // Get invoices for the subscription
@@ -606,6 +624,181 @@ export class SubscriptionService {
         { error: error.message }
       );
       return { success: false, message: error.message };
+    }
+  }
+
+  // Halted subscription recovery methods
+  async resumeHaltedSubscription(userId: string, subscriptionId: string) {
+    try {
+      // Get the subscription from our database
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user_id: userId,
+          subscription_id: subscriptionId,
+          status: 'halted',
+        },
+      });
+
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'Halted subscription not found for this user',
+        };
+      }
+
+      // Attempt to resume the subscription via Razorpay
+      const razorpayResponse =
+        await this.razorpayService.resumeSubscription(subscriptionId);
+
+      // Update our database with the new status
+      await this.subscriptionRepository.update(
+        { id: subscription.id },
+        {
+          status: 'active',
+          updated_at: new Date(),
+          metadata: {
+            ...subscription.metadata,
+            resumed_at: new Date(),
+            razorpay_response: razorpayResponse,
+          },
+        }
+      );
+
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Subscription resumed successfully',
+        {
+          userId,
+          subscriptionId,
+          razorpayResponse,
+        }
+      );
+
+      return {
+        success: true,
+        message: 'Subscription resumed successfully',
+        data: razorpayResponse,
+      };
+    } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to resume subscription',
+        {
+          userId,
+          subscriptionId,
+          error: error.message,
+        }
+      );
+
+      return {
+        success: false,
+        message: `Failed to resume subscription: ${error.message}`,
+      };
+    }
+  }
+
+  async retryHaltedPayment(userId: string, subscriptionId: string) {
+    try {
+      // Get the subscription from our database
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user_id: userId,
+          subscription_id: subscriptionId,
+          status: 'halted',
+        },
+      });
+
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'Halted subscription not found for this user',
+        };
+      }
+
+      // Attempt to retry the payment via Razorpay
+      const razorpayResponse =
+        await this.razorpayService.retryPayment(subscriptionId);
+
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Payment retry attempted',
+        {
+          userId,
+          subscriptionId,
+          razorpayResponse,
+        }
+      );
+
+      return {
+        success: true,
+        message: 'Payment retry initiated',
+        data: razorpayResponse,
+      };
+    } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to retry payment',
+        {
+          userId,
+          subscriptionId,
+          error: error.message,
+        }
+      );
+
+      return {
+        success: false,
+        message: `Failed to retry payment: ${error.message}`,
+      };
+    }
+  }
+
+  async getHaltedSubscriptionDetails(userId: string) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user_id: userId,
+          status: 'halted',
+        },
+        order: { created_at: 'DESC' },
+      });
+
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'No halted subscription found for this user',
+        };
+      }
+
+      // Get additional details from Razorpay
+      let razorpayDetails = null;
+      try {
+        razorpayDetails = await this.razorpayService.getSubscription(
+          subscription.subscription_id!
+        );
+      } catch (error) {
+        this.loggerService.logSubscriptionEvent(
+          'warn',
+          'Failed to fetch Razorpay details for halted subscription',
+          {
+            userId,
+            subscriptionId: subscription.subscription_id,
+            error: error.message,
+          }
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          ...subscription,
+          razorpay_details: razorpayDetails,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to get halted subscription details: ${error.message}`,
+      };
     }
   }
 }
