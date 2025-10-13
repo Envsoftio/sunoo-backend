@@ -19,9 +19,7 @@ const TABLE_MAPPING = {
   'User.json': 'users',
   'Category.json': 'categories',
   'Books.json': 'books',
-  'Authors.json': 'authors',
   'Chapters.json': 'chapters',
-  'Narrator.json': 'narrators',
   'Bookmarks.json': 'bookmarks',
   'BookRatings.json': 'book_ratings',
   'UserProgress.json': 'user_progress',
@@ -208,12 +206,10 @@ async function migrateFromIndividualJson() {
     const MIGRATION_ORDER = [
       'User.json', // No dependencies
       'Category.json', // No dependencies
-      'Authors.json', // No dependencies
       'CastMembers.json', // No dependencies
       'Plans.json', // No dependencies
       'Books.json', // Depends on Category
       'Chapters.json', // Depends on Books
-      'Narrator.json', // Depends on User
       'Bookmarks.json', // Depends on User, Books
       'BookRatings.json', // Depends on User, Books
       'UserProgress.json', // Depends on User, Books, Chapters
