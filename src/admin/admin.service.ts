@@ -129,36 +129,30 @@ export class AdminService {
   async getUserRegistrationsByPeriod(period: string) {
     try {
       let dateFormat: string;
-      let dateFilter: Date;
-      const now = new Date();
 
       switch (period) {
         case 'day':
           dateFormat = 'YYYY-MM-DD';
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
           break;
         case 'week':
-          dateFormat = 'YYYY-"W"WW';
-          dateFilter = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // Last 12 weeks
+          // Use ISO week format to match Supabase implementation
+          dateFormat = 'IYYY-"W"IW';
           break;
         case 'month':
           dateFormat = 'YYYY-MM';
-          dateFilter = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // Last 12 months
           break;
         case 'year':
           dateFormat = 'YYYY';
-          dateFilter = new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000); // Last 5 years
           break;
         default:
           dateFormat = 'YYYY-MM-DD';
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
+      // Get all user registrations without date filter (like Supabase implementation)
       const registrations = await this.userRepository
         .createQueryBuilder('user')
         .select(`TO_CHAR(user.created_at, '${dateFormat}')`, 'period')
         .addSelect('COUNT(*)', 'count')
-        .where('user.created_at >= :dateFilter', { dateFilter })
         .groupBy(`TO_CHAR(user.created_at, '${dateFormat}')`)
         .orderBy('period', 'ASC')
         .getRawMany();
@@ -178,36 +172,29 @@ export class AdminService {
   async getSubscriptionRegistrationsByPeriod(period: string) {
     try {
       let dateFormat: string;
-      let dateFilter: Date;
-      const now = new Date();
 
       switch (period) {
         case 'day':
           dateFormat = 'YYYY-MM-DD';
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
           break;
         case 'week':
-          dateFormat = 'YYYY-"W"WW';
-          dateFilter = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // Last 12 weeks
+          // Use ISO week format to match Supabase implementation
+          dateFormat = 'IYYY-"W"IW';
           break;
         case 'month':
           dateFormat = 'YYYY-MM';
-          dateFilter = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // Last 12 months
           break;
         case 'year':
           dateFormat = 'YYYY';
-          dateFilter = new Date(now.getTime() - 5 * 365 * 24 * 60 * 60 * 1000); // Last 5 years
           break;
         default:
           dateFormat = 'YYYY-MM-DD';
-          dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
-      // Get all periods in the range to ensure we have data for all periods
+      // Get all periods to ensure we have data for all periods (like Supabase implementation)
       const allPeriods = await this.subscriptionRepository
         .createQueryBuilder('subscription')
         .select(`TO_CHAR(subscription.created_at, '${dateFormat}')`, 'period')
-        .where('subscription.created_at >= :dateFilter', { dateFilter })
         .groupBy(`TO_CHAR(subscription.created_at, '${dateFormat}')`)
         .orderBy('period', 'ASC')
         .getRawMany();
@@ -218,7 +205,6 @@ export class AdminService {
         .select(`TO_CHAR(subscription.created_at, '${dateFormat}')`, 'period')
         .addSelect('subscription.status', 'status')
         .addSelect('COUNT(*)', 'count')
-        .where('subscription.created_at >= :dateFilter', { dateFilter })
         .groupBy(
           `TO_CHAR(subscription.created_at, '${dateFormat}'), subscription.status`
         )
@@ -233,8 +219,8 @@ export class AdminService {
         periodMap.set(period.period, {
           period: period.period,
           active: 0,
+          inactive: 0, // Add inactive status
           authorized: 0,
-          cancelled: 0,
         });
       });
 
@@ -247,10 +233,17 @@ export class AdminService {
               periodData.active = parseInt(item.count);
               break;
             case 'authorized':
-              periodData.authorized = parseInt(item.count);
+            case 'pending':
+            case 'authenticated':
+              // Map authorized/pending states to 'authorized'
+              periodData.authorized += parseInt(item.count);
               break;
             case 'cancelled':
-              periodData.cancelled = parseInt(item.count);
+            case 'inactive':
+            case 'halted':
+            case 'failed':
+              // Map various inactive states to 'inactive'
+              periodData.inactive += parseInt(item.count);
               break;
           }
         }
@@ -319,65 +312,115 @@ export class AdminService {
 
   async getUserActivities(startDate?: Date, endDate?: Date) {
     try {
-      // Get user progress with related data instead of sessions
-      let query = this.userSessionRepository
-        .createQueryBuilder('session')
-        .leftJoinAndSelect('session.user', 'user')
-        .leftJoin('user.userProgress', 'progress')
-        .leftJoin('progress.book', 'book')
-        .leftJoin('progress.chapter', 'chapter')
+      // Get user progress with related data - this is the correct approach
+      let query = this.userProgressRepository
+        .createQueryBuilder('progress')
+        .leftJoinAndSelect('progress.user', 'user')
+        .leftJoinAndSelect('progress.book', 'book')
+        .leftJoinAndSelect('progress.chapter', 'chapter')
         .select([
-          'session.id',
-          'session.userId',
-          'session.isActive',
-          'session.created_at',
-          'session.updated_at',
+          'progress.id',
+          'progress.progress_time',
+          'progress.updated_at',
           'user.id',
           'user.name',
           'user.email',
           'user.imageURL',
-          'progress.id',
-          'progress.progress_time',
-          'progress.updated_at',
           'book.id',
           'book.title',
           'chapter.id',
           'chapter.name',
           'chapter.playbackTime',
         ])
-        .orderBy('session.updated_at', 'DESC');
+        .orderBy('progress.updated_at', 'DESC')
+        .limit(100); // Add limit for performance
 
       if (startDate) {
-        query = query.andWhere('session.updated_at >= :startDate', {
+        query = query.andWhere('progress.updated_at >= :startDate', {
           startDate,
         });
       }
       if (endDate) {
-        query = query.andWhere('session.updated_at <= :endDate', { endDate });
+        query = query.andWhere('progress.updated_at <= :endDate', { endDate });
       }
 
       const activities = await query.getMany();
 
       // Transform the data to match frontend expectations
-      const transformedActivities = activities.map(activity => ({
-        id: activity.id,
-        userId: activity.userId,
-        isActive: activity.isActive,
-        created_at: activity.created_at,
-        updated_at: activity.updated_at,
-        User: activity.user
-          ? {
-              id: activity.user.id,
-              name: activity.user.name,
-              email: activity.user.email,
-              imageURL: activity.user.imageURL,
+      const transformedActivities = activities.map(activity => {
+        // Convert playbackTime string to seconds (similar to frontend logic)
+        let playbackTimeSec = 0;
+        if (typeof activity.chapter?.playbackTime === 'string') {
+          // Handle different formats: "01h 05m 08s" or "1:23:45"
+          if (
+            activity.chapter.playbackTime.includes('h') ||
+            activity.chapter.playbackTime.includes('m') ||
+            activity.chapter.playbackTime.includes('s')
+          ) {
+            // Format: "01h 05m 08s"
+            const hMatch = activity.chapter.playbackTime.match(/(\d+)h/);
+            const mMatch = activity.chapter.playbackTime.match(/(\d+)m/);
+            const sMatch = activity.chapter.playbackTime.match(/(\d+)s/);
+            if (hMatch) playbackTimeSec += parseInt(hMatch[1], 10) * 3600;
+            if (mMatch) playbackTimeSec += parseInt(mMatch[1], 10) * 60;
+            if (sMatch) playbackTimeSec += parseInt(sMatch[1], 10);
+          } else if (activity.chapter.playbackTime.includes(':')) {
+            // Format: "1:23:45" or "23:45"
+            const timeParts = activity.chapter.playbackTime
+              .split(':')
+              .map(Number);
+            if (timeParts.length === 3) {
+              playbackTimeSec =
+                timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+            } else if (timeParts.length === 2) {
+              playbackTimeSec = timeParts[0] * 60 + timeParts[1];
             }
-          : null,
-        // Add progress data if available
-        progress_time: 0, // Default value
-        Books: null,
-        Chapters: null,
-      }));
+          }
+        } else if (typeof activity.chapter?.playbackTime === 'number') {
+          playbackTimeSec = activity.chapter.playbackTime;
+        }
+
+        const prog = Number(activity.progress_time);
+        let percent = 0;
+        if (playbackTimeSec > 0 && !isNaN(prog)) {
+          percent = Math.min(100, Math.round((prog / playbackTimeSec) * 100));
+        }
+
+        return {
+          id: activity.id,
+          userName: activity.user?.name || '',
+          userEmail: activity.user?.email || '',
+          userImage: activity.user?.imageURL || null,
+          bookTitle: activity.book?.title || '',
+          chapterName: activity.chapter?.name || '',
+          progress_time: activity.progress_time,
+          playbackTime: playbackTimeSec,
+          progressPercent: percent,
+          updated_at: activity.updated_at,
+          // Keep the old structure for backward compatibility
+          User: activity.user
+            ? {
+                id: activity.user.id,
+                name: activity.user.name,
+                email: activity.user.email,
+                imageURL: activity.user.imageURL,
+              }
+            : null,
+          Books: activity.book
+            ? {
+                id: activity.book.id,
+                title: activity.book.title,
+              }
+            : null,
+          Chapters: activity.chapter
+            ? {
+                id: activity.chapter.id,
+                name: activity.chapter.name,
+                playbackTime: activity.chapter.playbackTime,
+              }
+            : null,
+        };
+      });
 
       return { success: true, data: transformedActivities };
     } catch (error) {

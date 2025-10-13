@@ -63,6 +63,7 @@ export class AdminController {
     return this.adminService.getUserRegistrationsByPeriod(body.period);
   }
 
+
   @Post('getSubscriptionRegistrationsByPeriod')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
