@@ -63,7 +63,6 @@ export class AdminController {
     return this.adminService.getUserRegistrationsByPeriod(body.period);
   }
 
-
   @Post('getSubscriptionRegistrationsByPeriod')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
@@ -542,5 +541,61 @@ export class AdminController {
       body.templateKey,
       body.dynamicFields
     );
+  }
+
+  // Story Plays Analytics APIs
+  @Get('story-plays')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story plays analytics (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Story plays analytics retrieved successfully',
+  })
+  async getStoryPlaysAnalytics(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search: string = '',
+    @Query('sortBy') sortBy: string = 'total_plays',
+    @Query('sortOrder') sortOrder: string = 'desc',
+    @Query('storyId') storyId: string = '',
+    @Query('language') language: string = ''
+  ) {
+    return await this.adminService.getStoryPlaysAnalytics(
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      storyId,
+      language
+    );
+  }
+
+  @Get('story-plays/:storyId/details')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get story play details (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Story play details retrieved successfully',
+  })
+  async getStoryPlayDetails(
+    @Param('storyId') storyId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10
+  ) {
+    return await this.adminService.getStoryPlayDetails(storyId, page, limit);
+  }
+
+  @Get('story-plays/languages')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get unique languages for story plays (Admin only)',
+  })
+  @ApiResponse({ status: 200, description: 'Languages retrieved successfully' })
+  async getStoryPlayLanguages() {
+    return await this.adminService.getStoryPlayLanguages();
   }
 }

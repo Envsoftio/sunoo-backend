@@ -1438,4 +1438,296 @@ export class AdminService {
       };
     }
   }
+
+  // Story Plays Analytics Methods
+  async getStoryPlaysAnalytics(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    sortBy: string = 'total_plays',
+    sortOrder: string = 'desc',
+    storyId: string = '',
+    language: string = ''
+  ) {
+    try {
+      const offset = (page - 1) * limit;
+
+      let query = this.userProgressRepository
+        .createQueryBuilder('progress')
+        .leftJoin('progress.book', 'book')
+        .leftJoin('progress.user', 'user')
+        .leftJoin('book.category', 'category')
+        .select([
+          'book.id',
+          'book.title',
+          'book.slug',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.isPublished',
+          'book.created_at',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('SUM(progress.progress_time)', 'total_play_time')
+        .addSelect('COUNT(DISTINCT progress.userId)', 'unique_listeners')
+        .addSelect('COUNT(progress.id)', 'total_plays')
+        .addSelect('AVG(progress.progress_time)', 'avg_play_time')
+        .where('progress.progress_time > 0')
+        .groupBy(
+          'book.id, book.title, book.slug, book.bookCoverUrl, book.language, book.isPublished, book.created_at, category.name, category.slug'
+        );
+
+      // Apply search filter
+      if (search) {
+        query = query.andWhere(
+          '(book.title ILIKE :search OR book.slug ILIKE :search OR book.bookDescription ILIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
+
+      // Apply language filter
+      if (language) {
+        query = query.andWhere('book.language = :language', { language });
+      }
+
+      // Apply story filter
+      if (storyId) {
+        query = query.andWhere('book.id = :storyId', { storyId });
+      }
+
+      // Apply sorting
+      const validSortFields = [
+        'total_play_time',
+        'unique_listeners',
+        'total_plays',
+        'avg_play_time',
+        'book.title',
+        'book.created_at',
+      ];
+      const sortField = validSortFields.includes(sortBy)
+        ? sortBy
+        : 'total_plays';
+      const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+      query = query.orderBy(sortField, sortDirection);
+
+      // Add secondary sort by book.id to ensure deterministic ordering
+      if (sortField !== 'book.id') {
+        query = query.addOrderBy('book.id', 'ASC');
+      }
+
+      // Get total count for pagination - need to count grouped results
+      const countQuery = this.userProgressRepository
+        .createQueryBuilder('progress')
+        .leftJoin('progress.book', 'book')
+        .leftJoin('book.category', 'category')
+        .select('book.id')
+        .where('progress.progress_time > 0')
+        .groupBy('book.id');
+
+      // Apply same filters to count query
+      if (search) {
+        countQuery.andWhere(
+          '(book.title ILIKE :search OR book.slug ILIKE :search OR book.bookDescription ILIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
+
+      if (language) {
+        countQuery.andWhere('book.language = :language', { language });
+      }
+
+      if (storyId) {
+        countQuery.andWhere('book.id = :storyId', { storyId });
+      }
+
+      const total = await countQuery.getCount();
+      console.log(
+        'Total count:',
+        total,
+        'Offset:',
+        offset,
+        'Limit:',
+        limit,
+        'Page:',
+        page
+      );
+
+      // Apply pagination
+      const results = await query.skip(offset).take(limit).getRawMany();
+      console.log('Results count:', results.length);
+      console.log(
+        'Page',
+        page,
+        'Results:',
+        results.map(r => ({
+          id: r.book_id,
+          title: r.book_title,
+          total_plays: r.total_plays,
+        }))
+      );
+
+      // Transform data to match expected format
+      const transformedData = results.map(item => ({
+        storyId: item.book_id,
+        title: item.book_title,
+        slug: item.book_slug,
+        coverUrl: item.book_bookCoverUrl,
+        language: item.book_language,
+        isPublished: item.book_isPublished,
+        createdAt: item.book_created_at,
+        category: item.category_name || 'Uncategorized',
+        categorySlug: item.category_slug || '',
+        totalPlayTime: parseFloat(item.total_play_time) || 0,
+        uniqueListeners: parseInt(item.unique_listeners) || 0,
+        totalPlays: parseInt(item.total_plays) || 0,
+        avgPlayTime: parseFloat(item.avg_play_time) || 0,
+      }));
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getStoryPlayDetails(
+    storyId: string,
+    page: number = 1,
+    limit: number = 10
+  ) {
+    try {
+      const offset = (page - 1) * limit;
+
+      const query = this.userProgressRepository
+        .createQueryBuilder('progress')
+        .leftJoinAndSelect('progress.user', 'user')
+        .leftJoinAndSelect('progress.chapter', 'chapter')
+        .leftJoinAndSelect('progress.book', 'book')
+        .select([
+          'progress.id',
+          'progress.progress_time',
+          'progress.updated_at',
+          'progress.created_at',
+          'user.id',
+          'user.name',
+          'user.email',
+          'user.imageURL',
+          'chapter.id',
+          'chapter.name',
+          'chapter.playbackTime',
+          'book.id',
+          'book.title',
+        ])
+        .where('progress.bookId = :storyId', { storyId })
+        .andWhere('progress.progress_time > 0')
+        .orderBy('progress.updated_at', 'DESC');
+
+      // Get total count for pagination
+      const total = await query.getCount();
+
+      // Apply pagination
+      const results = await query.skip(offset).take(limit).getMany();
+
+      // Transform data
+      const transformedData = results.map(progress => {
+        // Convert playbackTime string to seconds
+        let playbackTimeSec = 0;
+        if (typeof progress.chapter?.playbackTime === 'string') {
+          if (
+            progress.chapter.playbackTime.includes('h') ||
+            progress.chapter.playbackTime.includes('m') ||
+            progress.chapter.playbackTime.includes('s')
+          ) {
+            // Format: "01h 05m 08s"
+            const hMatch = progress.chapter.playbackTime.match(/(\d+)h/);
+            const mMatch = progress.chapter.playbackTime.match(/(\d+)m/);
+            const sMatch = progress.chapter.playbackTime.match(/(\d+)s/);
+            if (hMatch) playbackTimeSec += parseInt(hMatch[1], 10) * 3600;
+            if (mMatch) playbackTimeSec += parseInt(mMatch[1], 10) * 60;
+            if (sMatch) playbackTimeSec += parseInt(sMatch[1], 10);
+          } else if (progress.chapter.playbackTime.includes(':')) {
+            // Format: "1:23:45" or "23:45"
+            const timeParts = progress.chapter.playbackTime
+              .split(':')
+              .map(Number);
+            if (timeParts.length === 3) {
+              playbackTimeSec =
+                timeParts[0] * 3600 + timeParts[1] * 60 + timeParts[2];
+            } else if (timeParts.length === 2) {
+              playbackTimeSec = timeParts[0] * 60 + timeParts[1];
+            }
+          }
+        } else if (typeof progress.chapter?.playbackTime === 'number') {
+          playbackTimeSec = progress.chapter.playbackTime;
+        }
+
+        const prog = Number(progress.progress_time);
+        let percent = 0;
+        if (playbackTimeSec > 0 && !isNaN(prog)) {
+          percent = Math.min(100, Math.round((prog / playbackTimeSec) * 100));
+        }
+
+        return {
+          id: progress.id,
+          userId: progress.user?.id,
+          userName: progress.user?.name || '',
+          userEmail: progress.user?.email || '',
+          userImage: progress.user?.imageURL || null,
+          chapterId: progress.chapter?.id,
+          chapterName: progress.chapter?.name || '',
+          playbackTime: playbackTimeSec,
+          progressTime: progress.progress_time,
+          progressPercent: percent,
+          updatedAt: progress.updated_at,
+          createdAt: progress.created_at,
+        };
+      });
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getStoryPlayLanguages() {
+    try {
+      const languages = await this.bookRepository
+        .createQueryBuilder('book')
+        .select('DISTINCT book.language', 'language')
+        .where('book.language IS NOT NULL')
+        .andWhere('book.deleted_at IS NULL')
+        .getRawMany();
+
+      return {
+        success: true,
+        data: languages
+          .map(l => l.language)
+          .filter(lang => lang && lang.trim() !== ''),
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }
