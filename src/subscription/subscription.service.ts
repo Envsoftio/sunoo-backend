@@ -177,20 +177,54 @@ export class SubscriptionService {
     try {
       const { subscriptionId } = cancellationData;
 
+      // Validate subscription ID
+      if (
+        !subscriptionId ||
+        subscriptionId === 'undefined' ||
+        subscriptionId === 'null' ||
+        subscriptionId === 'NaN'
+      ) {
+        return { success: false, message: 'Invalid subscription ID provided' };
+      }
+
+      // Find subscription by Razorpay subscription ID (not database ID)
       const subscription = await this.subscriptionRepository.findOne({
-        where: { id: parseInt(subscriptionId), user_id: userId },
+        where: { subscription_id: subscriptionId, user_id: userId },
       });
 
       if (!subscription) {
         return { success: false, message: 'Subscription not found' };
       }
 
-      await this.subscriptionRepository.update(subscriptionId, {
+      // Calculate end date based on next billing date or current date + 30 days
+      let endDate: Date;
+      if (subscription.next_billing_date) {
+        endDate = new Date(subscription.next_billing_date);
+      } else {
+        // Fallback: add 30 days from current date
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30);
+      }
+
+      // Update using the database ID - set status to cancelled but keep access until end date
+      await this.subscriptionRepository.update(subscription.id, {
         status: 'cancelled',
         cancelledAt: new Date(),
+        end_date: endDate,
+        user_cancelled: true,
       });
 
-      return { success: true, message: 'Subscription cancelled successfully' };
+      return {
+        success: true,
+        message: 'Subscription cancelled successfully',
+        data: {
+          end_date: endDate,
+          access_until: endDate.toISOString(),
+          days_remaining: Math.ceil(
+            (endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          ),
+        },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -251,7 +285,13 @@ export class SubscriptionService {
       const subscription = await this.subscriptionRepository.findOne({
         where: {
           user_id: userId,
-          status: In(['active', 'pending', 'authenticated', 'halted']),
+          status: In([
+            'active',
+            'pending',
+            'authenticated',
+            'halted',
+            'cancelled',
+          ]),
         },
         order: { created_at: 'DESC' },
       });
@@ -259,13 +299,150 @@ export class SubscriptionService {
       if (!subscription) {
         return {
           success: false,
-          message: 'No active, pending, or halted subscription found',
+          message: 'No subscription found',
         };
+      }
+
+      // Check if cancelled subscription is still in grace period
+      if (subscription.status === 'cancelled' && subscription.end_date) {
+        const now = new Date();
+        const endDate = new Date(subscription.end_date);
+
+        if (now <= endDate) {
+          // Still in grace period - return the subscription
+          return {
+            success: true,
+            data: {
+              ...subscription,
+              isInGracePeriod: true,
+              daysRemaining: Math.ceil(
+                (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+              ),
+            },
+          };
+        } else {
+          // Grace period expired
+          return {
+            success: false,
+            message: 'Subscription grace period has expired',
+          };
+        }
       }
 
       return { success: true, data: subscription };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  // Helper method to check if user has active subscription access (including grace period)
+  async hasActiveSubscriptionAccess(userId: string): Promise<boolean> {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user_id: userId,
+          status: In([
+            'active',
+            'pending',
+            'authenticated',
+            'halted',
+            'cancelled',
+          ]),
+        },
+        order: { created_at: 'DESC' },
+      });
+
+      if (!subscription) {
+        return false;
+      }
+
+      // If subscription is active, pending, authenticated, or halted, user has access
+      if (
+        subscription.status &&
+        ['active', 'pending', 'authenticated', 'halted'].includes(
+          subscription.status
+        )
+      ) {
+        return true;
+      }
+
+      // If subscription is cancelled, check if we're still within the grace period
+      if (subscription.status === 'cancelled' && subscription.end_date) {
+        const now = new Date();
+        const endDate = new Date(subscription.end_date);
+        return now <= endDate;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking subscription access:', error);
+      return false;
+    }
+  }
+
+  // Helper method to get subscription access details
+  async getSubscriptionAccessDetails(userId: string) {
+    try {
+      const subscription = await this.subscriptionRepository.findOne({
+        where: {
+          user_id: userId,
+          status: In([
+            'active',
+            'pending',
+            'authenticated',
+            'halted',
+            'cancelled',
+          ]),
+        },
+        order: { created_at: 'DESC' },
+      });
+
+      if (!subscription) {
+        return {
+          hasAccess: false,
+          status: 'none',
+          message: 'No subscription found',
+        };
+      }
+
+      const now = new Date();
+      const isActive = subscription.status
+        ? ['active', 'pending', 'authenticated', 'halted'].includes(
+            subscription.status
+          )
+        : false;
+      const isCancelled = subscription.status === 'cancelled';
+      const hasGracePeriod =
+        isCancelled &&
+        subscription.end_date &&
+        now <= new Date(subscription.end_date);
+
+      return {
+        hasAccess: isActive || hasGracePeriod,
+        status: subscription.status,
+        isActive,
+        isCancelled,
+        hasGracePeriod,
+        endDate: subscription.end_date,
+        daysRemaining: subscription.end_date
+          ? Math.ceil(
+              (new Date(subscription.end_date).getTime() - now.getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+          : null,
+        message: isActive
+          ? 'Active subscription'
+          : hasGracePeriod && subscription.end_date
+            ? `Access until ${new Date(subscription.end_date).toLocaleDateString()}`
+            : 'Subscription expired',
+      };
+    } catch (error) {
+      console.error('Error getting subscription access details:', error);
+      return {
+        hasAccess: false,
+        status: 'error',
+        message: 'Error checking subscription status',
+      };
     }
   }
 
@@ -331,11 +508,48 @@ export class SubscriptionService {
     cancelAtCycleEnd = false
   ) {
     try {
+      // First, cancel the subscription in Razorpay
       const response = await this.razorpayService.cancelSubscription(
         subscriptionId,
         cancelAtCycleEnd
       );
-      return { success: true, data: response };
+
+      // Then update the database status
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { subscription_id: subscriptionId },
+      });
+
+      if (subscription) {
+        // Calculate end date based on next billing date or current date + 30 days
+        let endDate: Date;
+        if (subscription.next_billing_date) {
+          endDate = new Date(subscription.next_billing_date);
+        } else {
+          // Fallback: add 30 days from current date
+          endDate = new Date();
+          endDate.setDate(endDate.getDate() + 30);
+        }
+
+        await this.subscriptionRepository.update(subscription.id, {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          end_date: endDate,
+          user_cancelled: true,
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          ...response,
+          end_date: subscription?.next_billing_date
+            ? new Date(subscription.next_billing_date)
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          access_until: subscription?.next_billing_date
+            ? new Date(subscription.next_billing_date).toISOString()
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -521,11 +735,17 @@ export class SubscriptionService {
   // Get subscription invoices for a user
   async getUserSubscriptionInvoices(userId: string) {
     try {
-      // Get user's active or pending subscription
+      // Get user's subscription (including cancelled with grace period)
       const subscription = await this.subscriptionRepository.findOne({
         where: {
           user_id: userId,
-          status: In(['active', 'pending']),
+          status: In([
+            'active',
+            'pending',
+            'authenticated',
+            'halted',
+            'cancelled',
+          ]),
         },
         order: { created_at: 'DESC' },
       });
@@ -533,8 +753,22 @@ export class SubscriptionService {
       if (!subscription) {
         return {
           success: false,
-          message: 'No active or pending subscription found',
+          message: 'No subscription found',
         };
+      }
+
+      // Check if cancelled subscription is still in grace period
+      if (subscription.status === 'cancelled' && subscription.end_date) {
+        const now = new Date();
+        const endDate = new Date(subscription.end_date);
+
+        if (now > endDate) {
+          // Grace period expired
+          return {
+            success: false,
+            message: 'Subscription grace period has expired',
+          };
+        }
       }
 
       // Get invoices for the subscription

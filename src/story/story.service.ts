@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Book } from '../entities/book.entity';
 import { Category } from '../entities/category.entity';
@@ -188,16 +188,43 @@ export class StoryService {
           0
         ) || 0;
 
-      // Check user subscription status
+      // Check user subscription status (including grace period for cancelled subscriptions)
       let userIsSubscribed = false;
       if (userId) {
         const subscription = await this.subscriptionRepository.findOne({
           where: {
             user_id: userId,
-            status: 'active',
+            status: In([
+              'active',
+              'pending',
+              'authenticated',
+              'halted',
+              'cancelled',
+            ]),
           },
+          order: { created_at: 'DESC' },
         });
-        userIsSubscribed = !!subscription;
+
+        if (subscription) {
+          // If subscription is active, pending, authenticated, or halted, user has access
+          if (
+            subscription.status &&
+            ['active', 'pending', 'authenticated', 'halted'].includes(
+              subscription.status
+            )
+          ) {
+            userIsSubscribed = true;
+          }
+          // If subscription is cancelled, check if we're still within the grace period
+          else if (
+            subscription.status === 'cancelled' &&
+            subscription.end_date
+          ) {
+            const now = new Date();
+            const endDate = new Date(subscription.end_date);
+            userIsSubscribed = now <= endDate;
+          }
+        }
       }
 
       // Get cast data
@@ -1204,19 +1231,46 @@ export class StoryService {
         return { success: false, message: 'Story not found' };
       }
 
-      // Check user subscription status
+      // Check user subscription status (including grace period for cancelled subscriptions)
       let userIsSubscribed = false;
       let isBookmarked = false;
 
       if (userId) {
-        // Check if user has active subscription
+        // Check if user has active subscription or is within grace period
         const subscription = await this.subscriptionRepository.findOne({
           where: {
             user_id: userId,
-            status: 'active',
+            status: In([
+              'active',
+              'pending',
+              'authenticated',
+              'halted',
+              'cancelled',
+            ]),
           },
+          order: { created_at: 'DESC' },
         });
-        userIsSubscribed = !!subscription;
+
+        if (subscription) {
+          // If subscription is active, pending, authenticated, or halted, user has access
+          if (
+            subscription.status &&
+            ['active', 'pending', 'authenticated', 'halted'].includes(
+              subscription.status
+            )
+          ) {
+            userIsSubscribed = true;
+          }
+          // If subscription is cancelled, check if we're still within the grace period
+          else if (
+            subscription.status === 'cancelled' &&
+            subscription.end_date
+          ) {
+            const now = new Date();
+            const endDate = new Date(subscription.end_date);
+            userIsSubscribed = now <= endDate;
+          }
+        }
 
         // Check if story is bookmarked
         const bookmark = await this.bookmarkRepository.findOne({

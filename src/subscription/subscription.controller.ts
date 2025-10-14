@@ -102,6 +102,20 @@ export class SubscriptionController {
     return this.subscriptionService.getUserSubscription(req.user.id);
   }
 
+  @Get('access-details')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get subscription access details including grace period',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription access details retrieved successfully',
+  })
+  async getSubscriptionAccessDetails(@Request() req) {
+    return this.subscriptionService.getSubscriptionAccessDetails(req.user.id);
+  }
+
   @Post('create')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -122,8 +136,13 @@ export class SubscriptionController {
     status: 200,
     description: 'Subscription cancelled successfully',
   })
-  async cancelSubscription(@Request() req) {
-    return this.subscriptionService.cancelSubscription(req.user.id, {});
+  async cancelSubscription(
+    @Request() req,
+    @Body() body: { subscription_id: string }
+  ) {
+    return this.subscriptionService.cancelSubscription(req.user.id, {
+      subscriptionId: body.subscription_id,
+    });
   }
 
   @Put('update')
