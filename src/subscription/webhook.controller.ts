@@ -709,6 +709,25 @@ export class WebhookController {
           subscriptionId,
         });
 
+        // Update subscription's next_billing_date based on latest payment
+        try {
+          await this.subscriptionService.updateNextBillingDateFromPayments(
+            subscriptionId
+          );
+        } catch (e) {
+          this.loggerService.logWebhookEvent(
+            'warn',
+            'Failed to update next_billing_date from payment',
+            { subscriptionId, error: (e as any)?.message },
+            'WebhookController'
+          );
+          console.log(
+            'Failed to update next_billing_date from payment',
+            subscriptionId,
+            e
+          );
+        }
+
         // Emit notification to user
         if (paymentDetails.notes?.user_id) {
           this.loggerService.logWebhookEvent(

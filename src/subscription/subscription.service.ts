@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
+import { Payment } from '../entities/payment.entity';
 import { RazorpayService } from './razorpay.service';
 import { LoggerService } from '../common/logger/logger.service';
 
@@ -13,6 +14,8 @@ export class SubscriptionService {
     private planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Payment)
+    private paymentRepository: Repository<Payment>,
     private razorpayService: RazorpayService,
     private loggerService: LoggerService
   ) {}
@@ -414,9 +417,8 @@ export class SubscriptionService {
       const isCancelled = subscription.status === 'cancelled';
       const hasGracePeriod =
         isCancelled &&
-        subscription.end_date &&
-        now <= new Date(subscription.end_date);
-
+        subscription.next_billing_date &&
+        now <= new Date(subscription.next_billing_date);
       return {
         hasAccess: isActive || hasGracePeriod,
         status: subscription.status,
@@ -424,16 +426,18 @@ export class SubscriptionService {
         isCancelled,
         hasGracePeriod,
         endDate: subscription.end_date,
-        daysRemaining: subscription.end_date
+        next_billing_date: subscription.next_billing_date,
+        daysRemaining: subscription.next_billing_date
           ? Math.ceil(
-              (new Date(subscription.end_date).getTime() - now.getTime()) /
+              (new Date(subscription.next_billing_date).getTime() -
+                now.getTime()) /
                 (1000 * 60 * 60 * 24)
             )
           : null,
         message: isActive
           ? 'Active subscription'
-          : hasGracePeriod && subscription.end_date
-            ? `Access until ${new Date(subscription.end_date).toLocaleDateString()}`
+          : hasGracePeriod && subscription.next_billing_date
+            ? `Access until ${new Date(subscription.next_billing_date).toLocaleDateString()}`
             : 'Subscription expired',
       };
     } catch (error) {
@@ -694,6 +698,80 @@ export class SubscriptionService {
       );
 
       return { success: true, message: 'Subscription status updated' };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Recompute next_billing_date based on latest payment and plan frequency
+  async updateNextBillingDateFromPayments(
+    razorpaySubscriptionId: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      if (!razorpaySubscriptionId) {
+        return { success: false, message: 'Missing subscription id' };
+      }
+
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { subscription_id: razorpaySubscriptionId },
+      });
+
+      if (!subscription) {
+        return { success: false, message: 'Subscription not found' };
+      }
+
+      const latestPayment = await this.paymentRepository.findOne({
+        where: { subscription_id: razorpaySubscriptionId },
+        order: { payment_created_at: 'DESC' },
+      });
+
+      if (!latestPayment || !latestPayment.payment_created_at) {
+        return { success: false, message: 'No payment with created_at found' };
+      }
+
+      // Resolve plan frequency: prefer matching by razorpayPlanId, fallback to id
+      let frequency: string | undefined;
+      if (subscription.plan_id) {
+        const planByRazorpay = await this.planRepository.findOne({
+          where: { razorpayPlanId: subscription.plan_id },
+        });
+        const plan =
+          planByRazorpay ||
+          (await this.planRepository.findOne({
+            where: { id: subscription.plan_id },
+          }));
+        frequency = plan?.frequency || undefined;
+      }
+
+      const paymentDate = new Date(latestPayment.payment_created_at);
+      const daysToAdd =
+        (frequency || '').toLowerCase() === 'yearly'
+          ? 365
+          : (frequency || '').toLowerCase() === 'monthly'
+            ? 30
+            : 0;
+      const nextDate = new Date(
+        paymentDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000
+      );
+
+      await this.subscriptionRepository.update(
+        { subscription_id: razorpaySubscriptionId },
+        { next_billing_date: nextDate }
+      );
+
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Updated next_billing_date from latest payment',
+        {
+          subscriptionId: razorpaySubscriptionId,
+          paymentId: latestPayment.payment_id,
+          paymentCreatedAt: latestPayment.payment_created_at,
+          nextBillingDate: nextDate,
+          frequency,
+        }
+      );
+
+      return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
     }
