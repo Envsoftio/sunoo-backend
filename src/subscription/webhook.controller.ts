@@ -73,6 +73,10 @@ export class WebhookController {
           { event, subscriptionId },
           'WebhookController'
         );
+        console.log('Skipping signature verification in development mode', {
+          event,
+          subscriptionId,
+        });
       }
 
       this.loggerService.logWebhookEvent(
@@ -81,6 +85,11 @@ export class WebhookController {
         { event, subscriptionId, payload: body },
         'WebhookController'
       );
+      console.log('Processing webhook event:', {
+        event,
+        subscriptionId,
+        payload: body,
+      });
 
       let result;
       switch (body.event) {
@@ -118,6 +127,11 @@ export class WebhookController {
             { event: body.event, subscriptionId, payload: body },
             'WebhookController'
           );
+          console.log('Unhandled event type:', {
+            event: body.event,
+            subscriptionId,
+            payload: body,
+          });
           result = { message: `Unhandled event type: ${body.event}` };
       }
 
@@ -200,6 +214,36 @@ export class WebhookController {
       },
       'WebhookController'
     );
+    console.log('Processing subscription.authenticated event', {
+      subscriptionId,
+      userId,
+      planId: subscriptionDetails.plan_id,
+      fullSubscriptionPayload: subscriptionDetails,
+      subscriptionMetadata: {
+        id: subscriptionDetails.id,
+        planId: subscriptionDetails.plan_id,
+        status: subscriptionDetails.status,
+        startAt: subscriptionDetails.start_at,
+        endAt: subscriptionDetails.end_at,
+        nextBillingAt: subscriptionDetails.next_billing_at,
+        currentStart: subscriptionDetails.current_start,
+        currentEnd: subscriptionDetails.current_end,
+        endedAt: subscriptionDetails.ended_at,
+        quantity: subscriptionDetails.quantity,
+        notes: subscriptionDetails.notes,
+        chargeAt: subscriptionDetails.charge_at,
+        shortUrl: subscriptionDetails.short_url,
+        hasOffer: !!subscriptionDetails.offer_id,
+        offerId: subscriptionDetails.offer_id,
+        customerNotify: subscriptionDetails.customer_notify,
+        totalCount: subscriptionDetails.total_count,
+        paidCount: subscriptionDetails.paid_count,
+        remainingCount: subscriptionDetails.remaining_count,
+        createdAt: subscriptionDetails.created_at,
+        entity: subscriptionDetails.entity,
+        source: subscriptionDetails.source,
+      },
+    });
 
     try {
       const subscriptionData = {
@@ -230,6 +274,10 @@ export class WebhookController {
         { subscriptionId, subscriptionData },
         'WebhookController'
       );
+      console.log('Upserting subscription data', {
+        subscriptionId,
+        subscriptionData,
+      });
 
       const result =
         await this.subscriptionService.upsertSubscription(subscriptionData);
@@ -241,6 +289,11 @@ export class WebhookController {
           { subscriptionId, userId, result },
           'WebhookController'
         );
+        console.log('Subscription upserted successfully', {
+          subscriptionId,
+          userId,
+          result,
+        });
 
         // Emit notification to user
         if (subscriptionDetails.notes?.user_id) {
@@ -250,6 +303,10 @@ export class WebhookController {
             { userId, subscriptionId },
             'WebhookController'
           );
+          console.log('Emitting subscription created notification', {
+            userId,
+            subscriptionId,
+          });
 
           this.notificationService.emitSubscriptionCreated(
             subscriptionDetails.notes.user_id,
@@ -263,6 +320,11 @@ export class WebhookController {
           { subscriptionId, userId, error: result.message },
           'WebhookController'
         );
+        console.log('Failed to upsert subscription', {
+          subscriptionId,
+          userId,
+          error: result.message,
+        });
       }
 
       return { message: 'subscription.authenticated processed successfully' };
@@ -288,6 +350,11 @@ export class WebhookController {
       { subscriptionId, userId, status: subscriptionDetails.status },
       'WebhookController'
     );
+    console.log('Processing subscription.activated event', {
+      subscriptionId,
+      userId,
+      status: subscriptionDetails.status,
+    });
 
     try {
       const updateData = {
@@ -303,6 +370,10 @@ export class WebhookController {
         { subscriptionId, updateData },
         'WebhookController'
       );
+      console.log('Updating subscription status to active', {
+        subscriptionId,
+        updateData,
+      });
 
       const result = await this.subscriptionService.updateSubscriptionStatus(
         subscriptionDetails.id,
@@ -317,6 +388,10 @@ export class WebhookController {
           { subscriptionId, userId },
           'WebhookController'
         );
+        console.log('Subscription status updated to active successfully', {
+          subscriptionId,
+          userId,
+        });
 
         // Emit notification to user
         if (subscriptionDetails.notes?.user_id) {
@@ -326,6 +401,10 @@ export class WebhookController {
             { userId, subscriptionId },
             'WebhookController'
           );
+          console.log('Emitting subscription activated notification', {
+            userId,
+            subscriptionId,
+          });
 
           this.notificationService.emitSubscriptionActivated(
             subscriptionDetails.notes.user_id,
@@ -339,6 +418,11 @@ export class WebhookController {
           { subscriptionId, userId, error: result.message },
           'WebhookController'
         );
+        console.log('Failed to update subscription status', {
+          subscriptionId,
+          userId,
+          error: result.message,
+        });
       }
 
       return { message: 'subscription.activated processed successfully' };
@@ -355,42 +439,48 @@ export class WebhookController {
 
   private async handleSubscriptionCharged(body: any) {
     const chargeDetails = body.payload.subscription.entity;
+    const subscriptionData = {
+      subscriptionId: chargeDetails.id,
+      userId: chargeDetails.notes?.user_id,
+      planId: chargeDetails.plan_id,
+      fullChargePayload: chargeDetails,
+      chargeMetadata: {
+        id: chargeDetails.id,
+        planId: chargeDetails.plan_id,
+        status: chargeDetails.status,
+        startAt: chargeDetails.start_at,
+        endAt: chargeDetails.end_at,
+        nextBillingAt: chargeDetails.next_billing_at,
+        chargeAt: chargeDetails.charge_at,
+        currentStart: chargeDetails.current_start,
+        currentEnd: chargeDetails.current_end,
+        endedAt: chargeDetails.ended_at,
+        quantity: chargeDetails.quantity,
+        notes: chargeDetails.notes,
+        shortUrl: chargeDetails.short_url,
+        hasOffer: !!chargeDetails.offer_id,
+        offerId: chargeDetails.offer_id,
+        customerNotify: chargeDetails.customer_notify,
+        totalCount: chargeDetails.total_count,
+        paidCount: chargeDetails.paid_count,
+        remainingCount: chargeDetails.remaining_count,
+        createdAt: chargeDetails.created_at,
+        entity: chargeDetails.entity,
+        source: chargeDetails.source,
+      },
+    };
 
     // Log detailed subscription charged payload
     this.loggerService.logWebhookEvent(
       'info',
       'Processing subscription.charged event',
-      {
-        subscriptionId: chargeDetails.id,
-        userId: chargeDetails.notes?.user_id,
-        planId: chargeDetails.plan_id,
-        fullChargePayload: chargeDetails,
-        chargeMetadata: {
-          id: chargeDetails.id,
-          planId: chargeDetails.plan_id,
-          status: chargeDetails.status,
-          startAt: chargeDetails.start_at,
-          endAt: chargeDetails.end_at,
-          nextBillingAt: chargeDetails.next_billing_at,
-          chargeAt: chargeDetails.charge_at,
-          currentStart: chargeDetails.current_start,
-          currentEnd: chargeDetails.current_end,
-          endedAt: chargeDetails.ended_at,
-          quantity: chargeDetails.quantity,
-          notes: chargeDetails.notes,
-          shortUrl: chargeDetails.short_url,
-          hasOffer: !!chargeDetails.offer_id,
-          offerId: chargeDetails.offer_id,
-          customerNotify: chargeDetails.customer_notify,
-          totalCount: chargeDetails.total_count,
-          paidCount: chargeDetails.paid_count,
-          remainingCount: chargeDetails.remaining_count,
-          createdAt: chargeDetails.created_at,
-          entity: chargeDetails.entity,
-          source: chargeDetails.source,
-        },
-      },
+      subscriptionData,
       'WebhookController'
+    );
+
+    console.log(
+      'handleSubscriptionCharged subscriptionData-----------------------------------------------------------',
+      subscriptionData
     );
 
     await this.subscriptionService.updateSubscriptionStatus(
@@ -521,6 +611,13 @@ export class WebhookController {
       },
       'WebhookController'
     );
+    console.log('Processing payment.authorized event', {
+      paymentId,
+      userId,
+      subscriptionId,
+      amount: paymentDetails.amount,
+      fullPaymentPayload: paymentDetails,
+    });
 
     try {
       let invoice = null;
@@ -533,6 +630,10 @@ export class WebhookController {
             { paymentId, invoiceId: paymentDetails.invoice_id },
             'WebhookController'
           );
+          console.log('Fetching invoice details', {
+            paymentId,
+            invoiceId: paymentDetails.invoice_id,
+          });
 
           invoice = await this.razorpayService.getInvoice(
             paymentDetails.invoice_id
@@ -548,6 +649,11 @@ export class WebhookController {
             },
             'WebhookController'
           );
+          console.log('Invoice details fetched successfully', {
+            paymentId,
+            invoiceId: paymentDetails.invoice_id,
+            subscriptionId: (invoice as any)?.subscription_id,
+          });
         } catch (error) {
           this.loggerService.logWebhookEvent(
             'warn',
@@ -559,6 +665,11 @@ export class WebhookController {
             },
             'WebhookController'
           );
+          console.log('Failed to fetch invoice details', {
+            paymentId,
+            invoiceId: paymentDetails.invoice_id,
+            error: error.message,
+          });
           // Continue without invoice data
         }
       }
@@ -581,6 +692,7 @@ export class WebhookController {
         { paymentId, paymentData },
         'WebhookController'
       );
+      console.log('Creating payment record', { paymentId, paymentData });
 
       const result = await this.paymentService.createPayment(paymentData);
 
@@ -591,6 +703,11 @@ export class WebhookController {
           { paymentId, userId, subscriptionId },
           'WebhookController'
         );
+        console.log('Payment record created successfully', {
+          paymentId,
+          userId,
+          subscriptionId,
+        });
 
         // Emit notification to user
         if (paymentDetails.notes?.user_id) {
@@ -600,6 +717,10 @@ export class WebhookController {
             { userId, paymentId },
             'WebhookController'
           );
+          console.log('Emitting payment success notification', {
+            userId,
+            paymentId,
+          });
 
           this.notificationService.emitPaymentSuccess(
             paymentDetails.notes.user_id,
@@ -613,6 +734,11 @@ export class WebhookController {
           { paymentId, userId, error: result.message },
           'WebhookController'
         );
+        console.log('Failed to create payment record', {
+          paymentId,
+          userId,
+          error: result.message,
+        });
       }
 
       return { message: 'payment.authorized processed successfully' };
@@ -674,6 +800,44 @@ export class WebhookController {
       },
       'WebhookController'
     );
+    console.log('Processing payment.failed event', {
+      paymentId: failureDetails.id,
+      userId: failureDetails.notes?.user_id,
+      subscriptionId: failureDetails.subscription_id,
+      fullPaymentPayload: failureDetails,
+      failureMetadata: {
+        id: failureDetails.id,
+        amount: failureDetails.amount,
+        currency: failureDetails.currency,
+        status: failureDetails.status,
+        method: failureDetails.method,
+        description: failureDetails.description,
+        errorCode: failureDetails.error_code,
+        errorDescription: failureDetails.error_description,
+        errorSource: failureDetails.error_source,
+        errorStep: failureDetails.error_step,
+        errorReason: failureDetails.error_reason,
+        acquirerData: failureDetails.acquirer_data,
+        card: failureDetails.card,
+        bank: failureDetails.bank,
+        wallet: failureDetails.wallet,
+        vpa: failureDetails.vpa,
+        emi: failureDetails.emi,
+        international: failureDetails.international,
+        orderId: failureDetails.order_id,
+        subscriptionId: failureDetails.subscription_id,
+        customerId: failureDetails.customer_id,
+        tokenId: failureDetails.token_id,
+        recurring: failureDetails.recurring,
+        save: failureDetails.save,
+        createdAt: failureDetails.created_at,
+        captured: failureDetails.captured,
+        capturedAt: failureDetails.captured_at,
+        entity: failureDetails.entity,
+        source: failureDetails.source,
+        notes: failureDetails.notes,
+      },
+    });
 
     const paymentData = {
       payment_id: failureDetails.id,
