@@ -33,6 +33,9 @@ export class Payment {
   @Column({ type: 'jsonb', nullable: true })
   metadata?: any;
 
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  payment_created_at?: Date;
+
   @Column({ nullable: true })
   payment_id?: string;
 
