@@ -310,7 +310,6 @@ export class StoryService {
           'book.created_at',
           'book.updated_at',
           'book.categoryId',
-          'book.narrator',
           'category.name',
           'category.slug',
         ])
@@ -323,7 +322,7 @@ export class StoryService {
         .where('book.isPublished = :isPublished', { isPublished: true })
         .groupBy('book.id')
         .addGroupBy('category.id')
-        .orderBy('listenerCount', 'DESC')
+        .orderBy('COALESCE(SUM(audiobookListeners.count), 0)', 'DESC')
         .addOrderBy('book.created_at', 'DESC')
         .limit(30) // Return top 30 most popular stories
         .getRawAndEntities();
@@ -404,7 +403,6 @@ export class StoryService {
           'book.created_at',
           'book.updated_at',
           'book.categoryId',
-          'book.narrator',
           'category.name',
           'category.slug',
         ])
@@ -912,7 +910,6 @@ export class StoryService {
           'book.created_at',
           'book.updated_at',
           'book.categoryId',
-          'book.narrator',
           'category.name',
           'category.slug',
         ])
@@ -983,7 +980,6 @@ export class StoryService {
           'book.created_at',
           'book.updated_at',
           'book.categoryId',
-          'book.narrator',
           'category.name',
           'category.slug',
         ])
@@ -1058,7 +1054,6 @@ export class StoryService {
           'book.created_at',
           'book.updated_at',
           'book.categoryId',
-          'book.narrator',
           'category.name',
           'category.slug',
         ])
@@ -1072,7 +1067,7 @@ export class StoryService {
         .andWhere('book.isPublished = :isPublished', { isPublished: true })
         .groupBy('book.id')
         .addGroupBy('category.id')
-        .orderBy('listenerCount', 'DESC')
+        .orderBy('COALESCE(SUM(audiobookListeners.count), 0)', 'DESC')
         .addOrderBy('book.created_at', 'DESC')
         .limit(20) // Limit to 20 stories
         .getRawAndEntities();

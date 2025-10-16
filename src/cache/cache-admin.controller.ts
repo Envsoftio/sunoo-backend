@@ -96,11 +96,30 @@ export class CacheAdminController {
       // Group keys by type
       const keysByType: Record<string, number> = {};
       allKeys.forEach(key => {
-        const match = key.match(/cache:.*?\/([\w-]+)/);
-        if (match) {
-          const type = match[1];
-          keysByType[type] = (keysByType[type] || 0) + 1;
+        // Extract type from cache key pattern: cache:/api/{type}/...
+        let type = 'other';
+
+        if (
+          key.includes('/show/') ||
+          key.includes('getStoryBySlugForShow') ||
+          key.includes('getStoryByIdForShow')
+        ) {
+          type = 'show';
+        } else if (key.includes('/genre')) {
+          type = 'genre';
+        } else if (key.includes('/story')) {
+          type = 'story';
+        } else if (key.includes('/progress')) {
+          type = 'progress';
+        } else if (key.includes('/rating')) {
+          type = 'rating';
+        } else if (key.includes('/review')) {
+          type = 'review';
+        } else if (key.includes('/bookmark')) {
+          type = 'bookmark';
         }
+
+        keysByType[type] = (keysByType[type] || 0) + 1;
       });
 
       const info = await this.cacheService.getInfo();
@@ -194,10 +213,25 @@ export class CacheAdminController {
         limitedKeys.map(async key => {
           const value = await this.cacheService.get(key);
           const ttl = await this.cacheService.getTTL(key);
+          const now = Date.now();
+
+          // Calculate expiry time
+          const expiresAt = ttl > 0 ? new Date(now + ttl * 1000) : null;
+
+          // Estimate creation time based on common TTL patterns
+          const estimatedTTL = this.estimateOriginalTTL(key);
+          const createdAt =
+            estimatedTTL > 0 && ttl > 0
+              ? new Date(now - (estimatedTTL - ttl) * 1000)
+              : null;
+
           return {
             key,
             ttl,
             ttlFormatted: this.formatTTL(ttl),
+            expiresAt: expiresAt?.toISOString(),
+            createdAt: createdAt?.toISOString(),
+            ageSeconds: estimatedTTL > 0 && ttl > 0 ? estimatedTTL - ttl : null,
             value,
           };
         })
@@ -346,21 +380,63 @@ export class CacheAdminController {
       };
 
       allKeys.forEach(key => {
-        if (key.includes('/show/')) grouped.show.push(key);
-        else if (key.includes('/genre')) grouped.genre.push(key);
-        else if (key.includes('/story')) grouped.story.push(key);
-        else if (key.includes('/progress')) grouped.progress.push(key);
-        else if (key.includes('/rating')) grouped.rating.push(key);
-        else if (key.includes('/review')) grouped.review.push(key);
-        else if (key.includes('/bookmark')) grouped.bookmark.push(key);
-        else grouped.other.push(key);
+        if (
+          key.includes('/show/') ||
+          key.includes('getStoryBySlugForShow') ||
+          key.includes('getStoryByIdForShow')
+        ) {
+          grouped.show.push(key);
+        } else if (key.includes('/genre')) {
+          grouped.genre.push(key);
+        } else if (key.includes('/story')) {
+          grouped.story.push(key);
+        } else if (key.includes('/progress')) {
+          grouped.progress.push(key);
+        } else if (key.includes('/rating')) {
+          grouped.rating.push(key);
+        } else if (key.includes('/review')) {
+          grouped.review.push(key);
+        } else if (key.includes('/bookmark')) {
+          grouped.bookmark.push(key);
+        } else {
+          grouped.other.push(key);
+        }
       });
 
-      const summary = Object.entries(grouped).map(([type, keys]) => ({
-        type,
-        count: keys.length,
-        keys: keys.slice(0, 10), // Show first 10
-      }));
+      const now = Date.now();
+      const summary = await Promise.all(
+        Object.entries(grouped).map(async ([type, keys]) => {
+          // Get detailed info for first 10 keys
+          const limitedKeys = keys.slice(0, 10);
+          const keyDetails = await Promise.all(
+            limitedKeys.map(async key => {
+              const ttl = await this.cacheService.getTTL(key);
+              const expiresAt = ttl > 0 ? new Date(now + ttl * 1000) : null;
+              const estimatedTTL = this.estimateOriginalTTL(key);
+              const createdAt =
+                estimatedTTL > 0 && ttl > 0
+                  ? new Date(now - (estimatedTTL - ttl) * 1000)
+                  : null;
+
+              return {
+                key,
+                ttl,
+                ttlFormatted: this.formatTTL(ttl),
+                expiresAt: expiresAt?.toISOString(),
+                createdAt: createdAt?.toISOString(),
+                ageSeconds:
+                  estimatedTTL > 0 && ttl > 0 ? estimatedTTL - ttl : null,
+              };
+            })
+          );
+
+          return {
+            type,
+            count: keys.length,
+            keys: keyDetails,
+          };
+        })
+      );
 
       return {
         success: true,
@@ -385,5 +461,56 @@ export class CacheAdminController {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
     return `${Math.floor(seconds / 86400)}d`;
+  }
+
+  /**
+   * Estimate original TTL based on cache key pattern
+   * This helps calculate creation time
+   */
+  private estimateOriginalTTL(key: string): number {
+    // Based on cache.constants.ts and cache.interceptor.ts patterns
+    const MONTH = 30 * 24 * 60 * 60; // 30 days
+    const WEEK = 7 * 24 * 60 * 60; // 7 days
+    const HOUR = 60 * 60; // 1 hour
+    const MINUTE = 60; // 1 minute
+    const SHORT = 10; // 10 seconds
+
+    // Show pages and listen pages - 30 days
+    if (
+      key.includes('/show/') ||
+      key.includes('getStoryBySlugForShow') ||
+      key.includes('getStoryByIdForShow') ||
+      key.includes('/listen/')
+    ) {
+      return MONTH;
+    }
+
+    // Genres - 30 days
+    if (key.includes('/genre')) {
+      return MONTH;
+    }
+
+    // Stories - 7 days
+    if (key.includes('/story')) {
+      return WEEK;
+    }
+
+    // Progress - 10 seconds
+    if (key.includes('/progress')) {
+      return SHORT;
+    }
+
+    // Ratings/Reviews - 1 minute
+    if (key.includes('/rating') || key.includes('/review')) {
+      return MINUTE;
+    }
+
+    // Bookmarks - 1 minute
+    if (key.includes('/bookmark')) {
+      return MINUTE;
+    }
+
+    // Default - 1 hour
+    return HOUR;
   }
 }

@@ -24,17 +24,16 @@ export class CacheInterceptor implements NestInterceptor {
     const method = request.method;
     const url = request.url;
 
-    // Skip caching for non-HTTP contexts, health checks, auth, payment, and subscription endpoints
+    // Skip caching for non-HTTP contexts, health checks, auth, payment, subscription, and admin endpoints
     if (
       context.getType() !== 'http' ||
       url.includes('/health') ||
-      url.includes('/auth/login') ||
-      url.includes('/auth/register') ||
-      url.includes('/auth/refresh') ||
+      url.includes('/auth/') || // All auth endpoints including profile
       url.includes('/subscription') ||
       url.includes('/payment') ||
       url.includes('/razorpay') ||
-      url.includes('/webhook')
+      url.includes('/webhook') ||
+      url.includes('/admin/') // All admin endpoints (more specific pattern)
     ) {
       return next.handle();
     }
@@ -128,6 +127,10 @@ export class CacheInterceptor implements NestInterceptor {
                   `   ↳ Pattern: ${pattern} | Deleted: ${deletedCount || 0} keys`
                 );
               }
+            } else {
+              this.logger.log(
+                `ℹ️  [NO CACHE INVALIDATION] ${request.method} ${request.url} | No invalidation patterns matched`
+              );
             }
           } catch (error) {
             this.logger.error('Error invalidating cache:', error);
@@ -350,7 +353,9 @@ export class CacheInterceptor implements NestInterceptor {
       patterns.push('cache:/api/auth/profile*');
     }
 
-    return patterns.length > 0 ? patterns : ['cache:*'];
+    // Return empty array if no specific patterns match
+    // DON'T delete all cache by default - that's too aggressive!
+    return patterns;
   }
 
   /**

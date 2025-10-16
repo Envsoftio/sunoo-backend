@@ -58,9 +58,6 @@ export class StoryController {
     @Query('slug') slug: string,
     @Query('userId') userId?: string
   ) {
-    console.log(
-      `🔍 getStoryBySlugForShow called with slug: ${slug}, userId: ${userId}`
-    );
     return await this.storyService.getStoryBySlugForShow(slug, userId);
   }
 
@@ -193,9 +190,6 @@ export class StoryController {
     @Query('id') id: string,
     @Query('userId') userId?: string
   ) {
-    console.log(
-      `🔍 getStoryByIdForShow called with ID: ${id}, userId: ${userId}`
-    );
     return await this.storyService.getStoryByIdForShow(id, userId);
   }
 

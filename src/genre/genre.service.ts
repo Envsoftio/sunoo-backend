@@ -242,7 +242,7 @@ export class GenreService {
         .addSelect('COALESCE(SUM(listeners.count), 0)', 'listenerCount')
         .where('category.is_active = :active', { active: true })
         .groupBy('category.id')
-        .orderBy('storyCount', 'DESC')
+        .orderBy('COUNT(DISTINCT book.id)', 'DESC')
         .addOrderBy('category.name', 'ASC')
         .setParameter('isPublished', true)
         .setParameter('active', true)
