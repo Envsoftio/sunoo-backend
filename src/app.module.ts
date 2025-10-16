@@ -16,17 +16,20 @@ import { SupportTicketModule } from './support-ticket/support-ticket.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { DatabaseLoggerService } from './common/logger/database-logger.service';
 import { getDatabaseConfig } from './config/database.config';
+import { CacheModule } from './cache/cache.module';
 import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
 import emailConfig from './config/email.config';
+import redisConfig from './config/redis.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, securityConfig, emailConfig],
+      load: [appConfig, securityConfig, emailConfig, redisConfig],
       envFilePath: ['.env.local', '.env'],
     }),
+    CacheModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule, LoggerModule],
       useFactory: (

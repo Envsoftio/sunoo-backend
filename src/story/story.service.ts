@@ -288,15 +288,45 @@ export class StoryService {
 
   async getMostPopularStories(userId?: string) {
     try {
+      // Optimized query: Use aggregations instead of loading all relations
       const stories = await this.bookRepository
         .createQueryBuilder('book')
-        .leftJoinAndSelect('book.chapters', 'chapters')
-        .leftJoinAndSelect('book.category', 'category')
-        .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
-        .orderBy('audiobookListeners.count', 'DESC')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select([
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'book.narrator',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
+        .where('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('book.id')
+        .addGroupBy('category.id')
+        .orderBy('listenerCount', 'DESC')
         .addOrderBy('book.created_at', 'DESC')
-        .getMany();
+        .limit(30) // Return top 30 most popular stories
+        .getRawAndEntities();
 
       let bookmarks: string[] = [];
       if (userId) {
@@ -309,11 +339,19 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story =>
-        this.processStoryData(story, userId, bookmarks)
-      );
+      // Process results with aggregated data
+      const processedData = stories.entities.map((story, index) => ({
+        ...story,
+        isBookmarked: userId ? bookmarks.includes(story.id) : false,
+        chapters: parseInt(stories.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(stories.raw[index]?.listenerCount || '0'),
+        averageRating:
+          parseFloat(stories.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} },
+        category: story.category?.name || story.category || 'Unknown',
+      }));
 
-      return { success: true, data: sortedData };
+      return { success: true, data: processedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -344,16 +382,44 @@ export class StoryService {
 
   async getLatestStories(userId?: string) {
     try {
-      const stories = await this.bookRepository.find({
-        relations: [
-          'chapters',
-          'category',
-          'bookRatings',
-          'audiobookListeners',
-        ],
-        order: { created_at: 'DESC' },
-        take: 20, // Limit to latest 20 stories
-      });
+      // Optimized query: Use aggregations instead of loading all relations
+      const stories = await this.bookRepository
+        .createQueryBuilder('book')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select([
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'book.narrator',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
+        .where('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('book.id')
+        .addGroupBy('category.id')
+        .orderBy('book.created_at', 'DESC')
+        .limit(20) // Limit to latest 20 stories
+        .getRawAndEntities();
 
       let bookmarks: string[] = [];
       if (userId) {
@@ -366,11 +432,19 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story =>
-        this.processStoryData(story, userId, bookmarks)
-      );
+      // Process results with aggregated data
+      const processedData = stories.entities.map((story, index) => ({
+        ...story,
+        isBookmarked: userId ? bookmarks.includes(story.id) : false,
+        chapters: parseInt(stories.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(stories.raw[index]?.listenerCount || '0'),
+        averageRating:
+          parseFloat(stories.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} }, // Default narrator structure
+        category: story.category?.name || story.category || 'Unknown',
+      }));
 
-      return { success: true, data: sortedData };
+      return { success: true, data: processedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -807,43 +881,73 @@ export class StoryService {
 
   async getContinueListeningStories(userId: string) {
     try {
+      if (!userId) {
+        return { success: true, data: [] };
+      }
+
+      // Optimized query: Use aggregations instead of loading all relations
       const progressStories = await this.userProgressRepository
         .createQueryBuilder('progress')
-        .leftJoinAndSelect('progress.book', 'book')
-        .leftJoinAndSelect('book.chapters', 'chapters')
-        .leftJoinAndSelect('book.category', 'category')
-        .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
+        .leftJoin('progress.book', 'book')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select([
+          'progress.progress',
+          'progress.currentTime',
+          'progress.totalTime',
+          'progress.lastListenedAt',
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'book.narrator',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
         .where('progress.userId = :userId', { userId })
         .andWhere('progress.progress > 0')
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('progress.id')
+        .addGroupBy('book.id')
+        .addGroupBy('category.id')
         .orderBy('progress.lastListenedAt', 'DESC')
-        .getMany();
+        .limit(20) // Limit to 20 most recent
+        .getRawAndEntities();
 
-      const stories = progressStories.map(progress => {
-        const story = progress.book;
-        const ratings = story.bookRatings || [];
-        const averageRating =
-          ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              ratings.length
-            : null;
-
-        return {
-          ...story,
-          isBookmarked: true,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-          userProgress: {
-            progress: progress.progress,
-            currentTime: progress.currentTime,
-            totalTime: progress.totalTime,
-            lastListenedAt: progress.lastListenedAt,
-          },
-        };
-      });
+      const stories = progressStories.entities.map((progress, index) => ({
+        ...progress.book,
+        isBookmarked: true,
+        chapters: parseInt(progressStories.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(progressStories.raw[index]?.listenerCount || '0'),
+        averageRating:
+          parseFloat(progressStories.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} }, // Default narrator structure
+        category: progress.book?.category?.name || 'Unknown',
+        userProgress: {
+          progress: progress.progress,
+          currentTime: progress.currentTime,
+          totalTime: progress.totalTime,
+          lastListenedAt: progress.lastListenedAt,
+        },
+      }));
 
       return { success: true, data: stories };
     } catch (error) {
@@ -857,15 +961,45 @@ export class StoryService {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
+      // Optimized query: Use aggregations instead of loading all relations
       const stories = await this.bookRepository
         .createQueryBuilder('book')
-        .leftJoinAndSelect('book.chapters', 'chapters')
-        .leftJoinAndSelect('book.category', 'category')
-        .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select([
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'book.narrator',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
         .where('chapters.created_at > :weekAgo', { weekAgo })
-        .orderBy('chapters.created_at', 'DESC')
-        .getMany();
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('book.id')
+        .addGroupBy('category.id')
+        .orderBy('book.created_at', 'DESC')
+        .limit(20) // Limit to 20 stories
+        .getRawAndEntities();
 
       let bookmarks: string[] = [];
       if (userId) {
@@ -878,11 +1012,19 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story =>
-        this.processStoryData(story, userId, bookmarks)
-      );
+      // Process results with aggregated data
+      const processedData = stories.entities.map((story, index) => ({
+        ...story,
+        isBookmarked: userId ? bookmarks.includes(story.id) : false,
+        chapters: parseInt(stories.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(stories.raw[index]?.listenerCount || '0'),
+        averageRating:
+          parseFloat(stories.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} }, // Default narrator structure
+        category: story.category?.name || story.category || 'Unknown',
+      }));
 
-      return { success: true, data: sortedData };
+      return { success: true, data: processedData };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -893,17 +1035,47 @@ export class StoryService {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
+      // Optimized query: Use aggregations instead of loading all relations
       const stories = await this.bookRepository
         .createQueryBuilder('book')
-        .leftJoinAndSelect('book.chapters', 'chapters')
-        .leftJoinAndSelect('book.category', 'category')
-        .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
-        .leftJoinAndSelect('book.userProgress', 'userProgress')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .leftJoin('book.userProgress', 'userProgress')
+        .select([
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'book.narrator',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
         .where('userProgress.lastListenedAt > :weekAgo', { weekAgo })
-        .orderBy('audiobookListeners.count', 'DESC')
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('book.id')
+        .addGroupBy('category.id')
+        .orderBy('listenerCount', 'DESC')
         .addOrderBy('book.created_at', 'DESC')
-        .getMany();
+        .limit(20) // Limit to 20 stories
+        .getRawAndEntities();
 
       let bookmarks: string[] = [];
       if (userId) {
@@ -916,11 +1088,19 @@ export class StoryService {
           .filter(Boolean) as string[];
       }
 
-      const sortedData = stories.map(story =>
-        this.processStoryData(story, userId, bookmarks)
-      );
+      // Process results with aggregated data
+      const processedData = stories.entities.map((story, index) => ({
+        ...story,
+        isBookmarked: userId ? bookmarks.includes(story.id) : false,
+        chapters: parseInt(stories.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(stories.raw[index]?.listenerCount || '0'),
+        averageRating:
+          parseFloat(stories.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} }, // Default narrator structure
+        category: story.category?.name || story.category || 'Unknown',
+      }));
 
-      return { success: true, data: sortedData };
+      return { success: true, data: processedData };
     } catch (error) {
       return { success: false, message: error.message };
     }

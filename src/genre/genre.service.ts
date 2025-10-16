@@ -73,24 +73,65 @@ export class GenreService {
         return { success: false, message: 'Genre not found' };
       }
 
-      const [stories, total] = await this.bookRepository.findAndCount({
-        where: {
-          category: { id: genre.id },
-          isPublished: true,
-        },
-        relations: ['category', 'bookRatings', 'audiobookListeners'],
-        order: { created_at: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      // Optimized query with aggregations
+      const query = this.bookRepository
+        .createQueryBuilder('book')
+        .leftJoin('book.category', 'category')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select([
+          'book.id',
+          'book.title',
+          'book.bookCoverUrl',
+          'book.language',
+          'book.bookDescription',
+          'book.duration',
+          'book.isPublished',
+          'book.isFree',
+          'book.contentRating',
+          'book.tags',
+          'book.slug',
+          'book.created_at',
+          'book.updated_at',
+          'book.categoryId',
+          'category.name',
+          'category.slug',
+        ])
+        .addSelect('COUNT(DISTINCT chapters.id)', 'chapterCount')
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'listenerCount'
+        )
+        .where('book.categoryId = :categoryId', { categoryId: genre.id })
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
+        .groupBy('book.id')
+        .addGroupBy('category.id')
+        .orderBy('book.created_at', 'DESC')
+        .limit(limit)
+        .offset((page - 1) * limit);
 
+      // Get total count efficiently
+      const totalQuery = this.bookRepository
+        .createQueryBuilder('book')
+        .where('book.categoryId = :categoryId', { categoryId: genre.id })
+        .andWhere('book.isPublished = :isPublished', { isPublished: true });
+
+      const [result, total] = await Promise.all([
+        query.getRawAndEntities(),
+        totalQuery.getCount(),
+      ]);
+
+      // Get user bookmarks if userId provided
       let bookmarks: string[] = [];
       if (userId) {
         const userBookmarks = await this.bookRepository
           .createQueryBuilder('book')
           .leftJoin('book.bookmarks', 'bookmark')
           .where('bookmark.userId = :userId', { userId })
-          .andWhere('book.category.id = :genreId', { genreId: genre.id })
+          .andWhere('book.categoryId = :categoryId', { categoryId: genre.id })
+          .andWhere('book.isPublished = :isPublished', { isPublished: true })
           .select('book.id')
           .getRawMany();
 
@@ -99,16 +140,16 @@ export class GenreService {
           .filter((id): id is string => Boolean(id));
       }
 
-      const processedStories = stories.map(story => ({
+      // Process results with aggregated data
+      const processedStories = result.entities.map((story, index) => ({
         ...story,
         isBookmarked: userId ? bookmarks.includes(story.id) : false,
+        chapters: parseInt(result.raw[index]?.chapterCount || '0'),
+        listeners: parseInt(result.raw[index]?.listenerCount || '0'),
         averageRating:
-          story.bookRatings?.length > 0
-            ? story.bookRatings.reduce(
-                (sum, rating) => sum + (rating.rating || 0),
-                0
-              ) / story.bookRatings.length
-            : 0,
+          parseFloat(result.raw[index]?.averageRating || '0') || null,
+        narrator: { data: {} }, // Default narrator structure
+        category: story.category?.name || genre.name,
       }));
 
       return {
@@ -128,44 +169,49 @@ export class GenreService {
 
   async getFeaturedGenres() {
     try {
-      const featuredGenres = await this.categoryRepository.find({
-        where: { is_active: true, featured: true },
-        order: { sort_order: 'ASC', name: 'ASC' },
-        take: 10,
-      });
-
-      // Add story counts and average ratings to each genre
-      const genresWithStats = await Promise.all(
-        featuredGenres.map(async genre => {
-          const storyCount = await this.bookRepository.count({
-            where: {
-              category: { id: genre.id },
-              isPublished: true,
-            },
-          });
-
-          // Calculate average rating for this genre
-          const ratingResult = await this.bookRepository
-            .createQueryBuilder('book')
-            .leftJoin('book.bookRatings', 'rating')
-            .select('AVG(rating.rating)', 'averageRating')
-            .addSelect('COUNT(rating.id)', 'ratingCount')
-            .where('book.category = :categoryId', { categoryId: genre.id })
-            .andWhere('book.isPublished = :isPublished', { isPublished: true })
-            .getRawOne();
-
-          const averageRating = ratingResult?.averageRating
-            ? parseFloat(parseFloat(ratingResult.averageRating).toFixed(1))
-            : 0;
-
-          return {
-            ...genre,
-            storyCount,
-            averageRating,
-            ratingCount: parseInt(ratingResult?.ratingCount || '0'),
-          };
+      // Optimized single query with aggregations
+      const result = await this.categoryRepository
+        .createQueryBuilder('category')
+        .leftJoin('category.books', 'book', 'book.isPublished = :isPublished', {
+          isPublished: true,
         })
-      );
+        .leftJoin('book.bookRatings', 'rating')
+        .leftJoin('book.audiobookListeners', 'listeners')
+        .select([
+          'category.id',
+          'category.name',
+          'category.slug',
+          'category.description',
+          'category.icon_url',
+          'category.color',
+          'category.sort_order',
+          'category.featured',
+          'category.is_active',
+          'category.created_at',
+          'category.updated_at',
+        ])
+        .addSelect('COUNT(DISTINCT book.id)', 'storyCount')
+        .addSelect('COALESCE(AVG(rating.rating), 0)', 'averageRating')
+        .addSelect('COUNT(DISTINCT rating.id)', 'ratingCount')
+        .addSelect('COALESCE(SUM(listeners.count), 0)', 'totalListeners')
+        .where('category.is_active = :active', { active: true })
+        .andWhere('category.featured = :featured', { featured: true })
+        .groupBy('category.id')
+        .orderBy('category.sort_order', 'ASC')
+        .addOrderBy('category.name', 'ASC')
+        .limit(10)
+        .getRawAndEntities();
+
+      // Process results with aggregated data
+      const genresWithStats = result.entities.map((genre, index) => ({
+        ...genre,
+        storyCount: parseInt(result.raw[index]?.storyCount || '0'),
+        averageRating: parseFloat(
+          parseFloat(result.raw[index]?.averageRating || '0').toFixed(1)
+        ),
+        ratingCount: parseInt(result.raw[index]?.ratingCount || '0'),
+        totalListeners: parseInt(result.raw[index]?.totalListeners || '0'),
+      }));
 
       return { success: true, data: genresWithStats };
     } catch (error) {
@@ -175,32 +221,47 @@ export class GenreService {
 
   async getGenreStats() {
     try {
-      // Get all active categories first
-      const categories = await this.categoryRepository.find({
-        where: { is_active: true },
-        order: { name: 'ASC' },
-      });
-
-      // Get story counts for each category
-      const stats = await Promise.all(
-        categories.map(async category => {
-          const storyCount = await this.bookRepository.count({
-            where: { category: { id: category.id }, isPublished: true },
-          });
-
-          return {
-            id: category.id,
-            name: category.name,
-            slug: category.slug,
-            iconUrl: category.icon_url,
-            color: category.color,
-            storyCount,
-          };
+      // Optimized single query with aggregations for frontend display
+      const result = await this.categoryRepository
+        .createQueryBuilder('category')
+        .leftJoin('category.books', 'book', 'book.isPublished = :isPublished', {
+          isPublished: true,
         })
-      );
+        .leftJoin('book.bookRatings', 'rating')
+        .leftJoin('book.audiobookListeners', 'listeners')
+        .select([
+          'category.id',
+          'category.name',
+          'category.slug',
+          'category.description',
+          'category.icon_url',
+          'category.color',
+        ])
+        .addSelect('COUNT(DISTINCT book.id)', 'storyCount')
+        .addSelect('COALESCE(AVG(rating.rating), 0)', 'averageRating')
+        .addSelect('COALESCE(SUM(listeners.count), 0)', 'listenerCount')
+        .where('category.is_active = :active', { active: true })
+        .groupBy('category.id')
+        .orderBy('storyCount', 'DESC')
+        .addOrderBy('category.name', 'ASC')
+        .setParameter('isPublished', true)
+        .setParameter('active', true)
+        .getRawAndEntities();
 
-      // Sort by story count descending
-      stats.sort((a, b) => b.storyCount - a.storyCount);
+      // Process results with aggregated data
+      const stats = result.entities.map((category, index) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        iconUrl: category.icon_url,
+        color: category.color,
+        storyCount: parseInt(result.raw[index]?.storyCount || '0'),
+        averageRating: parseFloat(
+          parseFloat(result.raw[index]?.averageRating || '0').toFixed(1)
+        ),
+        listenerCount: parseInt(result.raw[index]?.listenerCount || '0'),
+      }));
 
       return { success: true, data: stats };
     } catch (error) {
