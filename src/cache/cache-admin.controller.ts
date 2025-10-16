@@ -182,14 +182,16 @@ export class CacheAdminController {
   })
   async searchCache(
     @Query('pattern') pattern: string,
-    @Query('limit') limit?: number,
+    @Query('limit') limit?: number
   ) {
     try {
       const keys = await this.cacheService.getKeys(pattern);
-      const limitedKeys = limit ? keys.slice(0, Number(limit)) : keys.slice(0, 50);
+      const limitedKeys = limit
+        ? keys.slice(0, Number(limit))
+        : keys.slice(0, 50);
 
       const results = await Promise.all(
-        limitedKeys.map(async (key) => {
+        limitedKeys.map(async key => {
           const value = await this.cacheService.get(key);
           const ttl = await this.cacheService.getTTL(key);
           return {
@@ -198,7 +200,7 @@ export class CacheAdminController {
             ttlFormatted: this.formatTTL(ttl),
             value,
           };
-        }),
+        })
       );
 
       return {
@@ -385,4 +387,3 @@ export class CacheAdminController {
     return `${Math.floor(seconds / 86400)}d`;
   }
 }
-
