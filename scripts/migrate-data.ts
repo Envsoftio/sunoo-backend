@@ -418,6 +418,14 @@ async function migrateFromIndividualJson() {
           continue;
         }
 
+        // For existing users, don't overwrite sensitive auth fields
+        if (tableName === 'users' && recordExists) {
+          delete mappedRecord.password;
+          delete mappedRecord.hasDefaultPassword;
+          delete mappedRecord.emailVerificationToken;
+          delete mappedRecord.isEmailVerified;
+        }
+
         // Insert or update record
         const insertColumns = Object.keys(mappedRecord);
         const insertValues = insertColumns.map(
