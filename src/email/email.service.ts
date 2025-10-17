@@ -242,6 +242,37 @@ export class EmailService {
     });
   }
 
+  async sendContactFormEmail(contactData: {
+    name: string;
+    email: string;
+    message: string;
+  }): Promise<boolean> {
+    const template = this.loadTemplate('contact-form');
+    const data = {
+      name: contactData.name,
+      email: contactData.email,
+      message: contactData.message,
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+      timestamp: new Date().toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      }),
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: this.emailConfig.adminEmail || 'hello@sunoo.app',
+      subject: `New Contact Form Submission from ${contactData.name} - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

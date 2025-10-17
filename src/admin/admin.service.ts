@@ -1396,15 +1396,6 @@ export class AdminService {
 
   async sendEmail(user: any, templateKey: string, dynamicFields: any) {
     try {
-      console.log(
-        'Sending email to:',
-        user.email,
-        'with template:',
-        templateKey,
-        'and fields:',
-        dynamicFields
-      );
-
       // Use Zeptomail service to send email with template
       const emailSent = await this.zeptomailService.sendEmailWithTemplate({
         to: user.email,
@@ -1428,7 +1419,7 @@ export class AdminService {
         return {
           success: false,
           message: 'Failed to send email',
-          error: 'Zeptomail service returned false',
+          error: 'Email service returned false',
         };
       }
     } catch (error) {
@@ -1544,30 +1535,9 @@ export class AdminService {
       }
 
       const total = await countQuery.getCount();
-      console.log(
-        'Total count:',
-        total,
-        'Offset:',
-        offset,
-        'Limit:',
-        limit,
-        'Page:',
-        page
-      );
 
       // Apply pagination
       const results = await query.skip(offset).take(limit).getRawMany();
-      console.log('Results count:', results.length);
-      console.log(
-        'Page',
-        page,
-        'Results:',
-        results.map(r => ({
-          id: r.book_id,
-          title: r.book_title,
-          total_plays: r.total_plays,
-        }))
-      );
 
       // Transform data to match expected format
       const transformedData = results.map(item => ({
@@ -1730,6 +1700,39 @@ export class AdminService {
       };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  async submitContactForm(contactFormDto: any) {
+    try {
+      const { name, email, message } = contactFormDto;
+
+      // Send email using the contact form template
+      const emailSent = await this.emailService.sendContactFormEmail({
+        name,
+        email,
+        message,
+      });
+
+      if (emailSent) {
+        return {
+          success: true,
+          message:
+            'Contact form submitted successfully. We will get back to you soon!',
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Failed to send contact form. Please try again later.',
+        };
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      return {
+        success: false,
+        message:
+          'An error occurred while submitting the contact form. Please try again later.',
+      };
     }
   }
 }

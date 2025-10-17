@@ -1,0 +1,204 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>New Contact Form Submission</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #cb0002 0%, #e14a4a 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+      }
+
+      .header p {
+        margin: 10px 0 0 0;
+        font-size: 16px;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px 30px;
+      }
+
+      .submission-details {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 20px 0;
+      }
+
+      .detail-item {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .detail-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .detail-label {
+        font-weight: 600;
+        color: #cb0002;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+      }
+
+      .detail-value {
+        color: #495057;
+        font-size: 16px;
+        word-wrap: break-word;
+      }
+
+      .message-content {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 20px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .footer {
+        background-color: #f8f9fa;
+        padding: 30px;
+        text-align: center;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .footer p {
+        margin: 0 0 10px 0;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .footer .brand {
+        color: #cb0002;
+        font-weight: 600;
+        font-size: 16px;
+      }
+
+      .timestamp {
+        color: #6c757d;
+        font-size: 12px;
+        margin-top: 15px;
+      }
+
+      .action-buttons {
+        margin-top: 25px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 12px 24px;
+        margin: 5px;
+        background-color: #cb0002;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .btn:hover {
+        background-color: #e14a4a;
+      }
+
+      .btn-secondary {
+        background-color: #6c757d;
+      }
+
+      .btn-secondary:hover {
+        background-color: #5a6268;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='email-container'>
+      <div class='header'>
+        <h1>📧 New Contact Form Submission</h1>
+        <p>You have received a new contact form submission from {{appName}}</p>
+      </div>
+
+      <div class='content'>
+        <p>Hello Admin,</p>
+        <p>A visitor has submitted a contact form on your website. Here are the
+          details:</p>
+
+        <div class='submission-details'>
+          <div class='detail-item'>
+            <div class='detail-label'>Name</div>
+            <div class='detail-value'>{{name}}</div>
+          </div>
+
+          <div class='detail-item'>
+            <div class='detail-label'>Email Address</div>
+            <div class='detail-value'>
+              <a
+                href='mailto:{{email}}'
+                style='color: #CB0002; text-decoration: none;'
+              >{{email}}</a>
+            </div>
+          </div>
+
+          <div class='detail-item'>
+            <div class='detail-label'>Message</div>
+            <div class='message-content'>{{message}}</div>
+          </div>
+        </div>
+
+        <div class='action-buttons'>
+          <a
+            href='mailto:{{email}}?subject=Re: Your Contact Form Submission'
+            class='btn'
+          >Reply to {{name}}</a>
+          <a href='{{appUrl}}/admin' class='btn btn-secondary'>View Admin Panel</a>
+        </div>
+      </div>
+
+      <div class='footer'>
+        <p>This email was automatically generated from the
+          <span class='brand'>{{appName}}</span>
+          contact form.</p>
+        <p>Please respond to the user's inquiry as soon as possible.</p>
+        <div class='timestamp'>
+          Received on
+          {{timestamp}}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

@@ -26,6 +26,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../auth/guards/superadmin.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { ContactFormDto } from '../dto/contact.dto';
 
 @ApiTags('Admin')
 @Controller('api/admin')
@@ -541,6 +542,19 @@ export class AdminController {
       body.templateKey,
       body.dynamicFields
     );
+  }
+
+  @Post('contact-form')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit contact form' })
+  @ApiResponse({
+    status: 200,
+    description: 'Contact form submitted successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async submitContactForm(@Body() contactFormDto: ContactFormDto) {
+    return await this.adminService.submitContactForm(contactFormDto);
   }
 
   // Story Plays Analytics APIs
