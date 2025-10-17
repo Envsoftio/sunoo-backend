@@ -66,6 +66,8 @@ export class AdminService {
           'marketing_emails_enabled',
           'new_content_emails_enabled',
           'subscription_emails_enabled',
+          'hasDefaultPassword',
+          'authId',
         ],
         relations: ['subscriptions'],
         order: { created_at: 'DESC' },
