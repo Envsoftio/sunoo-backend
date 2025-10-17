@@ -51,7 +51,17 @@ export class AuthController {
   async getProfile(@Request() req) {
     const result = await this.authService.getProfile(req.user.id);
     if (result.success) {
-      return result.data;
+      const {
+        password,
+        passwordResetExpires,
+        passwordResetToken,
+        emailVerificationToken,
+        lastLoginAt,
+        hasDefaultPassword,
+        email_preferences_updated_at,
+        ...sanitized
+      } = result.data || {};
+      return sanitized;
     } else {
       throw new UnauthorizedException(
         result.error?.message || 'Failed to get profile'
