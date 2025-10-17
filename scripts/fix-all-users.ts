@@ -30,8 +30,12 @@ async function fixAllUsers() {
 
     console.log('📊 Initial user state:');
     console.log(`   - Total users: ${initialStats[0].total_users}`);
-    console.log(`   - Users with default password: ${initialStats[0].users_with_default_password}`);
-    console.log(`   - Users flagged for password reset: ${initialStats[0].users_flagged_for_reset}`);
+    console.log(
+      `   - Users with default password: ${initialStats[0].users_with_default_password}`
+    );
+    console.log(
+      `   - Users flagged for password reset: ${initialStats[0].users_flagged_for_reset}`
+    );
     console.log(`   - Verified users: ${initialStats[0].verified_users}`);
     console.log(`   - Unverified users: ${initialStats[0].unverified_users}\n`);
 
@@ -42,7 +46,9 @@ async function fixAllUsers() {
       SET "hasDefaultPassword" = true
       WHERE password = 'default_password'
     `);
-    console.log(`✅ Updated ${passwordResult[1]} users to require password reset`);
+    console.log(
+      `✅ Updated ${passwordResult[1]} users to require password reset`
+    );
 
     // Step 2: Verify all emails
     console.log('\n📧 Step 2: Verifying all user emails...');
@@ -67,8 +73,12 @@ async function fixAllUsers() {
 
     console.log('\n📊 Final user state:');
     console.log(`   - Total users: ${finalStats[0].total_users}`);
-    console.log(`   - Users with default password: ${finalStats[0].users_with_default_password}`);
-    console.log(`   - Users flagged for password reset: ${finalStats[0].users_flagged_for_reset}`);
+    console.log(
+      `   - Users with default password: ${finalStats[0].users_with_default_password}`
+    );
+    console.log(
+      `   - Users flagged for password reset: ${finalStats[0].users_flagged_for_reset}`
+    );
     console.log(`   - Verified users: ${finalStats[0].verified_users}`);
     console.log(`   - Unverified users: ${finalStats[0].unverified_users}`);
 
@@ -81,7 +91,9 @@ async function fixAllUsers() {
 
     console.log('\n📋 Sample users:');
     sampleUsers.forEach(user => {
-      console.log(`   - ${user.email} (needs password reset: ${user.hasDefaultPassword}, email verified: ${user.isEmailVerified})`);
+      console.log(
+        `   - ${user.email} (needs password reset: ${user.hasDefaultPassword}, email verified: ${user.isEmailVerified})`
+      );
     });
 
     console.log('\n🎉 All user fixes completed successfully!');
@@ -93,7 +105,6 @@ async function fixAllUsers() {
     console.log('   - Users will be forced to reset their passwords on login');
     console.log('   - Users can now access email-verified features');
     console.log('   - Monitor the password reset flow in your application');
-
   } catch (error) {
     console.error('❌ Error fixing users:', error);
   } finally {

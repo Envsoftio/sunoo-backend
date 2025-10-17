@@ -21,8 +21,6 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
     "migrate:data": "ts-node scripts/migrate-data.ts",
-    "migrate:fix-users": "ts-node scripts/fix-migrated-users.ts",
-    "migrate:verify-emails": "ts-node scripts/verify-all-emails.ts",
     "migrate:fix-all-users": "ts-node scripts/fix-all-users.ts"
   },
   "dependencies": {
