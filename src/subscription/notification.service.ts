@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Response } from 'express';
+import { Observer } from 'rxjs';
 
 export interface SubscriptionEvent {
   type:
     | 'subscription_created'
     | 'subscription_activated'
     | 'subscription_cancelled'
+    | 'subscription_charged'
+    | 'subscription_resumed'
+    | 'subscription_pending'
+    | 'subscription_halted'
     | 'payment_success'
     | 'payment_failed';
   userId: string;
@@ -19,24 +23,24 @@ export interface SubscriptionEvent {
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
-  private readonly activeConnections = new Map<string, Response[]>();
+  private readonly activeConnections = new Map<string, Observer<any>[]>();
 
   constructor(private eventEmitter: EventEmitter2) {}
 
   // Store SSE connection for a user
-  addConnection(userId: string, response: Response) {
+  addConnection(userId: string, observer: Observer<any>) {
     if (!this.activeConnections.has(userId)) {
       this.activeConnections.set(userId, []);
     }
-    this.activeConnections.get(userId)!.push(response);
+    this.activeConnections.get(userId)!.push(observer);
     this.logger.log(`Added SSE connection for user ${userId}`);
   }
 
   // Remove SSE connection for a user
-  removeConnection(userId: string, response: Response) {
+  removeConnection(userId: string, observer: Observer<any>) {
     const connections = this.activeConnections.get(userId);
     if (connections) {
-      const index = connections.indexOf(response);
+      const index = connections.indexOf(observer);
       if (index > -1) {
         connections.splice(index, 1);
         this.logger.log(`Removed SSE connection for user ${userId}`);
@@ -55,24 +59,20 @@ export class NotificationService {
       return;
     }
 
-    const eventData = `data: ${JSON.stringify(event)}\n\n`;
-
     // Send to all connections for this user
-    const deadConnections: Response[] = [];
-    for (const response of connections) {
+    const deadConnections: Observer<any>[] = [];
+    for (const observer of connections) {
       try {
-        // Check if connection is still alive
-        if ((response as any).writableEnded) {
-          deadConnections.push(response);
-          continue;
-        }
-
-        // Write the event data
-        (response as any).write(eventData);
+        // Send the event data
+        observer.next({
+          data: event,
+          type: event.type,
+          id: `${event.type}_${Date.now()}`,
+        });
         this.logger.log(`Sent event ${event.type} to user ${userId}`);
       } catch (error) {
         this.logger.error(`Error sending event to user ${userId}:`, error);
-        deadConnections.push(response);
+        deadConnections.push(observer);
       }
     }
 
@@ -150,6 +150,54 @@ export class NotificationService {
       timestamp: new Date(),
     };
     this.eventEmitter.emit('payment.failed', event);
+    void this.sendToUser(userId, event);
+  }
+
+  emitSubscriptionCharged(userId: string, subscriptionData: any) {
+    const event: SubscriptionEvent = {
+      type: 'subscription_charged',
+      userId,
+      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+      data: subscriptionData,
+      timestamp: new Date(),
+    };
+    this.eventEmitter.emit('subscription.charged', event);
+    void this.sendToUser(userId, event);
+  }
+
+  emitSubscriptionResumed(userId: string, subscriptionData: any) {
+    const event: SubscriptionEvent = {
+      type: 'subscription_resumed',
+      userId,
+      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+      data: subscriptionData,
+      timestamp: new Date(),
+    };
+    this.eventEmitter.emit('subscription.resumed', event);
+    void this.sendToUser(userId, event);
+  }
+
+  emitSubscriptionPending(userId: string, subscriptionData: any) {
+    const event: SubscriptionEvent = {
+      type: 'subscription_pending',
+      userId,
+      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+      data: subscriptionData,
+      timestamp: new Date(),
+    };
+    this.eventEmitter.emit('subscription.pending', event);
+    void this.sendToUser(userId, event);
+  }
+
+  emitSubscriptionHalted(userId: string, subscriptionData: any) {
+    const event: SubscriptionEvent = {
+      type: 'subscription_halted',
+      userId,
+      subscriptionId: subscriptionData.subscription_id || subscriptionData.id,
+      data: subscriptionData,
+      timestamp: new Date(),
+    };
+    this.eventEmitter.emit('subscription.halted', event);
     void this.sendToUser(userId, event);
   }
 

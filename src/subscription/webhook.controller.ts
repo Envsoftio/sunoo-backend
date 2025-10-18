@@ -494,6 +494,28 @@ export class WebhookController {
       }
     );
 
+    // Emit notification to user
+    if (chargeDetails.notes?.user_id) {
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Emitting subscription charged notification',
+        {
+          userId: chargeDetails.notes.user_id,
+          subscriptionId: chargeDetails.id,
+        },
+        'WebhookController'
+      );
+      console.log('Emitting subscription charged notification', {
+        userId: chargeDetails.notes.user_id,
+        subscriptionId: chargeDetails.id,
+      });
+
+      this.notificationService.emitSubscriptionCharged(
+        chargeDetails.notes.user_id,
+        chargeDetails
+      );
+    }
+
     return { message: 'subscription.charged processed successfully' };
   }
 
@@ -561,6 +583,28 @@ export class WebhookController {
       }
     );
 
+    // Emit notification to user
+    if (subscriptionDetails.notes?.user_id) {
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Emitting subscription resumed notification',
+        {
+          userId: subscriptionDetails.notes.user_id,
+          subscriptionId: subscriptionDetails.id,
+        },
+        'WebhookController'
+      );
+      console.log('Emitting subscription resumed notification', {
+        userId: subscriptionDetails.notes.user_id,
+        subscriptionId: subscriptionDetails.id,
+      });
+
+      this.notificationService.emitSubscriptionResumed(
+        subscriptionDetails.notes.user_id,
+        subscriptionDetails
+      );
+    }
+
     return { message: 'subscription.resumed processed successfully' };
   }
 
@@ -575,6 +619,28 @@ export class WebhookController {
       }
     );
 
+    // Emit notification to user
+    if (pendingDetails.notes?.user_id) {
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Emitting subscription pending notification',
+        {
+          userId: pendingDetails.notes.user_id,
+          subscriptionId: pendingDetails.id,
+        },
+        'WebhookController'
+      );
+      console.log('Emitting subscription pending notification', {
+        userId: pendingDetails.notes.user_id,
+        subscriptionId: pendingDetails.id,
+      });
+
+      this.notificationService.emitSubscriptionPending(
+        pendingDetails.notes.user_id,
+        pendingDetails
+      );
+    }
+
     return { message: 'subscription.pending processed successfully' };
   }
 
@@ -588,6 +654,28 @@ export class WebhookController {
         metadata: haltedDetails,
       }
     );
+
+    // Emit notification to user
+    if (haltedDetails.notes?.user_id) {
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'Emitting subscription halted notification',
+        {
+          userId: haltedDetails.notes.user_id,
+          subscriptionId: haltedDetails.id,
+        },
+        'WebhookController'
+      );
+      console.log('Emitting subscription halted notification', {
+        userId: haltedDetails.notes.user_id,
+        subscriptionId: haltedDetails.id,
+      });
+
+      this.notificationService.emitSubscriptionHalted(
+        haltedDetails.notes.user_id,
+        haltedDetails
+      );
+    }
 
     return { message: 'subscription.halted processed successfully' };
   }
@@ -718,7 +806,7 @@ export class WebhookController {
           this.loggerService.logWebhookEvent(
             'warn',
             'Failed to update next_billing_date from payment',
-            { subscriptionId, error: (e as any)?.message },
+            { subscriptionId, error: e?.message },
             'WebhookController'
           );
           console.log(
