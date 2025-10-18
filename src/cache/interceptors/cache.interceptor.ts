@@ -24,12 +24,13 @@ export class CacheInterceptor implements NestInterceptor {
     const method = request.method;
     const url = request.url;
 
-    // Skip caching for non-HTTP contexts, health checks, auth, payment, subscription, and admin endpoints
+    // Skip caching for non-HTTP contexts, health checks, auth, payment, subscription, notifications, and admin endpoints
     if (
       context.getType() !== 'http' ||
       url.includes('/health') ||
       url.includes('/auth/') || // All auth endpoints including profile
       url.includes('/subscription') ||
+      url.includes('/notifications') || // All notification endpoints including SSE
       url.includes('/payment') ||
       url.includes('/razorpay') ||
       url.includes('/webhook') ||

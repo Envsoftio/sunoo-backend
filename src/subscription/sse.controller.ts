@@ -1,13 +1,16 @@
 import {
   Controller,
   Get,
-  Request,
-  Res,
+  Sse,
+  MessageEvent,
   Logger,
   OnModuleDestroy,
+  Query,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import type { Response } from 'express';
+import { Observable, interval, map, catchError, of, merge } from 'rxjs';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Real-time Notifications')
@@ -17,69 +20,83 @@ export class SseController implements OnModuleDestroy {
 
   constructor(private notificationService: NotificationService) {}
 
-  @Get('subscribe')
+  @Sse('subscribe')
   @ApiOperation({ summary: 'Subscribe to real-time subscription events' })
   @ApiResponse({ status: 200, description: 'SSE connection established' })
-  subscribe(@Request() req, @Res() res: Response) {
-    const userId = req.query.userId;
-
+  subscribe(@Query('userId') userId: string): Observable<MessageEvent> {
     if (!userId) {
-      res.status(400).json({ error: 'User ID is required' });
-      return;
+      throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
     }
-
-    // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
-
-    // Send initial connection event
-    res.write(
-      `data: ${JSON.stringify({
-        type: 'connection_established',
-        userId,
-        timestamp: new Date(),
-        message: 'Connected to subscription events',
-      })}\n\n`
-    );
-
-    // Add connection to notification service
-    this.notificationService.addConnection(userId, res as any);
 
     this.logger.log(`SSE connection established for user ${userId}`);
 
-    // Handle client disconnect
-    req.on('close', () => {
-      this.logger.log(`SSE connection closed for user ${userId}`);
-      this.notificationService.removeConnection(userId, res as any);
-    });
-
-    // Keep connection alive with heartbeat
-    const heartbeat = setInterval(() => {
-      try {
-        if (res.writableEnded) {
-          clearInterval(heartbeat);
-          return;
-        }
-        res.write(
-          `data: ${JSON.stringify({
+    try {
+      // Create heartbeat observable (every 30 seconds)
+      const heartbeat$ = interval(5000).pipe(
+        map(() => ({
+          data: {
             type: 'heartbeat',
             timestamp: new Date(),
-          })}\n\n`
-        );
-      } catch (error) {
-        this.logger.error(`Heartbeat error for user ${userId}:`, error);
-        clearInterval(heartbeat);
-        this.notificationService.removeConnection(userId, res as any);
-      }
-    }, 30000); // Send heartbeat every 30 seconds
+          },
+        })),
+        catchError(error => {
+          this.logger.error('Heartbeat error:', error);
+          return of({
+            data: {
+              type: 'error',
+              message: 'Heartbeat error',
+              timestamp: new Date(),
+            },
+          });
+        })
+      );
 
-    // Clean up on module destroy
-    req.on('close', () => {
-      clearInterval(heartbeat);
-    });
+      // Get notification stream from service
+      const notificationStream$ = this.notificationService
+        .getNotificationStream(userId)
+        .pipe(
+          catchError(error => {
+            this.logger.error('Notification stream error:', error);
+            return of({
+              data: {
+                type: 'error',
+                message: 'Notification stream error',
+                timestamp: new Date(),
+              },
+            });
+          })
+        );
+
+      // Create initial connection event
+      const initialEvent$ = of({
+        data: {
+          type: 'connection_established',
+          userId,
+          timestamp: new Date(),
+          message: 'Connected to subscription events',
+        },
+      });
+
+      // Merge all streams
+      return merge(initialEvent$, heartbeat$, notificationStream$).pipe(
+        catchError(error => {
+          this.logger.error('SSE stream error:', error);
+          return of({
+            data: {
+              type: 'error',
+              message: 'Stream error',
+              timestamp: new Date(),
+            },
+          });
+        })
+      );
+    } catch (error) {
+      this.logger.error('Error creating SSE stream:', error);
+      throw new HttpException(
+        'Failed to create SSE stream',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   @Get('status')

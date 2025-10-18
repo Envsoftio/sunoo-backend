@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Observer } from 'rxjs';
+import { Observer, Observable, Subject } from 'rxjs';
 
 export interface SubscriptionEvent {
   type:
@@ -24,6 +24,7 @@ export interface SubscriptionEvent {
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
   private readonly activeConnections = new Map<string, Observer<any>[]>();
+  private readonly userStreams = new Map<string, Subject<any>>();
 
   constructor(private eventEmitter: EventEmitter2) {}
 
@@ -37,49 +38,85 @@ export class NotificationService {
   }
 
   // Remove SSE connection for a user
-  removeConnection(userId: string, observer: Observer<any>) {
-    const connections = this.activeConnections.get(userId);
-    if (connections) {
-      const index = connections.indexOf(observer);
-      if (index > -1) {
-        connections.splice(index, 1);
-        this.logger.log(`Removed SSE connection for user ${userId}`);
+  removeConnection(userId: string, observer?: Observer<any>) {
+    if (observer) {
+      const connections = this.activeConnections.get(userId);
+      if (connections) {
+        const index = connections.indexOf(observer);
+        if (index > -1) {
+          connections.splice(index, 1);
+          this.logger.log(`Removed SSE connection for user ${userId}`);
+        }
+        if (connections.length === 0) {
+          this.activeConnections.delete(userId);
+        }
       }
-      if (connections.length === 0) {
-        this.activeConnections.delete(userId);
+    } else {
+      // Remove all connections for user
+      this.activeConnections.delete(userId);
+      const stream = this.userStreams.get(userId);
+      if (stream) {
+        stream.complete();
+        this.userStreams.delete(userId);
       }
+      this.logger.log(`Removed all connections for user ${userId}`);
     }
+  }
+
+  // Get notification stream for a user
+  getNotificationStream(userId: string): Observable<any> {
+    if (!this.userStreams.has(userId)) {
+      this.userStreams.set(userId, new Subject());
+    }
+
+    return this.userStreams.get(userId)!.asObservable();
   }
 
   // Send event to specific user
   sendToUser(userId: string, event: SubscriptionEvent) {
-    const connections = this.activeConnections.get(userId);
-    if (!connections || connections.length === 0) {
-      this.logger.warn(`No active connections for user ${userId}`);
-      return;
-    }
+    const eventData = {
+      data: event,
+      type: event.type,
+      id: `${event.type}_${Date.now()}`,
+    };
 
-    // Send to all connections for this user
-    const deadConnections: Observer<any>[] = [];
-    for (const observer of connections) {
+    // Send to Observable stream
+    const stream = this.userStreams.get(userId);
+    if (stream) {
       try {
-        // Send the event data
-        observer.next({
-          data: event,
-          type: event.type,
-          id: `${event.type}_${Date.now()}`,
-        });
+        if (stream.closed) {
+          this.userStreams.set(userId, new Subject());
+          this.userStreams.get(userId)!.next(eventData);
+        } else {
+          stream.next(eventData);
+        }
         this.logger.log(`Sent event ${event.type} to user ${userId}`);
       } catch (error) {
         this.logger.error(`Error sending event to user ${userId}:`, error);
-        deadConnections.push(observer);
       }
     }
 
-    // Remove dead connections
-    deadConnections.forEach(deadConn => {
-      this.removeConnection(userId, deadConn);
-    });
+    // Send to legacy connections (if any)
+    const connections = this.activeConnections.get(userId);
+    if (connections && connections.length > 0) {
+      const deadConnections: Observer<any>[] = [];
+      for (const observer of connections) {
+        try {
+          observer.next(eventData);
+          this.logger.log(
+            `Sent event ${event.type} to user ${userId} connection`
+          );
+        } catch (error) {
+          this.logger.error(`Error sending event to user ${userId}:`, error);
+          deadConnections.push(observer);
+        }
+      }
+
+      // Remove dead connections
+      deadConnections.forEach(deadConn => {
+        this.removeConnection(userId, deadConn);
+      });
+    }
   }
 
   // Broadcast event to all users (for admin notifications)
