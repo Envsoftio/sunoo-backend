@@ -10,7 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Observable, interval, map, catchError, of, merge } from 'rxjs';
+import { Observable, interval, map, catchError, of, merge, tap } from 'rxjs';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Real-time Notifications')
@@ -31,62 +31,85 @@ export class SseController implements OnModuleDestroy {
     this.logger.log(`SSE connection established for user ${userId}`);
 
     try {
-      // Create heartbeat observable (every 30 seconds)
-      const heartbeat$ = interval(5000).pipe(
+      const heartbeat$ = interval(30000).pipe(
         map(() => ({
-          data: {
+          data: JSON.stringify({
             type: 'heartbeat',
-            timestamp: new Date(),
-          },
+            timestamp: new Date().toISOString(),
+          }),
         })),
-        catchError(error => {
+        catchError((error) => {
           this.logger.error('Heartbeat error:', error);
           return of({
-            data: {
+            data: JSON.stringify({
               type: 'error',
               message: 'Heartbeat error',
-              timestamp: new Date(),
-            },
+              timestamp: new Date().toISOString(),
+            }),
           });
         })
       );
 
-      // Get notification stream from service
       const notificationStream$ = this.notificationService
         .getNotificationStream(userId)
         .pipe(
-          catchError(error => {
+          map((event) => ({
+            id: event.id,
+            type: event.type,
+            data: JSON.stringify({
+              type: event.type,
+              ...event.data,
+            }),
+          })),
+          catchError((error) => {
             this.logger.error('Notification stream error:', error);
             return of({
-              data: {
+              data: JSON.stringify({
                 type: 'error',
                 message: 'Notification stream error',
-                timestamp: new Date(),
-              },
+                timestamp: new Date().toISOString(),
+              }),
             });
           })
         );
 
-      // Create initial connection event
-      const initialEvent$ = of({
-        data: {
-          type: 'connection_established',
-          userId,
-          timestamp: new Date(),
-          message: 'Connected to subscription events',
-        },
+      const connection$ = new Observable<MessageEvent>((observer) => {
+        this.notificationService.addConnection(userId, observer);
+
+        // On client disconnect
+        return () => {
+          this.logger.log(`SSE connection closed for user ${userId}`);
+          this.notificationService.removeConnection(userId, observer);
+        };
       });
 
-      // Merge all streams
-      return merge(initialEvent$, heartbeat$, notificationStream$).pipe(
-        catchError(error => {
+      const initialEvent$ = of({
+        data: JSON.stringify({
+          type: 'connection_established',
+          userId,
+          timestamp: new Date().toISOString(),
+          message: 'Connected to subscription events',
+        }),
+      });
+
+      const mergedStream$ = merge(initialEvent$, heartbeat$, notificationStream$, connection$);
+
+      this.logger.log(`SSE stream created for user ${userId}`);
+
+      return mergedStream$.pipe(
+        tap((event) => {
+          this.logger.log(
+            `SSE emitting event to user ${userId}: ${event.type || 'message'}`
+          );
+        }),
+        catchError((error) => {
           this.logger.error('SSE stream error:', error);
           return of({
-            data: {
+            data: JSON.stringify({
               type: 'error',
               message: 'Stream error',
-              timestamp: new Date(),
-            },
+              timestamp: new Date().toISOString(),
+            }),
           });
         })
       );
@@ -100,8 +123,6 @@ export class SseController implements OnModuleDestroy {
   }
 
   @Get('status')
-  @ApiOperation({ summary: 'Get notification service status' })
-  @ApiResponse({ status: 200, description: 'Status retrieved successfully' })
   getStatus() {
     return {
       activeConnections: this.notificationService.getActiveConnectionsCount(),
