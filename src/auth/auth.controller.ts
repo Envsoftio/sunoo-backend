@@ -52,13 +52,13 @@ export class AuthController {
     const result = await this.authService.getProfile(req.user.id);
     if (result.success) {
       const {
-        password,
-        passwordResetExpires,
-        passwordResetToken,
-        emailVerificationToken,
-        lastLoginAt,
-        hasDefaultPassword,
-        email_preferences_updated_at,
+        password: _password,
+        passwordResetExpires: _passwordResetExpires,
+        passwordResetToken: _passwordResetToken,
+        emailVerificationToken: _emailVerificationToken,
+        lastLoginAt: _lastLoginAt,
+        hasDefaultPassword: _hasDefaultPassword,
+        email_preferences_updated_at: _email_preferences_updated_at,
         ...sanitized
       } = result.data || {};
       return sanitized;

@@ -38,7 +38,7 @@ export class SseController implements OnModuleDestroy {
             timestamp: new Date().toISOString(),
           }),
         })),
-        catchError((error) => {
+        catchError(error => {
           this.logger.error('Heartbeat error:', error);
           return of({
             data: JSON.stringify({
@@ -53,7 +53,7 @@ export class SseController implements OnModuleDestroy {
       const notificationStream$ = this.notificationService
         .getNotificationStream(userId)
         .pipe(
-          map((event) => ({
+          map(event => ({
             id: event.id,
             type: event.type,
             data: JSON.stringify({
@@ -61,7 +61,7 @@ export class SseController implements OnModuleDestroy {
               ...event.data,
             }),
           })),
-          catchError((error) => {
+          catchError(error => {
             this.logger.error('Notification stream error:', error);
             return of({
               data: JSON.stringify({
@@ -73,7 +73,7 @@ export class SseController implements OnModuleDestroy {
           })
         );
 
-      const connection$ = new Observable<MessageEvent>((observer) => {
+      const connection$ = new Observable<MessageEvent>(observer => {
         this.notificationService.addConnection(userId, observer);
 
         // On client disconnect
@@ -92,17 +92,22 @@ export class SseController implements OnModuleDestroy {
         }),
       });
 
-      const mergedStream$ = merge(initialEvent$, heartbeat$, notificationStream$, connection$);
+      const mergedStream$ = merge(
+        initialEvent$,
+        heartbeat$,
+        notificationStream$,
+        connection$
+      );
 
       this.logger.log(`SSE stream created for user ${userId}`);
 
       return mergedStream$.pipe(
-        tap((event) => {
+        tap(event => {
           this.logger.log(
-            `SSE emitting event to user ${userId}: ${event.type || 'message'}`
+            `SSE emitting event to user ${userId}: ${(event as any).type || 'message'}`
           );
         }),
-        catchError((error) => {
+        catchError(error => {
           this.logger.error('SSE stream error:', error);
           return of({
             data: JSON.stringify({
@@ -127,6 +132,34 @@ export class SseController implements OnModuleDestroy {
     return {
       activeConnections: this.notificationService.getActiveConnectionsCount(),
       activeUsers: this.notificationService.getActiveUsersCount(),
+      timestamp: new Date(),
+    };
+  }
+
+  @Get('test-event')
+  testEvent(
+    @Query('userId') userId: string,
+    @Query('eventType') eventType = 'test'
+  ) {
+    if (!userId) {
+      throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const testEvent = {
+      type: eventType as any,
+      userId,
+      data: {
+        message: 'This is a test event',
+        timestamp: new Date(),
+      },
+      timestamp: new Date(),
+    };
+
+    this.notificationService.sendToUser(userId, testEvent);
+
+    return {
+      message: `Test event '${eventType}' sent to user ${userId}`,
+      event: testEvent,
       timestamp: new Date(),
     };
   }
