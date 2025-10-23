@@ -9,11 +9,14 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { RazorpayService } from './razorpay.service';
 import { SubscriptionService } from './subscription.service';
 import { PaymentService } from './payment.service';
 import { NotificationService } from './notification.service';
 import { LoggerService } from '../common/logger/logger.service';
+import { Payment } from '../entities/payment.entity';
 
 @ApiTags('Webhooks')
 @Controller('api/webhooks')
@@ -23,7 +26,9 @@ export class WebhookController {
     private readonly subscriptionService: SubscriptionService,
     private readonly paymentService: PaymentService,
     private readonly notificationService: NotificationService,
-    private readonly loggerService: LoggerService
+    private readonly loggerService: LoggerService,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>
   ) {}
 
   @Post('razorpay')
@@ -119,6 +124,12 @@ export class WebhookController {
           break;
         case 'payment.failed':
           result = await this.handlePaymentFailed(body);
+          break;
+        case 'payment.captured':
+          result = await this.handlePaymentCaptured(body);
+          break;
+        case 'order.paid':
+          result = await this.handleOrderPaid(body);
           break;
         default:
           this.loggerService.logWebhookEvent(
@@ -268,12 +279,7 @@ export class WebhookController {
             : undefined,
       };
 
-      this.loggerService.logWebhookEvent(
-        'debug',
-        'Upserting subscription data',
-        { subscriptionId, subscriptionData },
-        'WebhookController'
-      );
+      // Upserting subscription data
       console.log('Upserting subscription data', {
         subscriptionId,
         subscriptionData,
@@ -283,12 +289,13 @@ export class WebhookController {
         await this.subscriptionService.upsertSubscription(subscriptionData);
 
       if (result.success) {
-        this.loggerService.logWebhookEvent(
-          'info',
-          'Subscription upserted successfully',
-          { subscriptionId, userId, result },
-          'WebhookController'
-        );
+        // Log important business event
+        this.loggerService.logBusinessEvent('Subscription Created', {
+          subscriptionId,
+          userId,
+          status: subscriptionDetails.status,
+          planId: subscriptionDetails.plan_id,
+        });
         console.log('Subscription upserted successfully', {
           subscriptionId,
           userId,
@@ -297,12 +304,7 @@ export class WebhookController {
 
         // Emit notification to user
         if (subscriptionDetails.notes?.user_id) {
-          this.loggerService.logWebhookEvent(
-            'debug',
-            'Emitting subscription created notification',
-            { userId, subscriptionId },
-            'WebhookController'
-          );
+          // Emitting subscription created notification
           console.log('Emitting subscription created notification', {
             userId,
             subscriptionId,
@@ -364,12 +366,7 @@ export class WebhookController {
         metadata: subscriptionDetails,
       };
 
-      this.loggerService.logWebhookEvent(
-        'debug',
-        'Updating subscription status to active',
-        { subscriptionId, updateData },
-        'WebhookController'
-      );
+      // Updating subscription status to active
       console.log('Updating subscription status to active', {
         subscriptionId,
         updateData,
@@ -382,12 +379,12 @@ export class WebhookController {
       );
 
       if (result.success) {
-        this.loggerService.logWebhookEvent(
-          'info',
-          'Subscription status updated to active successfully',
-          { subscriptionId, userId },
-          'WebhookController'
-        );
+        // Log important business event
+        this.loggerService.logBusinessEvent('Subscription Activated', {
+          subscriptionId,
+          userId,
+          status: 'active',
+        });
         console.log('Subscription status updated to active successfully', {
           subscriptionId,
           userId,
@@ -395,12 +392,7 @@ export class WebhookController {
 
         // Emit notification to user
         if (subscriptionDetails.notes?.user_id) {
-          this.loggerService.logWebhookEvent(
-            'debug',
-            'Emitting subscription activated notification',
-            { userId, subscriptionId },
-            'WebhookController'
-          );
+          // Emitting subscription activated notification
           console.log('Emitting subscription activated notification', {
             userId,
             subscriptionId,
@@ -496,15 +488,7 @@ export class WebhookController {
 
     // Emit notification to user
     if (chargeDetails.notes?.user_id) {
-      this.loggerService.logWebhookEvent(
-        'debug',
-        'Emitting subscription charged notification',
-        {
-          userId: chargeDetails.notes.user_id,
-          subscriptionId: chargeDetails.id,
-        },
-        'WebhookController'
-      );
+      // Emitting subscription charged notification
       console.log('Emitting subscription charged notification', {
         userId: chargeDetails.notes.user_id,
         subscriptionId: chargeDetails.id,
@@ -704,6 +688,7 @@ export class WebhookController {
       userId,
       subscriptionId,
       amount: paymentDetails.amount,
+      notes: paymentDetails.notes,
       fullPaymentPayload: paymentDetails,
     });
 
@@ -762,6 +747,33 @@ export class WebhookController {
         }
       }
 
+      // Get user ID from subscription if available
+      let userId: string | null = paymentDetails.notes?.user_id;
+      const subscriptionId = (invoice as any)?.subscription_id || '';
+
+      // If user_id not found in payment notes, try to get it from subscription
+      if (!userId && subscriptionId) {
+        try {
+          const subscriptionResponse =
+            await this.subscriptionService.getSubscriptionByRazorpayId(
+              subscriptionId
+            );
+          if (
+            subscriptionResponse.success &&
+            subscriptionResponse.data?.user_id
+          ) {
+            userId = subscriptionResponse.data.user_id;
+          }
+        } catch (error) {
+          this.loggerService.logWebhookEvent(
+            'warn',
+            'Failed to fetch subscription for user ID',
+            { subscriptionId, error: error.message },
+            'WebhookController'
+          );
+        }
+      }
+
       const paymentData = {
         payment_id: paymentDetails.id,
         status: paymentDetails.status,
@@ -769,8 +781,8 @@ export class WebhookController {
         currency: paymentDetails.currency,
         invoice_id: paymentDetails.invoice_id,
         plan_id: paymentDetails.plan_id,
-        user_id: paymentDetails.notes?.user_id,
-        subscription_id: (invoice as any)?.subscription_id || '',
+        user_id: userId || undefined,
+        subscription_id: subscriptionId,
         metadata: paymentDetails,
       };
 
@@ -785,12 +797,14 @@ export class WebhookController {
       const result = await this.paymentService.createPayment(paymentData);
 
       if (result.success) {
-        this.loggerService.logWebhookEvent(
-          'info',
-          'Payment record created successfully',
-          { paymentId, userId, subscriptionId },
-          'WebhookController'
-        );
+        // Log important business event
+        this.loggerService.logBusinessEvent('Payment Authorized', {
+          paymentId,
+          userId,
+          subscriptionId,
+          amount: paymentDetails.amount,
+          currency: paymentDetails.currency,
+        });
         console.log('Payment record created successfully', {
           paymentId,
           userId,
@@ -963,5 +977,196 @@ export class WebhookController {
     }
 
     return { message: 'payment.failed processed successfully' };
+  }
+
+  private async handlePaymentCaptured(body: any) {
+    const paymentDetails = body.payload.payment.entity;
+    const paymentId = paymentDetails.id;
+
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing payment.captured event',
+      { paymentId, amount: paymentDetails.amount },
+      'WebhookController'
+    );
+
+    // Payment captured - emit payment success event to frontend
+    console.log('Payment captured:', {
+      paymentId,
+      amount: paymentDetails.amount,
+      subscriptionId: paymentDetails.subscription_id,
+      notes: paymentDetails.notes,
+      fullPaymentDetails: paymentDetails,
+    });
+
+    // Get user ID from multiple sources
+    let userId: string | null = null;
+
+    // First try to get userId from payment notes
+    if (paymentDetails.notes?.user_id) {
+      userId = paymentDetails.notes.user_id;
+      console.log('Found userId in payment notes:', userId);
+    }
+
+    // If not found in notes, try to get from subscription
+    if (!userId && paymentDetails.subscription_id) {
+      try {
+        const subscriptionResponse =
+          await this.subscriptionService.getSubscriptionByRazorpayId(
+            paymentDetails.subscription_id
+          );
+        if (
+          subscriptionResponse.success &&
+          subscriptionResponse.data?.user_id
+        ) {
+          userId = subscriptionResponse.data.user_id;
+          console.log('Found userId from subscription:', userId);
+        }
+      } catch (error) {
+        this.loggerService.logWebhookEvent(
+          'warn',
+          'Failed to fetch subscription for payment captured event',
+          {
+            subscriptionId: paymentDetails.subscription_id,
+            error: error.message,
+          },
+          'WebhookController'
+        );
+      }
+    }
+
+    // If still not found, try to get from Razorpay subscription directly
+    if (!userId && paymentDetails.subscription_id) {
+      try {
+        const razorpaySubscription = await this.razorpayService.getSubscription(
+          paymentDetails.subscription_id
+        );
+        if (razorpaySubscription?.notes?.user_id) {
+          userId = razorpaySubscription.notes.user_id;
+          console.log('Found userId from Razorpay subscription notes:', userId);
+        }
+      } catch (error) {
+        console.log(
+          'Failed to fetch Razorpay subscription for user ID:',
+          error.message
+        );
+      }
+    }
+
+    // If still not found, try to get from existing payment record
+    if (!userId) {
+      try {
+        const existingPayment = await this.paymentRepository.findOne({
+          where: { payment_id: paymentId },
+        });
+        if (existingPayment?.user_id) {
+          userId = existingPayment.user_id;
+          console.log('Found userId from existing payment record:', userId);
+        }
+      } catch (error) {
+        console.log(
+          'Failed to fetch existing payment for user ID:',
+          error.message
+        );
+      }
+    }
+
+    // Emit payment success event to frontend
+    if (userId) {
+      console.log('Emitting payment success event to user:', userId);
+      this.notificationService.emitPaymentSuccess(userId, {
+        paymentId,
+        amount: paymentDetails.amount,
+        currency: paymentDetails.currency,
+        status: paymentDetails.status,
+        subscriptionId: paymentDetails.subscription_id,
+      });
+    } else {
+      console.log(
+        'No userId found for payment captured event - cannot emit to frontend:',
+        {
+          paymentId,
+          subscriptionId: paymentDetails.subscription_id,
+          notes: paymentDetails.notes,
+        }
+      );
+
+      // Log the issue but don't emit to avoid sending wrong events to users
+      this.loggerService.logWebhookEvent(
+        'warn',
+        'Payment captured but no userId found - event not emitted to frontend',
+        {
+          paymentId,
+          subscriptionId: paymentDetails.subscription_id,
+          notes: paymentDetails.notes,
+        },
+        'WebhookController'
+      );
+    }
+
+    return { message: 'payment.captured processed successfully' };
+  }
+
+  private async handleOrderPaid(body: any) {
+    const orderDetails = body.payload.order.entity;
+    const paymentDetails = body.payload.payment.entity;
+    const orderId = orderDetails.id;
+    const paymentId = paymentDetails.id;
+
+    this.loggerService.logWebhookEvent(
+      'info',
+      'Processing order.paid event',
+      { orderId, paymentId, amount: orderDetails.amount },
+      'WebhookController'
+    );
+
+    // Order paid - this usually means payment was successful
+    // The actual payment processing is handled by payment.authorized
+    console.log('Order paid:', {
+      orderId,
+      paymentId,
+      amount: orderDetails.amount,
+    });
+
+    // Get user ID from subscription to emit event
+    let userId: string | null = null;
+    if (paymentDetails.subscription_id) {
+      try {
+        const subscriptionResponse =
+          await this.subscriptionService.getSubscriptionByRazorpayId(
+            paymentDetails.subscription_id
+          );
+        if (
+          subscriptionResponse.success &&
+          subscriptionResponse.data?.user_id
+        ) {
+          userId = subscriptionResponse.data.user_id;
+        }
+      } catch (error) {
+        this.loggerService.logWebhookEvent(
+          'warn',
+          'Failed to fetch subscription for order paid event',
+          {
+            subscriptionId: paymentDetails.subscription_id,
+            error: error.message,
+          },
+          'WebhookController'
+        );
+      }
+    }
+
+    // Emit payment success event to frontend
+    if (userId) {
+      this.notificationService.emitPaymentSuccess(userId, {
+        paymentId,
+        amount: paymentDetails.amount,
+        currency: paymentDetails.currency,
+        status: paymentDetails.status,
+        subscriptionId: paymentDetails.subscription_id,
+        orderId,
+      });
+    }
+
+    return { message: 'order.paid processed successfully' };
   }
 }

@@ -21,13 +21,40 @@ export class PaymentService {
     subscription_id?: string;
     metadata?: any;
   }) {
-    try {
-      const payment = this.paymentRepository.create(paymentData);
-      await this.paymentRepository.save(payment);
-      return { success: true, data: payment };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
+    // Use a transaction to prevent race conditions
+    return await this.paymentRepository.manager.transaction(
+      async transactionalEntityManager => {
+        try {
+          // Check if payment already exists within the transaction
+          const existingPayment = await transactionalEntityManager.findOne(
+            Payment,
+            {
+              where: { payment_id: paymentData.payment_id },
+            }
+          );
+
+          if (existingPayment) {
+            return {
+              success: false,
+              message: 'Payment already exists',
+              data: existingPayment,
+            };
+          }
+
+          const payment = transactionalEntityManager.create(
+            Payment,
+            paymentData
+          );
+          const savedPayment = await transactionalEntityManager.save(
+            Payment,
+            payment
+          );
+          return { success: true, data: savedPayment };
+        } catch (error) {
+          return { success: false, message: error.message };
+        }
+      }
+    );
   }
 
   async getPaymentsByUserId(userId: string) {

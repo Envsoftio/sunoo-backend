@@ -175,8 +175,9 @@ export class SubscriptionController {
     status: 201,
     description: 'Razorpay subscription created successfully',
   })
-  async createRazorpaySubscription(@Body() body: any, @Request() _req) {
-    return this.subscriptionService.createRazorpaySubscription(body);
+  async createRazorpaySubscription(@Body() body: any, @Request() req) {
+    const userId = req.user?.id;
+    return this.subscriptionService.createRazorpaySubscription(body, userId);
   }
 
   @Post('cancel-razorpay-subscription')

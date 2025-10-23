@@ -491,33 +491,56 @@ export class SubscriptionService {
   }
 
   // New methods for Razorpay integration
-  async createRazorpaySubscription(subscriptionData: {
-    plan_id: string;
-    total_count: number;
-    start_at?: number;
-    customer_notify: number;
-    notify_info: any;
-    notes: any;
-    offer_id?: string;
-  }) {
+  async createRazorpaySubscription(
+    subscriptionData: {
+      plan_id: string;
+      total_count: number;
+      start_at?: number;
+      customer_notify: number;
+      notify_info: any;
+      notes: any;
+      offer_id?: string;
+    },
+    userId?: string
+  ) {
     try {
       const response =
         await this.razorpayService.createSubscription(subscriptionData);
 
-      // Emit subscription created event immediately
-      if (response && response.id && subscriptionData.notes?.user_id) {
-        this.notificationService.emitSubscriptionCreated(
-          subscriptionData.notes.user_id,
-          response
-        );
-        this.loggerService.logSubscriptionEvent(
-          'info',
-          'Subscription created event emitted',
-          {
-            userId: subscriptionData.notes.user_id,
-            subscriptionId: response.id,
-          }
-        );
+      // Store subscription in our database with user_id for future webhook lookups
+      if (userId && response.id) {
+        try {
+          const subscription = this.subscriptionRepository.create({
+            user_id: userId,
+            subscription_id: response.id,
+            plan_id: subscriptionData.plan_id,
+            status: 'created',
+            razorpaySubscriptionId: response.id,
+            metadata: subscriptionData.notes,
+          });
+          await this.subscriptionRepository.save(subscription);
+
+          this.loggerService.logSubscriptionEvent(
+            'info',
+            'Subscription stored in database for webhook lookups',
+            {
+              userId,
+              subscriptionId: response.id,
+              planId: subscriptionData.plan_id,
+            }
+          );
+        } catch (dbError) {
+          this.loggerService.logSubscriptionEvent(
+            'warn',
+            'Failed to store subscription in database',
+            {
+              userId,
+              subscriptionId: response.id,
+              error: dbError.message,
+            }
+          );
+          // Continue even if database storage fails
+        }
       }
 
       return { success: true, data: response };

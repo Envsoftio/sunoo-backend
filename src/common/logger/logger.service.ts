@@ -42,9 +42,9 @@ export class LoggerService implements NestLoggerService {
       )
     );
 
-    // Main application logger
+    // Main application logger - more concise for production
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || 'warn', // Changed from 'info' to 'warn' for less verbose logging
       format: logFormat,
       transports: [
         new winston.transports.File({
@@ -59,6 +59,7 @@ export class LoggerService implements NestLoggerService {
           maxFiles: 5,
         }),
         new winston.transports.Console({
+          level: 'warn', // Only show warnings and errors in console
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
@@ -71,9 +72,9 @@ export class LoggerService implements NestLoggerService {
       ],
     });
 
-    // Subscription-specific logger
+    // Subscription-specific logger - focus on important events
     this.subscriptionLogger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || 'warn', // Changed from 'info' to 'warn'
       format: logFormat,
       transports: [
         new winston.transports.File({
@@ -90,9 +91,9 @@ export class LoggerService implements NestLoggerService {
       ],
     });
 
-    // Webhook-specific logger
+    // Webhook-specific logger - focus on important webhook events
     this.webhookLogger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || 'warn', // Changed from 'info' to 'warn'
       format: logFormat,
       transports: [
         new winston.transports.File({
@@ -107,6 +108,7 @@ export class LoggerService implements NestLoggerService {
           maxFiles: 10,
         }),
         new winston.transports.Console({
+          level: 'warn', // Only show warnings and errors in console
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
@@ -350,6 +352,39 @@ export class LoggerService implements NestLoggerService {
     }
 
     return sanitized;
+  }
+
+  // Important business events that should always be logged
+  logBusinessEvent(
+    event: string,
+    data: any = {},
+    context: string = 'BusinessEvent'
+  ) {
+    this.logger.warn(`[BUSINESS] ${event}`, {
+      context,
+      event,
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Critical errors that need immediate attention
+  logCriticalError(
+    message: string,
+    error: Error,
+    context: string = 'CriticalError',
+    additionalData: any = {}
+  ) {
+    this.logger.error(`[CRITICAL] ${message}`, {
+      context,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      },
+      ...additionalData,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Get logger instances for direct use
