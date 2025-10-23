@@ -166,7 +166,7 @@ jobs:
           ACCOUNT_LOCKOUT_DURATION: ${{ secrets.STAGING_ACCOUNT_LOCKOUT_DURATION }}
 
           # Swagger Configuration
-          ENABLE_SWAGGER: false
+          ENABLE_SWAGGER: true
           SWAGGER_TITLE: "Sunoo Backend API - Staging"
           SWAGGER_DESCRIPTION: "Staging API documentation for Sunoo Backend"
           SWAGGER_VERSION: "1.0.0"
@@ -225,7 +225,7 @@ jobs:
           ACCOUNT_LOCKOUT_DURATION=${{ secrets.STAGING_ACCOUNT_LOCKOUT_DURATION }}
 
           # Swagger Configuration
-          ENABLE_SWAGGER=false
+          ENABLE_SWAGGER=true
           SWAGGER_TITLE=Sunoo Backend API - Staging
           SWAGGER_DESCRIPTION=Staging API documentation for Sunoo Backend
           SWAGGER_VERSION=1.0.0
