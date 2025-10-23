@@ -6,6 +6,7 @@ import { Subscription } from '../entities/subscription.entity';
 import { Payment } from '../entities/payment.entity';
 import { RazorpayService } from './razorpay.service';
 import { LoggerService } from '../common/logger/logger.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -17,7 +18,8 @@ export class SubscriptionService {
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
     private razorpayService: RazorpayService,
-    private loggerService: LoggerService
+    private loggerService: LoggerService,
+    private notificationService: NotificationService
   ) {}
 
   async getAllPlans() {
@@ -501,6 +503,23 @@ export class SubscriptionService {
     try {
       const response =
         await this.razorpayService.createSubscription(subscriptionData);
+
+      // Emit subscription created event immediately
+      if (response && response.id && subscriptionData.notes?.user_id) {
+        this.notificationService.emitSubscriptionCreated(
+          subscriptionData.notes.user_id,
+          response
+        );
+        this.loggerService.logSubscriptionEvent(
+          'info',
+          'Subscription created event emitted',
+          {
+            userId: subscriptionData.notes.user_id,
+            subscriptionId: response.id,
+          }
+        );
+      }
+
       return { success: true, data: response };
     } catch (error) {
       return { success: false, message: error.message };

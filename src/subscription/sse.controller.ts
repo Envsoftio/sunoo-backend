@@ -60,6 +60,7 @@ export class SseController implements OnModuleDestroy {
               type: event.type,
               ...event.data,
             }),
+            event: event.type, // This makes it a custom SSE event
           })),
           catchError(error => {
             this.logger.error('Notification stream error:', error);

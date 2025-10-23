@@ -75,7 +75,7 @@ export class NotificationService {
   // Send event to specific user
   sendToUser(userId: string, event: SubscriptionEvent) {
     const eventData = {
-      data: event,
+      data: JSON.stringify(event),
       type: event.type,
       id: `${event.type}_${Date.now()}`,
     };
