@@ -61,33 +61,35 @@ async function bootstrap() {
     })
   );
 
-  // Swagger/OpenAPI configuration
-  const config = new DocumentBuilder()
-    .setTitle(configService.get('app.swagger.title') || 'Sunoo Backend API')
-    .setDescription(
-      configService.get('app.swagger.description') ||
-        'API documentation for Sunoo Backend'
-    )
-    .setVersion(configService.get('app.swagger.version') || '1.0.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth'
-    )
-    .build();
+  // Swagger/OpenAPI configuration - configurable via environment
+  if (configService.get('app.enableSwagger')) {
+    const config = new DocumentBuilder()
+      .setTitle(configService.get('app.swagger.title') || 'Sunoo Backend API')
+      .setDescription(
+        configService.get('app.swagger.description') ||
+          'API documentation for Sunoo Backend'
+      )
+      .setVersion(configService.get('app.swagger.version') || '1.0.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth'
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-  });
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+  }
 
   const port = configService.get('app.port');
   await app.listen(port);
@@ -97,9 +99,12 @@ async function bootstrap() {
     `🚀 Application is running on: http://localhost:${port}`,
     'Bootstrap'
   );
-  loggerService.log(
-    `📚 Swagger documentation: http://localhost:${port}/api`,
-    'Bootstrap'
-  );
+
+  if (configService.get('app.enableSwagger')) {
+    loggerService.log(
+      `📚 Swagger documentation: http://localhost:${port}/api`,
+      'Bootstrap'
+    );
+  }
 }
 void bootstrap();

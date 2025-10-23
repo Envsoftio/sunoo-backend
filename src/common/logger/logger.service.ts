@@ -44,7 +44,9 @@ export class LoggerService implements NestLoggerService {
 
     // Main application logger - more concise for production
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'warn', // Changed from 'info' to 'warn' for less verbose logging
+      level:
+        process.env.LOG_LEVEL ||
+        (process.env.NODE_ENV === 'development' ? 'info' : 'warn'), // More verbose in development
       format: logFormat,
       transports: [
         new winston.transports.File({
@@ -59,7 +61,7 @@ export class LoggerService implements NestLoggerService {
           maxFiles: 5,
         }),
         new winston.transports.Console({
-          level: 'warn', // Only show warnings and errors in console
+          level: process.env.NODE_ENV === 'development' ? 'info' : 'warn', // More verbose in development
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),
@@ -108,7 +110,7 @@ export class LoggerService implements NestLoggerService {
           maxFiles: 10,
         }),
         new winston.transports.Console({
-          level: 'warn', // Only show warnings and errors in console
+          level: process.env.NODE_ENV === 'development' ? 'info' : 'warn', // More verbose in development
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.simple(),

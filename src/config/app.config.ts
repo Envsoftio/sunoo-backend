@@ -7,6 +7,7 @@ export default registerAs('app', () => ({
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   awsS3HlsUrl: process.env.AWS_S3_HLS_URL,
+  enableSwagger: process.env.ENABLE_SWAGGER !== 'false',
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID,
     secret: process.env.RAZORPAY_SECRET,
