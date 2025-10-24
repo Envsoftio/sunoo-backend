@@ -85,6 +85,11 @@ export class UsersService {
       avatar: user.avatar,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
+      email_notifications_enabled: user.email_notifications_enabled,
+      marketing_emails_enabled: user.marketing_emails_enabled,
+      new_content_emails_enabled: user.new_content_emails_enabled,
+      subscription_emails_enabled: user.subscription_emails_enabled,
+      email_preferences_updated_at: user.email_preferences_updated_at,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };

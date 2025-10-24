@@ -29,6 +29,7 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
 } from '../dto/auth.dto';
+import { UpdateEmailPreferencesDto } from '../dto/user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SuperAdminGuard } from './guards/superadmin.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -58,9 +59,9 @@ export class AuthController {
         emailVerificationToken: _emailVerificationToken,
         lastLoginAt: _lastLoginAt,
         hasDefaultPassword: _hasDefaultPassword,
-        email_preferences_updated_at: _email_preferences_updated_at,
         ...sanitized
       } = result.data || {};
+
       return sanitized;
     } else {
       throw new UnauthorizedException(
@@ -77,6 +78,26 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(@Body() updateData: any, @Request() req) {
     return this.authService.handleUpdateUser(req.user.id, updateData);
+  }
+
+  @Put('profile/email-preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update email preferences' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email preferences updated successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Invalid email preferences data' })
+  async updateEmailPreferences(
+    @Body() emailPreferences: UpdateEmailPreferencesDto,
+    @Request() req
+  ) {
+    return await this.authService.updateEmailPreferences(
+      req.user.id,
+      emailPreferences
+    );
   }
 
   @Post('forgot-password')

@@ -21,6 +21,7 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
 } from '../dto/auth.dto';
+import { UpdateEmailPreferencesDto } from '../dto/user.dto';
 import { EmailService } from '../email/email.service';
 import { SessionService } from './services/session.service';
 import { RateLimitService } from './services/rate-limit.service';
@@ -666,6 +667,70 @@ export class AuthService {
         error: {
           message: 'Failed to update user',
           code: 'UPDATE_FAILED',
+        },
+      };
+    }
+  }
+
+  async updateEmailPreferences(
+    userId: string,
+    emailPreferences: UpdateEmailPreferencesDto
+  ) {
+    try {
+      console.log('🔧 Email preferences update request:', {
+        userId,
+        emailPreferences,
+        timestamp: new Date().toISOString(),
+      });
+
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      console.log('📧 Current user state before update:', {
+        email_notifications_enabled: user.email_notifications_enabled,
+        marketing_emails_enabled: user.marketing_emails_enabled,
+        new_content_emails_enabled: user.new_content_emails_enabled,
+        subscription_emails_enabled: user.subscription_emails_enabled,
+      });
+
+      // Update email preferences with timestamp
+      const updateData = {
+        ...emailPreferences,
+        email_preferences_updated_at: new Date(),
+      };
+
+      console.log('📝 Update data being sent to database:', updateData);
+
+      const updateResult = await this.userRepository.update(userId, updateData);
+      console.log('✅ Database update result:', updateResult);
+
+      return {
+        success: true,
+        message: 'Email preferences updated successfully',
+        data: {
+          email_notifications_enabled:
+            emailPreferences.email_notifications_enabled ??
+            user.email_notifications_enabled,
+          marketing_emails_enabled:
+            emailPreferences.marketing_emails_enabled ??
+            user.marketing_emails_enabled,
+          new_content_emails_enabled:
+            emailPreferences.new_content_emails_enabled ??
+            user.new_content_emails_enabled,
+          subscription_emails_enabled:
+            emailPreferences.subscription_emails_enabled ??
+            user.subscription_emails_enabled,
+          email_preferences_updated_at: updateData.email_preferences_updated_at,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to update email preferences',
+          code: 'EMAIL_PREFERENCES_UPDATE_FAILED',
         },
       };
     }
