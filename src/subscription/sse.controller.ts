@@ -56,10 +56,7 @@ export class SseController implements OnModuleDestroy {
           map(event => ({
             id: event.id,
             type: event.type,
-            data: JSON.stringify({
-              type: event.type,
-              ...event.data,
-            }),
+            data: event.data, // event.data is already JSON stringified
             event: event.type, // This makes it a custom SSE event
           })),
           catchError(error => {

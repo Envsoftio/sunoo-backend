@@ -22,6 +22,7 @@ export class CacheService {
       socket: {
         host,
         port,
+        connectTimeout: 10000, // 10 seconds
       },
       password: password || undefined,
       database: db,
@@ -32,16 +33,50 @@ export class CacheService {
     });
 
     this.client.on('connect', () => {
-      this.logger.log('Redis Client Connected');
+      this.logger.log(`Redis Client Connected to ${host}:${port}`);
     });
 
-    await this.client.connect();
+    this.client.on('ready', () => {
+      this.logger.log('Redis Client Ready');
+    });
+
+    this.client.on('reconnecting', () => {
+      this.logger.warn('Redis Client Reconnecting...');
+    });
+
+    this.client.on('end', () => {
+      this.logger.warn('Redis Client Connection Ended');
+    });
+
+    try {
+      await this.client.connect();
+      // Test the connection
+      await this.client.ping();
+      this.logger.log('Redis connection test successful');
+    } catch (error) {
+      this.logger.error('Failed to connect to Redis:', error);
+      throw error;
+    }
   }
 
   async disconnect(): Promise<void> {
     if (this.client) {
       await this.client.quit();
       this.logger.log('Redis Client Disconnected');
+    }
+  }
+
+  /**
+   * Check if Redis connection is healthy
+   */
+  async isConnected(): Promise<boolean> {
+    try {
+      if (!this.client) return false;
+      await this.client.ping();
+      return true;
+    } catch (error) {
+      this.logger.error('Redis connection check failed:', error);
+      return false;
     }
   }
 
@@ -118,19 +153,65 @@ export class CacheService {
 
   /**
    * Delete multiple keys matching a pattern
-   * Note: Use carefully in production
+   * Uses SCAN instead of KEYS for better performance and safety
    * @returns Number of keys deleted
    */
   async delPattern(pattern: string): Promise<number> {
     try {
-      const keys = await this.client.keys(pattern);
-      if (keys && keys.length > 0) {
-        await this.client.del(keys);
-        return keys.length;
+      // Check connection first
+      if (!(await this.isConnected())) {
+        this.logger.error(
+          `Redis not connected, cannot delete pattern: ${pattern}`
+        );
+        return 0;
       }
-      return 0;
+
+      const keys: string[] = [];
+      let cursor = '0';
+
+      this.logger.log(`Scanning for keys matching pattern: ${pattern}`);
+      // Use SCAN instead of KEYS for better performance
+      do {
+        const result = await this.client.scan(cursor, {
+          MATCH: pattern,
+          COUNT: 100, // Process in batches of 100
+        });
+        cursor = result.cursor;
+        keys.push(...result.keys);
+      } while (cursor !== '0');
+
+      if (keys.length > 0) {
+        this.logger.log(
+          `Found ${keys.length} keys matching pattern: ${pattern}`
+        );
+
+        // Delete keys in batches to avoid overwhelming Redis
+        const batchSize = 100;
+        let deletedCount = 0;
+
+        for (let i = 0; i < keys.length; i += batchSize) {
+          const batch = keys.slice(i, i + batchSize);
+          const result = await this.client.del(batch);
+          deletedCount += result;
+        }
+
+        this.logger.log(
+          `Successfully deleted ${deletedCount} keys matching pattern: ${pattern}`
+        );
+        return deletedCount;
+      } else {
+        this.logger.log(`No keys found matching pattern: ${pattern}`);
+        return 0;
+      }
     } catch (error) {
       this.logger.error(`Error deleting pattern ${pattern}:`, error);
+      // Log more details about the error
+      if (error.message) {
+        this.logger.error(`Error message: ${error.message}`);
+      }
+      if (error.code) {
+        this.logger.error(`Error code: ${error.code}`);
+      }
       return 0;
     }
   }
@@ -182,10 +263,23 @@ export class CacheService {
 
   /**
    * Get all keys matching a pattern (for admin panel)
+   * Uses SCAN instead of KEYS for better performance and safety
    */
   async getKeys(pattern: string): Promise<string[]> {
     try {
-      const keys = await this.client.keys(pattern);
+      const keys: string[] = [];
+      let cursor = '0';
+
+      // Use SCAN instead of KEYS for better performance
+      do {
+        const result = await this.client.scan(cursor, {
+          MATCH: pattern,
+          COUNT: 100, // Process in batches of 100
+        });
+        cursor = result.cursor;
+        keys.push(...result.keys);
+      } while (cursor !== '0');
+
       return keys;
     } catch (error) {
       this.logger.error('Error getting cache keys:', error);
