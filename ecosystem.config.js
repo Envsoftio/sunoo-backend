@@ -10,6 +10,8 @@ module.exports = {
         PORT: 3005,
         // Production URL
         APP_URL: 'https://api.sunoo.app',
+        // Timezone configuration
+        TZ: 'Asia/Kolkata',
         // Logging for production - use relative paths
         log_file: './logs/combined.log',
         out_file: './logs/out.log',
@@ -60,6 +62,7 @@ module.exports = {
         PORT: 3006,
         // Staging URL
         APP_URL: 'https://apidev.sunoo.app',
+        TZ: 'Asia/Kolkata',
         // Logging for staging - use relative paths
         log_file: './logs/combined.log',
         out_file: './logs/out.log',
