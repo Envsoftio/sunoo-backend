@@ -178,7 +178,7 @@ export class StoryService {
       const ratings = story.bookRatings || [];
       const averageRating =
         ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+          ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
             ratings.length
           : null;
 
@@ -366,7 +366,8 @@ export class StoryService {
     const ratings = story.bookRatings || [];
     const averageRating =
       ratings.length > 0
-        ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
+        ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
+          ratings.length
         : null;
 
     return {
@@ -768,7 +769,7 @@ export class StoryService {
       const ratings = story.bookRatings || [];
       const averageRating =
         ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+          ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
             ratings.length
           : null;
 

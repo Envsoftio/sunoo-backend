@@ -884,7 +884,7 @@ export class AdminService {
       const ratings = story.bookRatings || [];
       const averageRating =
         ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
+          ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
             ratings.length
           : 0;
 
@@ -1309,7 +1309,8 @@ export class AdminService {
       const totalRatings = ratings.length;
       const averageRating =
         totalRatings > 0
-          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / totalRatings
+          ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
+            totalRatings
           : 0;
 
       const ratingDistribution = [1, 2, 3, 4, 5].map(star => ({
