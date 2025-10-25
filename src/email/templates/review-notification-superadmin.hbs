@@ -1,0 +1,158 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>New Review Alert - {{bookTitle}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #e74c3c;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        color: #e74c3c;
+        margin: 0;
+        font-size: 24px;
+      }
+      .review-card {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      .book-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .book-cover {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-right: 15px;
+      }
+      .book-details h3 {
+        margin: 0 0 5px 0;
+        color: #2c3e50;
+      }
+      .rating {
+        color: #f39c12;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .reviewer-info {
+        background-color: #e8f4f8;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .comment {
+        background-color: white;
+        padding: 15px;
+        border-left: 4px solid #3498db;
+        margin: 15px 0;
+        font-style: italic;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        color: #666;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #3498db;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 10px 5px;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      .alert {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>🚨 New Review Alert</h1>
+        <p>A new review has been submitted for
+          <strong>{{bookTitle}}</strong></p>
+      </div>
+
+      <div class='alert'>
+        <strong>Admin Action Required:</strong>
+        A new review has been submitted and requires your attention.
+      </div>
+
+      <div class='review-card'>
+        <div class='book-info'>
+          {{#if bookCoverUrl}}
+            <img
+              src='{{bookCoverUrl}}'
+              alt='{{bookTitle}}'
+              class='book-cover'
+            />
+          {{/if}}
+          <div class='book-details'>
+            <h3>{{bookTitle}}</h3>
+            <div class='rating'>⭐ {{rating}}/5 stars</div>
+          </div>
+        </div>
+
+        <div class='reviewer-info'>
+          <h4>Reviewer Information:</h4>
+          <p><strong>Name:</strong> {{userName}}</p>
+          <p><strong>Email:</strong> {{userEmail}}</p>
+          <p><strong>Review Date:</strong> {{reviewDate}}</p>
+        </div>
+
+        {{#if comment}}
+          <div class='comment'>
+            <h4>Review Comment:</h4>
+            <p>"{{comment}}"</p>
+          </div>
+        {{/if}}
+      </div>
+
+      <div style='text-align: center; margin: 30px 0;'>
+        <a href='{{adminUrl}}/admin/stories' class='btn'>View in Admin Panel</a>
+        <a href='{{appUrl}}/story/{{bookTitle}}' class='btn'>View Story</a>
+      </div>
+
+      <div class='footer'>
+        <p>This is an automated notification from {{appName}}.</p>
+        <p>Please review this content and take appropriate action if necessary.</p>
+      </div>
+    </div>
+  </body>
+</html>
+

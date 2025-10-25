@@ -19,4 +19,7 @@ export class CastMember {
 
   @Column({ nullable: true })
   picture?: string;
+
+  @Column({ nullable: true })
+  email?: string;
 }

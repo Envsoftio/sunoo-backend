@@ -640,7 +640,12 @@ export class AdminService {
   }
 
   // Cast Member Management
-  async createCastMember(data: { name: string; bio: string; picture: string }) {
+  async createCastMember(data: {
+    name: string;
+    bio: string;
+    picture: string;
+    email?: string;
+  }) {
     try {
       const castMember = this.castMemberRepository.create(data);
       const savedCastMember = await this.castMemberRepository.save(castMember);
@@ -656,7 +661,12 @@ export class AdminService {
 
   async updateCastMember(
     id: string,
-    data: { name: string; bio: string; picture: string }
+    data: {
+      name: string;
+      bio: string;
+      picture: string;
+      email?: string;
+    }
   ) {
     try {
       await this.castMemberRepository.update(id, data);

@@ -13,6 +13,8 @@ import { Subscription } from '../entities/subscription.entity';
 import { StoryCast } from '../entities/story-cast.entity';
 import { CastMember } from '../entities/cast-member.entity';
 import { ChapterBookmark } from '../entities/chapter-bookmark.entity';
+import { User } from '../entities/user.entity';
+import { ReviewNotificationService } from '../email/review-notification.service';
 
 @Injectable()
 export class StoryService {
@@ -39,7 +41,10 @@ export class StoryService {
     private castMemberRepository: Repository<CastMember>,
     @InjectRepository(ChapterBookmark)
     private chapterBookmarkRepository: Repository<ChapterBookmark>,
-    private configService: ConfigService
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private configService: ConfigService,
+    private reviewNotificationService: ReviewNotificationService
   ) {}
 
   // Helper function to process chapters with access control
@@ -717,10 +722,14 @@ export class StoryService {
     try {
       const { bookId, rating, review } = ratingData;
 
-      let bookRating = await this.bookRatingRepository.findOne({
+      // Check if this is a new rating or an update
+      const existingRating = await this.bookRatingRepository.findOne({
         where: { userId, bookId },
       });
 
+      const isNewRating = !existingRating;
+
+      let bookRating = existingRating;
       if (bookRating) {
         bookRating.rating = rating;
         bookRating.comment = review;
@@ -734,6 +743,43 @@ export class StoryService {
       }
 
       await this.bookRatingRepository.save(bookRating);
+
+      // Send email notifications only for new ratings
+      if (isNewRating) {
+        try {
+          // Get user and book information for the notification
+          const [user, book] = await Promise.all([
+            this.userRepository.findOne({ where: { id: userId } }),
+            this.bookRepository.findOne({ where: { id: bookId } }),
+          ]);
+
+          if (user && book) {
+            const notificationData = {
+              bookId,
+              userId,
+              rating,
+              comment: review,
+              userName: user.name || user.email,
+              userEmail: user.email,
+              bookTitle: book.title,
+              bookCoverUrl: book.bookCoverUrl,
+            };
+
+            // Send notifications asynchronously (don't wait for completion)
+            this.reviewNotificationService
+              .sendReviewNotifications(notificationData)
+              .catch(error => {
+                console.error('Failed to send review notifications:', error);
+              });
+          }
+        } catch (notificationError) {
+          // Log error but don't fail the rating save
+          console.error(
+            'Error sending review notifications:',
+            notificationError
+          );
+        }
+      }
 
       return { success: true, message: 'Rating saved successfully' };
     } catch (error) {

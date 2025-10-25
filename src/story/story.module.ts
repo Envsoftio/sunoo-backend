@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { StoryService } from './story.service';
 import { StoryController } from './story.controller';
+import { EmailModule } from '../email/email.module';
+import { ReviewNotificationService } from '../email/review-notification.service';
 import {
   Book,
   Category,
@@ -14,6 +16,7 @@ import {
   StoryCast,
   CastMember,
   ChapterBookmark,
+  User,
 } from '../entities';
 
 @Module({
@@ -30,9 +33,11 @@ import {
       StoryCast,
       CastMember,
       ChapterBookmark,
+      User,
     ]),
+    EmailModule,
   ],
-  providers: [StoryService],
+  providers: [StoryService, ReviewNotificationService],
   controllers: [StoryController],
   exports: [StoryService],
 })
