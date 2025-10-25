@@ -158,6 +158,7 @@ export class StoryService {
           'chapters',
           'category',
           'bookRatings',
+          'bookRatings.user',
           'audiobookListeners',
         ],
       });
@@ -595,6 +596,7 @@ export class StoryService {
         .leftJoinAndSelect('book.chapters', 'chapters')
         .leftJoinAndSelect('book.category', 'category')
         .leftJoinAndSelect('book.bookRatings', 'bookRatings')
+        .leftJoinAndSelect('bookRatings.user', 'user')
         .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
         .where('bookmark.userId = :userId', { userId })
         .orderBy('bookmark.created_at', 'DESC')
@@ -746,6 +748,7 @@ export class StoryService {
           'chapters',
           'category',
           'bookRatings',
+          'bookRatings.user',
           'audiobookListeners',
         ],
       });
@@ -1397,6 +1400,7 @@ export class StoryService {
         .leftJoinAndSelect('book.category', 'category')
         .leftJoinAndSelect('book.chapters', 'chapters')
         .leftJoinAndSelect('book.bookRatings', 'bookRatings')
+        .leftJoinAndSelect('bookRatings.user', 'user')
         .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
         .where('book.isPublished = :isPublished', { isPublished: true })
         .andWhere('LOWER(book.slug) = LOWER(:slug)', { slug })
