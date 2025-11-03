@@ -242,6 +242,42 @@ export class EmailService {
     });
   }
 
+  async sendSubscriptionAuthenticatedEmail(
+    userEmail: string,
+    userName: string,
+    params: {
+      planName?: string;
+      planId?: string;
+      subscriptionId?: string;
+      startDate?: Date;
+      nextBillingDate?: Date;
+    } = {}
+  ): Promise<boolean> {
+    const template = this.loadTemplate('subscription-authenticated');
+    const data = {
+      userName,
+      userEmail,
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+      planName: params.planName,
+      planId: params.planId,
+      subscriptionId: params.subscriptionId,
+      startDateFormatted: params.startDate
+        ? new Date(params.startDate).toLocaleDateString()
+        : null,
+      nextBillingDateFormatted: params.nextBillingDate
+        ? new Date(params.nextBillingDate).toLocaleDateString()
+        : null,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: userEmail,
+      subject: `Your ${this.emailConfig.templates.appName} subscription is now active`,
+      html,
+    });
+  }
+
   async sendContactFormEmail(contactData: {
     name: string;
     email: string;

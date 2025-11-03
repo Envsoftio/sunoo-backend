@@ -1,0 +1,209 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Welcome to {{appName}}!</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .logo {
+        font-size: 32px;
+        font-weight: bold;
+        color: #6366f1;
+        margin-bottom: 10px;
+      }
+      .welcome-title {
+        color: #1f2937;
+        font-size: 28px;
+        margin-bottom: 20px;
+      }
+      .content {
+        margin-bottom: 30px;
+      }
+      .highlight {
+        background-color: #f0f9ff;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
+        margin: 20px 0;
+      }
+      .button {
+        display: inline-block;
+        background-color: #6366f1;
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin: 20px 0;
+        transition: background-color 0.3s;
+      }
+      .button:hover {
+        background-color: #4f46e5;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      .social-links {
+        margin: 20px 0;
+      }
+      .social-links a {
+        color: #6366f1;
+        text-decoration: none;
+        margin: 0 10px;
+      }
+      .features {
+        margin: 30px 0;
+      }
+      .feature {
+        display: flex;
+        align-items: center;
+        margin: 15px 0;
+      }
+      .feature-icon {
+        width: 24px;
+        height: 24px;
+        background-color: #10b981;
+        border-radius: 50%;
+        margin-right: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <div class='logo'>{{appName}}</div>
+        <h1 class='welcome-title'>Subscription Activated! 🎉</h1>
+      </div>
+
+      <div class='content'>
+        <div style='background:#f7f7fb;padding:24px 0;'>
+          <div
+            style='background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #ececf2;padding:28px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827;'
+          >
+            <p style='margin:0 0 8px 0;font-size:16px;'>Hi {{userName}},</p>
+            <p style='margin:0 0 16px 0;font-size:16px;line-height:1.6;'>
+              Thank you for your payment. Your
+              {{#if planName}}{{planName}}{{else}}subscription{{/if}}
+              is now active and you have full access to
+              {{appName}}.
+            </p>
+
+            <div
+              style='margin:20px 0;background:#fafafc;border:1px solid #ececf2;border-radius:10px;'
+            >
+              <div style='padding:16px 18px;font-size:14px;color:#374151;'>
+                {{#if planName}}
+                  <div style='margin-bottom:8px;'>
+                    <strong style='color:#111827;'>Plan:</strong>
+                    <span>{{planName}}</span>
+                  </div>
+                {{/if}}
+                {{#if planId}}
+                  <div style='margin-bottom:8px;'>
+                    <strong style='color:#111827;'>Plan ID:</strong>
+                    <span>{{planId}}</span>
+                  </div>
+                {{/if}}
+                {{#if subscriptionId}}
+                  <div style='margin-bottom:8px;'>
+                    <strong style='color:#111827;'>Subscription ID:</strong>
+                    <span>{{subscriptionId}}</span>
+                  </div>
+                {{/if}}
+                {{#if startDateFormatted}}
+                  <div style='margin-bottom:8px;'>
+                    <strong style='color:#111827;'>Start date:</strong>
+                    <span>{{startDateFormatted}}</span>
+                  </div>
+                {{/if}}
+                {{#if nextBillingDateFormatted}}
+                  <div>
+                    <strong style='color:#111827;'>Next billing:</strong>
+                    <span>{{nextBillingDateFormatted}}</span>
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+
+            <p style='margin:0 0 18px 0;font-size:15px;line-height:1.6;'>
+              You can manage your subscription, view invoices, or update your
+              billing details anytime.
+            </p>
+            <p style='margin:0 0 22px 0;'>
+              <a
+                href='{{appUrl}}/profile?go=Subscriptions'
+                style='display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;'
+              >Manage subscription</a>
+            </p>
+
+            <p
+              style='margin:0 0 12px 0;font-size:14px;color:#6b7280;line-height:1.6;'
+            >
+              If you didn’t expect this email, please contact our support team
+              and we’ll help you right away.
+            </p>
+            <p style='margin:0;font-size:14px;color:#6b7280;'>— The
+              {{appName}}
+              Team</p>
+
+            <div
+              style='font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#9ca3af;font-size:12px;margin-top:12px;'
+            >
+              This is an automated message. Please do not reply.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class='footer'>
+        <p>If you have any questions, feel free to reach out to our support
+          team.</p>
+
+        <div class='social-links'>
+          <a href='{{appUrl}}'>Visit {{appName}}</a>
+          <a href='{{appUrl}}/help'>Help Center</a>
+          <a href='{{appUrl}}/contact'>Contact Us</a>
+        </div>
+
+        <p style='margin-top: 20px;'>
+          This email was sent to
+          {{userEmail}}. If you didn't create an account with
+          {{appName}}, you can safely ignore this email.
+        </p>
+
+        <p style='font-size: 12px; color: #9ca3af;'>
+          © 2024
+          {{appName}}. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

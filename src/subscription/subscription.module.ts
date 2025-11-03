@@ -12,11 +12,13 @@ import { LoggerService } from '../common/logger/logger.service';
 import { Plan } from '../entities/plan.entity';
 import { Subscription } from '../entities/subscription.entity';
 import { Payment } from '../entities/payment.entity';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Plan, Subscription, Payment]),
     EventEmitterModule.forRoot(),
+    EmailModule,
   ],
   providers: [
     SubscriptionService,

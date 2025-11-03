@@ -17,6 +17,7 @@ import { PaymentService } from './payment.service';
 import { NotificationService } from './notification.service';
 import { LoggerService } from '../common/logger/logger.service';
 import { Payment } from '../entities/payment.entity';
+import { EmailService } from '../email/email.service';
 
 @ApiTags('Webhooks')
 @Controller('api/webhooks')
@@ -27,6 +28,7 @@ export class WebhookController {
     private readonly paymentService: PaymentService,
     private readonly notificationService: NotificationService,
     private readonly loggerService: LoggerService,
+    private readonly emailService: EmailService,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>
   ) {}
@@ -313,6 +315,97 @@ export class WebhookController {
           this.notificationService.emitSubscriptionCreated(
             subscriptionDetails.notes.user_id,
             subscriptionData
+          );
+        }
+
+        // Send confirmation email to the user
+        try {
+          let userEmail: string | null = null;
+          let userName: string | null = null;
+
+          try {
+            const subResp =
+              await this.subscriptionService.getSubscriptionByRazorpayId(
+                subscriptionId
+              );
+            if (subResp.success && subResp.data?.user) {
+              userEmail = subResp.data.user.email;
+              // Prefer name; fallback to prefix of email
+              userName =
+                subResp.data.user.name ||
+                (subResp.data.user.email
+                  ? subResp.data.user.email.split('@')[0]
+                  : 'there');
+            }
+          } catch (e) {
+            console.log(
+              'Failed to fetch user for subscription email------------------------------------',
+              e
+            );
+          }
+
+          // Optionally resolve plan name
+          let planName: string | undefined;
+          try {
+            if (subscriptionDetails.plan_id) {
+              const planRes = await this.subscriptionService.getPlanById(
+                subscriptionDetails.plan_id
+              );
+              if (planRes.success && planRes.data) {
+                // support different possible naming fields
+                planName =
+                  (planRes.data as any).planName || (planRes.data as any).name;
+              }
+            }
+          } catch (_e) {
+            console.log(
+              'Failed to fetch plan for subscription email------------------------------------',
+              _e
+            );
+          }
+
+          if (userEmail) {
+            console.log(
+              'Sending subscription authenticated email------------------------------------',
+              {
+                userEmail,
+                userName,
+                planName,
+                planId: subscriptionDetails.plan_id,
+                subscriptionId,
+                startDate: subscriptionData.start_date,
+                nextBillingDate: subscriptionData.next_billing_date,
+              }
+            );
+            const sent =
+              await this.emailService.sendSubscriptionAuthenticatedEmail(
+                userEmail,
+                userName || userEmail,
+                {
+                  planName,
+                  planId: subscriptionDetails.plan_id,
+                  subscriptionId,
+                  startDate: subscriptionData.start_date,
+                  nextBillingDate: subscriptionData.next_billing_date,
+                }
+              );
+
+            if (sent) {
+              console.log(
+                'Subscription authenticated email sent------------------------------------',
+                { subscriptionId, userEmail }
+              );
+            } else {
+              console.log(
+                'Failed to send subscription authenticated email------------------------------------',
+                { subscriptionId, userEmail }
+              );
+            }
+          }
+        } catch (emailError) {
+          console.log(
+            'Error while attempting to send subscription authenticated email------------------------------------',
+            emailError
           );
         }
       } else {
