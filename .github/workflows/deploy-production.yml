@@ -172,6 +172,14 @@ jobs:
 
           # External Services
           AWS_S3_HLS_URL=${{ secrets.PROD_AWS_S3_HLS_URL }}
+
+          # AWS S3 Configuration for File Uploads
+          AWS_REGION=ap-south-1
+          AWS_S3_BUCKET=sunoo-app
+          AWS_ACCESS_KEY_ID=${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+
+          # Payment Gateway
           RAZORPAY_KEY_ID=${{ secrets.PROD_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET=${{ secrets.PROD_RAZORPAY_SECRET }}
           EOF
