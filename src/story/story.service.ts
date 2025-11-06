@@ -1758,4 +1758,25 @@ export class StoryService {
       return { success: false, message: error.message };
     }
   }
+
+  async getLatestBookCovers() {
+    try {
+      const books = await this.bookRepository
+        .createQueryBuilder('book')
+        .select('book.bookCoverUrl', 'bookCoverUrl')
+        .where('book.bookCoverUrl IS NOT NULL')
+        .andWhere("book.bookCoverUrl != ''")
+        .orderBy('book.created_at', 'DESC')
+        .limit(10)
+        .getRawMany();
+
+      const covers = books
+        .map(book => book.bookCoverUrl)
+        .filter((url): url is string => url != null && url.trim() !== '');
+
+      return { success: true, data: covers };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
 }

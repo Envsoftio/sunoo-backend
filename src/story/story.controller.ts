@@ -438,6 +438,26 @@ export class StoryController {
     return await this.storyService.getCategoryStats();
   }
 
+  @Get('getLatestBookCovers')
+  @ApiOperation({ summary: 'Get latest book cover URLs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Latest book cover URLs retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    },
+  })
+  async getLatestBookCovers() {
+    return await this.storyService.getLatestBookCovers();
+  }
+
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get story by slug' })
   @ApiResponse({ status: 200, description: 'Story retrieved successfully' })
