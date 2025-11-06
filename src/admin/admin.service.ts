@@ -16,6 +16,7 @@ import { BookRating } from '../entities/book-rating.entity';
 import { AudiobookListener } from '../entities/audiobook-listener.entity';
 import { EmailService } from '../email/email.service';
 import { ZeptomailService } from '../email/zeptomail.service';
+import { S3Service } from '../common/services/s3.service';
 
 @Injectable()
 export class AdminService {
@@ -47,7 +48,8 @@ export class AdminService {
     @InjectRepository(AudiobookListener)
     private audiobookListenerRepository: Repository<AudiobookListener>,
     private emailService: EmailService,
-    private zeptomailService: ZeptomailService
+    private zeptomailService: ZeptomailService,
+    private s3Service: S3Service
   ) {}
 
   // User Management
@@ -473,7 +475,15 @@ export class AdminService {
 
       const result = await this.storyCastRepository.query(query, [storyId]);
 
-      return { success: true, casts: result };
+      // Convert picture keys to full URLs for API response
+      const castsWithUrls = result.map(cast => ({
+        ...cast,
+        picture: cast.picture
+          ? this.s3Service.getFileUrl(cast.picture)
+          : cast.picture,
+      }));
+
+      return { success: true, casts: castsWithUrls };
     } catch (error) {
       return { success: false, message: error.message };
     }
@@ -692,17 +702,40 @@ export class AdminService {
     }
   }
 
-  async uploadCastPicture(id: string, pictureKey: string) {
+  async uploadCastPicture(id: string, file: any) {
     try {
-      await this.castMemberRepository.update(id, { picture: pictureKey });
+      if (!file) {
+        return { success: false, message: 'No file provided' };
+      }
+
+      // Upload to S3 - returns only the key (path), not full URL
+      // Use casts/{id}.jpg format so updates overwrite existing file
+      const fileExtension = this.getFileExtension(file.originalname) || '.jpg';
+      const fileKey = await this.s3Service.uploadMulterFile(
+        file,
+        'casts',
+        `${id}${fileExtension}`
+      );
+
+      // Update cast member with S3 key (path only)
+      await this.castMemberRepository.update(id, { picture: fileKey });
+
+      // Return both key and full URL for API response
+      const fileUrl = this.s3Service.getFileUrl(fileKey);
+
       return {
         success: true,
         message: 'Picture uploaded successfully',
-        data: { pictureKey },
+        data: { pictureKey: fileKey, pictureUrl: fileUrl },
       };
     } catch (error) {
       return { success: false, message: error.message };
     }
+  }
+
+  private getFileExtension(filename: string): string {
+    const lastDot = filename.lastIndexOf('.');
+    return lastDot !== -1 ? filename.substring(lastDot) : '';
   }
 
   // Dashboard Analytics Methods

@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { JsonExceptionFilter } from './filters/json-exception.filter';
 import { LoggerService } from './common/logger/logger.service';
@@ -12,7 +13,12 @@ import { LoggerInterceptor } from './common/logger/logger.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: false, // Disable default NestJS logger
+    bodyParser: true, // Enable body parser for JSON
   });
+
+  // Configure body size limit for file uploads (50MB)
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
   const configService = app.get(ConfigService);
   const loggerService = app.get(LoggerService);
   const loggerInterceptor = app.get(LoggerInterceptor);
@@ -41,7 +47,13 @@ async function bootstrap() {
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+    ],
+    exposedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Global exception filter for JSON parsing errors

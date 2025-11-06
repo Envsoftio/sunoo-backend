@@ -15,7 +15,6 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Multer } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -225,11 +224,30 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Upload cast member picture (Admin only)' })
   @ApiResponse({ status: 200, description: 'Picture uploaded successfully' })
-  async uploadCastPicture(
-    @Param('id') id: string,
-    @Body() body: { picture: string }
-  ) {
-    return await this.adminService.uploadCastPicture(id, body.picture);
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - file missing or invalid',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      fileFilter: (req, file, cb) => {
+        // Accept only images
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+          return cb(new Error('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
+  async uploadCastPicture(@Param('id') id: string, @UploadedFile() file: any) {
+    if (!file) {
+      return {
+        success: false,
+        message: 'No file provided. Please select an image file.',
+      };
+    }
+    return await this.adminService.uploadCastPicture(id, file);
   }
 
   // Category Management
@@ -459,7 +477,7 @@ export class AdminController {
   @UseInterceptors(FileInterceptor('file'))
   bulkUploadChapters(
     @Param('storyId') storyId: string,
-    @UploadedFile() file: Multer.File
+    @UploadedFile() file: any
   ) {
     return this.adminService.bulkUploadChapters(storyId, file);
   }

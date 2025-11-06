@@ -21,12 +21,14 @@ import appConfig from './config/app.config';
 import securityConfig from './config/security.config';
 import emailConfig from './config/email.config';
 import redisConfig from './config/redis.config';
+import s3Config from './config/s3.config';
+import { S3Module } from './common/services/s3.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, securityConfig, emailConfig, redisConfig],
+      load: [appConfig, securityConfig, emailConfig, redisConfig, s3Config],
       envFilePath: ['.env.local', '.env'],
     }),
     CacheModule,
@@ -39,6 +41,7 @@ import redisConfig from './config/redis.config';
       inject: [ConfigService, DatabaseLoggerService],
     }),
     LoggerModule,
+    S3Module,
     AuthModule,
     UsersModule,
     DatabaseModule,
