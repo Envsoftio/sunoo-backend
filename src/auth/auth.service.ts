@@ -142,13 +142,17 @@ export class AuthService {
     // Clear failed attempts on successful login
     this.accountLockoutService.recordSuccessfulAttempt(loginDto.email);
 
+    // Detect and update user's country if not already set or if it's been a while
+    const userAgent = request?.headers?.['user-agent'];
+    await this.updateUserCountryIfNeeded(user, clientIp, userAgent);
+
     // Update last login
     await this.userRepository.update(user.id, { lastLoginAt: new Date() });
 
     // Create session
     const session = await this.sessionService.createSession({
       userId: user.id,
-      userAgent: request?.headers?.['user-agent'],
+      userAgent: userAgent,
       ipAddress: clientIp,
       deviceInfo: request?.headers?.['x-device-info'],
       metadata: {
@@ -170,7 +174,10 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(
+    registerDto: RegisterDto,
+    request?: any
+  ): Promise<AuthResponseDto> {
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
     });
@@ -179,11 +186,29 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
+    // Detect country during registration
+    const clientIP = this.getClientIp(request);
+    const userAgent = request?.headers?.['user-agent'];
+    let detectedCountry = 'United States'; // Default fallback
+    try {
+      const countryInfo = await this.countryDetectionService.detectCountry(
+        clientIP,
+        userAgent
+      );
+      detectedCountry = countryInfo.country;
+      console.log(
+        `Country detected during registration: ${detectedCountry} (${countryInfo.currency}) via ${countryInfo.source}`
+      );
+    } catch (error) {
+      console.warn('Country detection failed during registration:', error);
+    }
+
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     const user = this.userRepository.create({
       ...registerDto,
       password: hashedPassword,
+      country: detectedCountry,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -283,157 +308,6 @@ export class AuthService {
 
   async activateUser(userId: string): Promise<void> {
     await this.userRepository.update(userId, { isActive: true });
-  }
-
-  // Sunoo-compatible methods
-  async handleLogin(loginDto: LoginDto, clientIP?: string, userAgent?: string) {
-    try {
-      const user = await this.validateUser(loginDto.email, loginDto.password);
-      if (!user) {
-        return {
-          success: false,
-          error: {
-            message: 'Invalid credentials',
-            code: 'INVALID_CREDENTIALS',
-          },
-        };
-      }
-
-      if (!user.isActive) {
-        return {
-          success: false,
-          error: {
-            message: 'Account is deactivated',
-            code: 'ACCOUNT_DEACTIVATED',
-          },
-        };
-      }
-
-      if (!user.isEmailVerified) {
-        return {
-          success: false,
-          error: {
-            message: 'Email not verified',
-            code: 'EMAIL_NOT_CONFIRMED',
-          },
-        };
-      }
-
-      // Check if user has default password (migrated user)
-      if (user.hasDefaultPassword) {
-        return {
-          success: false,
-          error: {
-            message: 'Please reset your password to continue',
-            code: 'DEFAULT_PASSWORD_MIGRATION_REQUIRED',
-            requiresPasswordReset: true,
-            isMigrationRequired: true,
-          },
-        };
-      }
-
-      // Detect and update user's country if not already set or if it's been a while
-      await this.updateUserCountryIfNeeded(user, clientIP, userAgent);
-
-      // Update last login
-      await this.userRepository.update(user.id, { lastLoginAt: new Date() });
-
-      // Get user with subscriptions
-      const userWithSubscriptions = await this.userRepository.findOne({
-        where: { id: user.id },
-        relations: ['subscriptions', 'subscriptions.plan'],
-      });
-
-      const payload = { email: user.email, sub: user.id };
-      const accessToken = this.jwtService.sign(payload);
-
-      return {
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            profile: userWithSubscriptions,
-          },
-          session: {
-            access_token: accessToken,
-            refresh_token: accessToken, // For compatibility
-            expires_at: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
-          },
-        },
-      };
-    } catch {
-      return {
-        success: false,
-        error: {
-          message: 'Login failed',
-          code: 'LOGIN_FAILED',
-        },
-      };
-    }
-  }
-
-  async handleSignup(
-    registerDto: RegisterDto,
-    clientIP?: string,
-    userAgent?: string
-  ) {
-    try {
-      const existingUser = await this.userRepository.findOne({
-        where: { email: registerDto.email },
-      });
-
-      if (existingUser) {
-        return {
-          status: 409,
-          message: 'Email already exists',
-        };
-      }
-
-      // Detect country during registration
-      let detectedCountry = 'United States'; // Default fallback
-      try {
-        const countryInfo = await this.countryDetectionService.detectCountry(
-          clientIP,
-          userAgent
-        );
-        detectedCountry = countryInfo.country;
-        console.log(
-          `Country detected during registration: ${detectedCountry} (${countryInfo.currency}) via ${countryInfo.source}`
-        );
-      } catch (error) {
-        console.warn('Country detection failed during registration:', error);
-      }
-
-      const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
-      const user = this.userRepository.create({
-        email: registerDto.email,
-        password: hashedPassword,
-        name: registerDto.name,
-        role: 'user',
-        isEmailVerified: false, // Will be verified via email
-        country: detectedCountry,
-      });
-
-      await this.userRepository.save(user);
-
-      return {
-        status: 201,
-        message: 'Signup successful',
-        data: {
-          country: detectedCountry,
-        },
-      };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return {
-        status: 400,
-        message: 'Signup failed',
-      };
-    }
   }
 
   handleLogout() {
@@ -725,7 +599,7 @@ export class AuthService {
           email_preferences_updated_at: updateData.email_preferences_updated_at,
         },
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: {

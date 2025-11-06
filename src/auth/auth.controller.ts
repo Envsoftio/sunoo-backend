@@ -316,9 +316,12 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'User registration (Legacy)' })
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
-    return this.authService.register(registerDto);
+  @ApiOperation({ summary: 'User registration with country detection' })
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Request() req
+  ): Promise<AuthResponseDto> {
+    return this.authService.register(registerDto, req);
   }
 
   @Post('clear-rate-limits')
@@ -392,58 +395,6 @@ export class AuthController {
         error: error.message,
       };
     }
-  }
-
-  // Sunoo-compatible login endpoint
-  @Post('sunoo-login')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RateLimitGuard)
-  @RateLimit(true)
-  @ApiOperation({
-    summary: 'Sunoo-compatible login with country detection',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid credentials',
-  })
-  @ApiResponse({ status: 429, description: 'Too many requests' })
-  async sunooLogin(@Body() loginDto: LoginDto, @Request() req) {
-    const clientIP = this.getClientIp(req);
-    const userAgent = req.headers['user-agent'];
-
-    return await this.authService.handleLogin(loginDto, clientIP, userAgent);
-  }
-
-  // Sunoo-compatible registration endpoint
-  @Post('sunoo-register')
-  @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RateLimitGuard)
-  @RateLimit(true)
-  @ApiOperation({
-    summary: 'Sunoo-compatible registration with country detection',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Registration successful',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Email already exists',
-  })
-  @ApiResponse({ status: 429, description: 'Too many requests' })
-  async sunooRegister(@Body() registerDto: RegisterDto, @Request() req) {
-    const clientIP = this.getClientIp(req);
-    const userAgent = req.headers['user-agent'];
-
-    return await this.authService.handleSignup(
-      registerDto,
-      clientIP,
-      userAgent
-    );
   }
 
   // Get user country information
