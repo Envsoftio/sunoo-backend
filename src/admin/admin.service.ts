@@ -1047,8 +1047,12 @@ export class AdminService {
     }
   }
 
-  async updateStoryCover(id: string, coverUrl: string) {
+  async updateStoryCover(id: string, file: any) {
     try {
+      if (!file) {
+        return { success: false, message: 'No file provided' };
+      }
+
       const story = await this.bookRepository.findOne({
         where: { id, deleted_at: IsNull() },
       });
@@ -1056,12 +1060,29 @@ export class AdminService {
         return { success: false, message: 'Story not found' };
       }
 
+      // Upload to S3 - returns only the key (path), not full URL
+      // Use story-covers/{id}.jpg format so updates overwrite existing file
+      const fileExtension = this.getFileExtension(file.originalname) || '.jpg';
+      const fileKey = await this.s3Service.uploadMulterFile(
+        file,
+        'stories',
+        `${id}${fileExtension}`
+      );
+
+      // Update story with S3 key (path only)
       await this.bookRepository.update(id, {
-        bookCoverUrl: coverUrl,
+        bookCoverUrl: fileKey,
         updated_at: new Date(),
       });
 
-      return { success: true, message: 'Story cover updated successfully' };
+      // Return both key and full URL for API response
+      const fileUrl = this.s3Service.getFileUrl(fileKey);
+
+      return {
+        success: true,
+        message: 'Story cover uploaded successfully',
+        data: { coverKey: fileKey, coverUrl: fileUrl },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

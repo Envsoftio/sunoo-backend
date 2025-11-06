@@ -419,13 +419,35 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update story cover (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Story cover updated successfully' })
-  async updateStoryCover(
-    @Param('id') id: string,
-    @Body() body: { coverUrl: string }
-  ) {
-    return await this.adminService.updateStoryCover(id, body.coverUrl);
+  @ApiOperation({ summary: 'Upload story cover (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Story cover uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - file missing or invalid',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      fileFilter: (req, file, cb) => {
+        // Accept only images
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+          return cb(new Error('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
+  async updateStoryCover(@Param('id') id: string, @UploadedFile() file: any) {
+    if (!file) {
+      return {
+        success: false,
+        message: 'No file provided. Please select an image file.',
+      };
+    }
+    return await this.adminService.updateStoryCover(id, file);
   }
 
   // Chapter Management APIs
