@@ -667,7 +667,8 @@ export class AdminController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async handleHlsWebhook(
-    @Body() body: {
+    @Body()
+    body: {
       outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
       storyName: string;
     },
