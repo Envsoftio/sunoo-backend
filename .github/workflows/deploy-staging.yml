@@ -250,6 +250,9 @@ jobs:
           # Payment Gateway
           RAZORPAY_KEY_ID=${{ secrets.STAGING_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET=${{ secrets.STAGING_RAZORPAY_SECRET }}
+
+          # Webhook Authentication
+          WEBHOOK_AUTH_TOKEN=${{ secrets.STAGING_WEBHOOK_AUTH_TOKEN }}
           EOF
 
       - name: Create deployment directory

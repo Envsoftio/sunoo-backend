@@ -13,6 +13,9 @@ import {
   Param,
   UseInterceptors,
   UploadedFile,
+  Headers,
+  UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -651,5 +654,44 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Languages retrieved successfully' })
   async getStoryPlayLanguages() {
     return await this.adminService.getStoryPlayLanguages();
+  }
+
+  // HLS Conversion Webhook
+  @Post('webhooks/hls-conversion')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Handle HLS conversion webhook' })
+  @ApiResponse({
+    status: 200,
+    description: 'HLS conversion webhook processed successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async handleHlsWebhook(
+    @Body() body: {
+      outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
+      storyName: string;
+    },
+    @Headers('webhook_auth') webhookAuth: string // HTTP headers are case-insensitive
+  ) {
+    // Verify webhook authentication
+    const expectedToken = process.env.WEBHOOK_AUTH_TOKEN;
+    if (!expectedToken) {
+      throw new UnauthorizedException('Webhook authentication not configured');
+    }
+
+    if (!webhookAuth || webhookAuth !== `Bearer ${expectedToken}`) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    // Validate payload
+    if (!body.outputPaths || !Array.isArray(body.outputPaths)) {
+      throw new BadRequestException("Invalid payload: missing 'outputPaths'");
+    }
+
+    if (!body.storyName || typeof body.storyName !== 'string') {
+      throw new BadRequestException("Invalid payload: missing 'storyName'");
+    }
+
+    return await this.adminService.handleHlsWebhook(body);
   }
 }

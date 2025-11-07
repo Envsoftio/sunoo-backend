@@ -182,6 +182,9 @@ jobs:
           # Payment Gateway
           RAZORPAY_KEY_ID=${{ secrets.PROD_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET=${{ secrets.PROD_RAZORPAY_SECRET }}
+
+          # Webhook Authentication
+          WEBHOOK_AUTH_TOKEN=${{ secrets.PROD_WEBHOOK_AUTH_TOKEN }}
           EOF
 
       - name: Create deployment directory

@@ -972,6 +972,97 @@ export class AdminService {
     }
   }
 
+  /**
+   * Generate slug from title (matching Supabase function logic)
+   */
+  private generateSlug(title: string): string {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  /**
+   * Handle HLS conversion webhook - creates book and chapters from conversion output
+   */
+  async handleHlsWebhook(payload: {
+    outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
+    storyName: string;
+  }) {
+    try {
+      const { outputPaths, storyName } = payload;
+
+      // Validate required fields
+      if (!outputPaths || !Array.isArray(outputPaths)) {
+        return {
+          success: false,
+          message: "Invalid payload: missing 'outputPaths'",
+        };
+      }
+
+      if (!storyName || typeof storyName !== 'string') {
+        return {
+          success: false,
+          message: "Invalid payload: missing 'storyName'",
+        };
+      }
+
+      // Validate outputPaths structure
+      for (const pathObj of outputPaths) {
+        if (!pathObj.name || !pathObj.url) {
+          return {
+            success: false,
+            message: "Invalid outputPaths object: missing 'name' or 'url'",
+          };
+        }
+      }
+
+      // Generate slug from story name
+      const slug = this.generateSlug(storyName);
+
+      // Create book
+      const newBook = this.bookRepository.create({
+        title: storyName,
+        slug: slug,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const savedBook = await this.bookRepository.save(newBook);
+
+      // Prepare chapters - save only S3 keys (paths), not full URLs
+      const chapters = outputPaths.map((pathObj, index) => {
+        return this.chapterRepository.create({
+          name: pathObj.name,
+          chapterUrl: pathObj.url, // Store S3 key/path directly
+          bookId: savedBook.id,
+          playbackTime: pathObj.playbackTime || undefined,
+          order: index + 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+      });
+
+      // Insert chapters
+      const savedChapters = await this.chapterRepository.save(chapters);
+
+      return {
+        success: true,
+        status: 'success',
+        bookId: savedBook.id,
+        chaptersInserted: savedChapters.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Internal Server Error',
+      };
+    }
+  }
+
   async updateStory(id: string, storyData: any) {
     try {
       const story = await this.bookRepository.findOne({
