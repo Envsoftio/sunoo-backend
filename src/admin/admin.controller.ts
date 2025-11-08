@@ -712,11 +712,45 @@ export class AdminController {
       throw new UnauthorizedException('Missing webhook_auth header');
     }
 
-    const expectedValue = `Bearer ${expectedToken}`;
-    if (webhookAuth !== expectedValue) {
+    // Trim whitespace from received header
+    const trimmedWebhookAuth = webhookAuth.trim();
+    const expectedValue = `Bearer ${expectedToken}`.trim();
+
+    // Debug: Log full lengths and character codes for first few chars to detect hidden issues
+    console.log('Webhook auth comparison:', {
+      receivedLength: trimmedWebhookAuth.length,
+      expectedLength: expectedValue.length,
+      receivedFirstChars: trimmedWebhookAuth
+        .substring(0, 30)
+        .split('')
+        .map(c => `${c}(${c.charCodeAt(0)})`)
+        .join(' '),
+      expectedFirstChars: expectedValue
+        .substring(0, 30)
+        .split('')
+        .map(c => `${c}(${c.charCodeAt(0)})`)
+        .join(' '),
+      receivedEndChars: trimmedWebhookAuth
+        .substring(Math.max(0, trimmedWebhookAuth.length - 10))
+        .split('')
+        .map(c => `${c}(${c.charCodeAt(0)})`)
+        .join(' '),
+      expectedEndChars: expectedValue
+        .substring(Math.max(0, expectedValue.length - 10))
+        .split('')
+        .map(c => `${c}(${c.charCodeAt(0)})`)
+        .join(' '),
+    });
+
+    if (trimmedWebhookAuth !== expectedValue) {
       console.error('Webhook auth mismatch:', {
-        received: webhookAuth.substring(0, 20) + '...',
-        expected: expectedValue.substring(0, 20) + '...',
+        received: trimmedWebhookAuth.substring(0, 30) + '...',
+        expected: expectedValue.substring(0, 30) + '...',
+        receivedLength: trimmedWebhookAuth.length,
+        expectedLength: expectedValue.length,
+        tokensMatch:
+          trimmedWebhookAuth.replace('Bearer ', '') ===
+          expectedValue.replace('Bearer ', ''),
       });
       throw new UnauthorizedException('Invalid webhook authentication token');
     }
