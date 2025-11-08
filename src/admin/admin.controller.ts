@@ -671,6 +671,7 @@ export class AdminController {
     body: {
       outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
       storyName: string;
+      totalDuration: string;
     },
     @Headers('webhook_auth') webhookAuth: string // HTTP headers are case-insensitive
   ) {

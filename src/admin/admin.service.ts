@@ -991,10 +991,11 @@ export class AdminService {
   async handleHlsWebhook(payload: {
     outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
     storyName: string;
+    totalDuration: string;
   }) {
     try {
-      const { outputPaths, storyName } = payload;
-
+      const { outputPaths, storyName, totalDuration } = payload;
+      console.log('totalDuration', totalDuration);
       // Validate required fields
       if (!outputPaths || !Array.isArray(outputPaths)) {
         return {
@@ -1027,6 +1028,7 @@ export class AdminService {
       const newBook = this.bookRepository.create({
         title: storyName,
         slug: slug,
+        duration: totalDuration,
         created_at: new Date(),
         updated_at: new Date(),
       });
