@@ -4,6 +4,7 @@ import { StoryService } from './story.service';
 import { StoryController } from './story.controller';
 import { EmailModule } from '../email/email.module';
 import { ReviewNotificationService } from '../email/review-notification.service';
+import { AdminModule } from '../admin/admin.module';
 import {
   Book,
   Category,
@@ -36,6 +37,7 @@ import {
       User,
     ]),
     EmailModule,
+    AdminModule,
   ],
   providers: [StoryService, ReviewNotificationService],
   controllers: [StoryController],

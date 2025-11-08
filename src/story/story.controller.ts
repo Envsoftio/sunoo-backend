@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Query,
   Param,
@@ -19,7 +20,9 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { StoryService } from './story.service';
+import { AdminService } from '../admin/admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SuperAdminGuard } from '../auth/guards/superadmin.guard';
 import { SaveRatingDto } from '../dto/rating.dto';
 import { SaveProgressDto } from '../dto/progress.dto';
 import { TrackListeningDto } from '../dto/track.dto';
@@ -28,7 +31,10 @@ import { JsonValidationPipe } from '../pipes/json-validation.pipe';
 @ApiTags('Stories')
 @Controller('api/story')
 export class StoryController {
-  constructor(private readonly storyService: StoryService) {}
+  constructor(
+    private readonly storyService: StoryService,
+    private readonly adminService: AdminService
+  ) {}
 
   @Get('getAllStories')
   @ApiOperation({ summary: 'Get all stories (Sunoo compatible)' })
@@ -691,5 +697,20 @@ export class StoryController {
     @Request() req
   ) {
     return await this.storyService.deleteChapter(body.chapterId, req.user.id);
+  }
+
+  @Put('admin/update/:id')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update story (Admin)' })
+  @ApiResponse({ status: 200, description: 'Story updated successfully' })
+  async updateStory(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() _req
+  ) {
+    // Use AdminService's updateStory for comprehensive updates
+    return await this.adminService.updateStory(id, body);
   }
 }
