@@ -52,6 +52,8 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'X-Requested-With',
+      'webhook_auth',
+      'WEBHOOK_AUTH',
     ],
     exposedHeaders: ['Content-Type', 'Authorization'],
   });

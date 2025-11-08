@@ -673,16 +673,52 @@ export class AdminController {
       storyName: string;
       totalDuration: string;
     },
-    @Headers('webhook_auth') webhookAuth: string // HTTP headers are case-insensitive
+    @Headers() allHeaders: Record<string, string>
   ) {
     // Verify webhook authentication
     const expectedToken = process.env.WEBHOOK_AUTH_TOKEN;
+
+    // Extract webhook auth header (case-insensitive lookup)
+    // Express normalizes headers to lowercase, but check multiple variations
+    const webhookAuthKey = Object.keys(allHeaders).find(
+      key => key.toLowerCase() === 'webhook_auth'
+    );
+    const webhookAuth = webhookAuthKey ? allHeaders[webhookAuthKey] : null;
+
+    // Debug logging (remove sensitive data in production)
+    console.log('Webhook auth check:', {
+      hasToken: !!expectedToken,
+      receivedHeader: webhookAuth ? 'present' : 'missing',
+      headerValue: webhookAuth ? `${webhookAuth.substring(0, 10)}...` : 'none',
+      availableHeaders: Object.keys(allHeaders).filter(
+        h =>
+          h.toLowerCase().includes('webhook') ||
+          h.toLowerCase().includes('auth')
+      ),
+    });
+
     if (!expectedToken) {
+      console.error(
+        'WEBHOOK_AUTH_TOKEN is not configured in environment variables'
+      );
       throw new UnauthorizedException('Webhook authentication not configured');
     }
 
-    if (!webhookAuth || webhookAuth !== `Bearer ${expectedToken}`) {
-      throw new UnauthorizedException('Unauthorized');
+    if (!webhookAuth) {
+      console.error(
+        'Missing webhook_auth header. Received headers:',
+        Object.keys(allHeaders)
+      );
+      throw new UnauthorizedException('Missing webhook_auth header');
+    }
+
+    const expectedValue = `Bearer ${expectedToken}`;
+    if (webhookAuth !== expectedValue) {
+      console.error('Webhook auth mismatch:', {
+        received: webhookAuth.substring(0, 20) + '...',
+        expected: expectedValue.substring(0, 20) + '...',
+      });
+      throw new UnauthorizedException('Invalid webhook authentication token');
     }
 
     // Validate payload
