@@ -716,41 +716,54 @@ export class AdminController {
     const trimmedWebhookAuth = webhookAuth.trim();
     const expectedValue = `Bearer ${expectedToken}`.trim();
 
-    // Debug: Log full lengths and character codes for first few chars to detect hidden issues
+    // Check if received token is duplicated (common issue with nginx or client)
+    const receivedToken = trimmedWebhookAuth.replace(/^Bearer\s+/i, '');
+    const expectedTokenOnly = expectedToken.trim();
+
+    // Debug: Log full comparison details
     console.log('Webhook auth comparison:', {
       receivedLength: trimmedWebhookAuth.length,
       expectedLength: expectedValue.length,
-      receivedFirstChars: trimmedWebhookAuth
-        .substring(0, 30)
-        .split('')
-        .map(c => `${c}(${c.charCodeAt(0)})`)
-        .join(' '),
-      expectedFirstChars: expectedValue
-        .substring(0, 30)
-        .split('')
-        .map(c => `${c}(${c.charCodeAt(0)})`)
-        .join(' '),
-      receivedEndChars: trimmedWebhookAuth
-        .substring(Math.max(0, trimmedWebhookAuth.length - 10))
-        .split('')
-        .map(c => `${c}(${c.charCodeAt(0)})`)
-        .join(' '),
-      expectedEndChars: expectedValue
-        .substring(Math.max(0, expectedValue.length - 10))
-        .split('')
-        .map(c => `${c}(${c.charCodeAt(0)})`)
-        .join(' '),
+      receivedTokenLength: receivedToken.length,
+      expectedTokenLength: expectedTokenOnly.length,
+      receivedFull: trimmedWebhookAuth,
+      expectedFull: expectedValue,
+      isDuplicated:
+        receivedToken.length === expectedTokenOnly.length * 2 &&
+        receivedToken.startsWith(expectedTokenOnly) &&
+        receivedToken.endsWith(expectedTokenOnly),
+      tokensMatch: receivedToken === expectedTokenOnly,
     });
 
-    if (trimmedWebhookAuth !== expectedValue) {
+    // Handle case where token might be duplicated (nginx or client issue)
+    // Check if received token is just the expected token (possibly duplicated)
+    let isValid = false;
+
+    if (trimmedWebhookAuth === expectedValue) {
+      isValid = true;
+    } else if (receivedToken === expectedTokenOnly) {
+      // Token matches but "Bearer " prefix might be different case or spacing
+      isValid = true;
+    } else if (
+      receivedToken.length === expectedTokenOnly.length * 2 &&
+      receivedToken === expectedTokenOnly + expectedTokenOnly
+    ) {
+      // Token is duplicated - extract first half
+      const firstHalf = receivedToken.substring(0, expectedTokenOnly.length);
+      isValid = firstHalf === expectedTokenOnly;
+      if (isValid) {
+        console.warn('Received duplicated token, using first half');
+      }
+    }
+
+    if (!isValid) {
       console.error('Webhook auth mismatch:', {
-        received: trimmedWebhookAuth.substring(0, 30) + '...',
-        expected: expectedValue.substring(0, 30) + '...',
+        received: trimmedWebhookAuth.substring(0, 50) + '...',
+        expected: expectedValue.substring(0, 50) + '...',
         receivedLength: trimmedWebhookAuth.length,
         expectedLength: expectedValue.length,
-        tokensMatch:
-          trimmedWebhookAuth.replace('Bearer ', '') ===
-          expectedValue.replace('Bearer ', ''),
+        receivedToken: receivedToken.substring(0, 50) + '...',
+        expectedToken: expectedTokenOnly.substring(0, 50) + '...',
       });
       throw new UnauthorizedException('Invalid webhook authentication token');
     }
