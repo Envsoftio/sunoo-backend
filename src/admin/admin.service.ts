@@ -491,27 +491,59 @@ export class AdminService {
 
   async saveStoryCasts(storyId: string, casts: any[]) {
     try {
+      if (!storyId) {
+        return { success: false, message: 'Story ID is required' };
+      }
+
       // First, delete existing casts for this story
       await this.storyCastRepository.delete({ story_id: storyId });
 
-      // Then, insert new casts
-      const storyCasts = casts.map(cast => {
-        const storyCast = new StoryCast();
-        storyCast.story_id = storyId;
-        storyCast.name = cast.name;
-        storyCast.role = cast.role;
-        storyCast.picture = cast.picture_url || cast.picture;
-        // Only set cast_id if it's provided and not empty
-        storyCast.cast_id =
-          cast.cast_id && cast.cast_id !== '' ? cast.cast_id : '';
-        return storyCast;
-      });
+      // If no casts provided, just return success (all casts deleted)
+      if (!casts || casts.length === 0) {
+        return { success: true, message: 'Casts removed successfully' };
+      }
 
-      await this.storyCastRepository.save(storyCasts);
+      // Then, insert new casts - filter out invalid entries
+      const storyCasts = casts
+        .filter(cast => {
+          // Ensure required fields are present
+          if (!cast.role || cast.role.trim() === '') {
+            console.warn('Skipping cast without role:', cast);
+            return false;
+          }
+          return true;
+        })
+        .map(cast => {
+          const storyCast = new StoryCast();
+          storyCast.story_id = storyId;
+          storyCast.name = cast.name || null;
+          storyCast.role = cast.role.trim(); // Required field
+          storyCast.picture = cast.picture_url || cast.picture || null;
+          // cast_id is required in DB (NOT NULL), use empty string if not provided
+          storyCast.cast_id =
+            cast.cast_id && cast.cast_id !== '' ? cast.cast_id : '';
+          storyCast.created_at = new Date();
+          storyCast.updated_at = new Date();
+          return storyCast;
+        });
 
-      return { success: true, message: 'Casts saved successfully' };
+      // Only save if we have valid casts
+      if (storyCasts.length > 0) {
+        await this.storyCastRepository.save(storyCasts);
+      }
+
+      return {
+        success: true,
+        message: 'Casts saved successfully',
+        savedCount: storyCasts.length,
+      };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error('Error saving story casts:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to save casts',
+        error: error.stack,
+      };
     }
   }
 

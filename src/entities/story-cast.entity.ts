@@ -23,6 +23,6 @@ export class StoryCast {
   @Column({ nullable: true })
   picture?: string;
 
-  @Column()
+  @Column({ default: '' })
   cast_id: string;
 }
