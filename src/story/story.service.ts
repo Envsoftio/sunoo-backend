@@ -108,6 +108,7 @@ export class StoryService {
   async getAllStories(userId?: string) {
     try {
       const stories = await this.bookRepository.find({
+        where: { isPublished: true },
         relations: [
           'chapters',
           'category',
@@ -141,7 +142,7 @@ export class StoryService {
   async getStoryById(id: string) {
     try {
       const story = await this.bookRepository.findOne({
-        where: { id },
+        where: { id, isPublished: true },
         relations: ['chapters', 'category', 'bookRatings'],
       });
 
@@ -158,7 +159,7 @@ export class StoryService {
   async getStoryBySlugForShow(slug: string, userId?: string) {
     try {
       const story = await this.bookRepository.findOne({
-        where: { slug },
+        where: { slug, isPublished: true },
         relations: [
           'chapters',
           'category',
@@ -464,6 +465,7 @@ export class StoryService {
         .leftJoinAndSelect('book.bookRatings', 'bookRatings')
         .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
         .where('category.slug = :genre', { genre })
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
         .orderBy('book.created_at', 'DESC')
         .getMany();
 
@@ -491,7 +493,7 @@ export class StoryService {
   async getStoriesByLanguage(language: string, userId?: string) {
     try {
       const stories = await this.bookRepository.find({
-        where: { language },
+        where: { language, isPublished: true },
         relations: [
           'chapters',
           'category',
@@ -605,6 +607,7 @@ export class StoryService {
         .leftJoinAndSelect('bookRatings.user', 'user')
         .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
         .where('bookmark.userId = :userId', { userId })
+        .andWhere('book.isPublished = :isPublished', { isPublished: true })
         .orderBy('bookmark.created_at', 'DESC')
         .getMany();
 
@@ -790,7 +793,7 @@ export class StoryService {
   async getStoryByIdForShow(id: string, userId?: string) {
     try {
       const story = await this.bookRepository.findOne({
-        where: { id },
+        where: { id, isPublished: true },
         relations: [
           'chapters',
           'category',
