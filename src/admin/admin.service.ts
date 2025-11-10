@@ -642,22 +642,47 @@ export class AdminService {
     try {
       const { id, ...data } = categoryData;
 
+      // Auto-generate slug from name if not provided
+      if (!data.slug && data.name) {
+        data.slug = data.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+
+      // Set updated_at timestamp
+      data.updated_at = new Date();
+
       if (id) {
         // Update existing category
         await this.categoryRepository.update(id, data);
-        return { success: true, message: 'Category updated successfully' };
+        const updatedCategory = await this.categoryRepository.findOne({
+          where: { id },
+        });
+        return {
+          success: true,
+          message: 'Category updated successfully',
+          data: updatedCategory,
+        };
       } else {
         // Create new category
-        const category = this.categoryRepository.create(data);
-        await this.categoryRepository.save(category);
+        const category = this.categoryRepository.create({
+          ...data,
+          created_at: new Date(),
+        });
+        const savedCategory = await this.categoryRepository.save(category);
         return {
           success: true,
           message: 'Category created successfully',
-          data: category,
+          data: savedCategory,
         };
       }
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error('Error saving category:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to save category',
+      };
     }
   }
 
