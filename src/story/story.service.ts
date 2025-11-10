@@ -792,48 +792,145 @@ export class StoryService {
 
   async getStoryByIdForShow(id: string, userId?: string) {
     try {
-      const story = await this.bookRepository.findOne({
-        where: { id, isPublished: true },
-        relations: [
-          'chapters',
-          'category',
-          'bookRatings',
-          'bookRatings.user',
-          'audiobookListeners',
-        ],
-      });
+      // Use query builder to ensure proper matching (same as getStoryBySlug)
+      const story = await this.bookRepository
+        .createQueryBuilder('book')
+        .leftJoinAndSelect('book.category', 'category')
+        .leftJoinAndSelect('book.chapters', 'chapters')
+        .leftJoinAndSelect('book.bookRatings', 'bookRatings')
+        .leftJoinAndSelect('bookRatings.user', 'user')
+        .leftJoinAndSelect('book.audiobookListeners', 'audiobookListeners')
+        .where('book.isPublished = :isPublished', { isPublished: true })
+        .andWhere('book.id = :id', { id })
+        .getOne();
 
       if (!story) {
         return { success: false, message: 'Story not found' };
       }
 
+      // Check user subscription status (including grace period for cancelled subscriptions)
+      let userIsSubscribed = false;
       let isBookmarked = false;
+
       if (userId) {
+        // Check if user has active subscription or is within grace period
+        const subscription = await this.subscriptionRepository.findOne({
+          where: {
+            user_id: userId,
+            status: In([
+              'active',
+              'pending',
+              'authenticated',
+              'halted',
+              'cancelled',
+            ]),
+          },
+          order: { created_at: 'DESC' },
+        });
+
+        if (subscription) {
+          // If subscription is active, pending, authenticated, or halted, user has access
+          if (
+            subscription.status &&
+            ['active', 'pending', 'authenticated', 'halted'].includes(
+              subscription.status
+            )
+          ) {
+            userIsSubscribed = true;
+          }
+          // If subscription is cancelled, check if we're still within the grace period
+          else if (
+            subscription.status === 'cancelled' &&
+            subscription.end_date
+          ) {
+            const now = new Date();
+            const endDate = new Date(subscription.end_date);
+            userIsSubscribed = now <= endDate;
+          }
+        }
+
+        // Check if story is bookmarked
         const bookmark = await this.bookmarkRepository.findOne({
-          where: { userId, bookId: id },
+          where: {
+            userId,
+            bookId: story.id,
+          },
         });
         isBookmarked = !!bookmark;
       }
 
+      // Calculate average rating
       const ratings = story.bookRatings || [];
       const averageRating =
         ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) /
+          ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) /
             ratings.length
-          : null;
+          : 0;
 
-      return {
-        success: true,
-        data: {
-          ...story,
-          isBookmarked,
-          chapters:
-            story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) ||
-            [],
-          listeners: story.audiobookListeners?.[0]?.count || 0,
-          averageRating,
-        },
+      // Get total listeners count
+      const totalListeners =
+        story.audiobookListeners?.reduce(
+          (sum, listener) => sum + (listener.count || 0),
+          0
+        ) || 0;
+
+      // Fetch cast information from story_casts table
+      const storyCasts = await this.storyCastRepository.find({
+        where: { story_id: story.id },
+        order: { created_at: 'ASC' },
+      });
+
+      // Try to find cast members for each cast_id
+      const casts: any[] = [];
+      if (storyCasts.length > 0) {
+        for (const storyCast of storyCasts) {
+          let castMember: any = null;
+          // Only try to find cast member if cast_id is provided and not empty
+          if (storyCast.cast_id && storyCast.cast_id !== '') {
+            castMember = await this.castMemberRepository.findOne({
+              where: { id: storyCast.cast_id },
+            });
+          }
+
+          casts.push({
+            id: storyCast.id,
+            created_at: storyCast.created_at,
+            updated_at: storyCast.updated_at,
+            story_id: storyCast.story_id,
+            role: storyCast.role,
+            cast_id: storyCast.cast_id,
+            // Use cast member data if available, otherwise use story cast data or fallbacks
+            name:
+              castMember?.name ||
+              storyCast.name ||
+              `Unknown ${storyCast.role || 'Cast Member'}`,
+            picture: castMember?.picture || storyCast.picture,
+          });
+        }
+      }
+
+      // Process chapters with access control
+      const sortedChapters =
+        story.chapters?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+      const processedChapters = this.processChaptersWithAccess(
+        sortedChapters,
+        userIsSubscribed,
+        story.isFree || false
+      );
+
+      // Process the story data (same structure as getStoryBySlug)
+      const processedStory = {
+        ...story,
+        userIsSubscribed,
+        isBookmarked,
+        isBookFree: story.isFree || false,
+        averageRating,
+        listeners: totalListeners,
+        Chapters: processedChapters, // Use processed chapters with access control
+        casts: casts || [], // Add cast data
       };
+
+      return { success: true, data: processedStory };
     } catch (error) {
       return { success: false, message: error.message };
     }
