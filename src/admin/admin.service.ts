@@ -1211,12 +1211,12 @@ export class AdminService {
       }
 
       // Upload to S3 - returns only the key (path), not full URL
-      // Use story-covers/{id}.jpg format so updates overwrite existing file
+      // Use stories/{id}/picture.{ext} format so updates overwrite existing file
       const fileExtension = this.getFileExtension(file.originalname) || '.jpg';
       const fileKey = await this.s3Service.uploadMulterFile(
         file,
         'stories',
-        `${id}${fileExtension}`
+        `${id}/picture${fileExtension}`
       );
 
       // Update story with S3 key (path only)
