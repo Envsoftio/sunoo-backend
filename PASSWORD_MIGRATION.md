@@ -1,8 +1,16 @@
 # Password Migration Guide
 
+> **⚠️ DEPRECATED: Migration Complete**
+> The Supabase migration is **complete**. This document is kept for historical reference only.
+> No new default passwords or email verifications should be set through migration scripts.
+
 ## Overview
 
-When migrating from Supabase to our custom backend, existing users need to reset their passwords due to different password hashing mechanisms. This guide explains how to handle this migration smoothly.
+~~When migrating from Supabase to our custom backend, existing users need to reset their passwords due to different password hashing mechanisms. This guide explains how to handle this migration smoothly.~~
+
+**Migration Status: ✅ COMPLETE**
+
+The initial migration from Supabase has been completed. All migration scripts have been made safe and will not set default passwords or auto-verify emails.
 
 ## Why Password Reset is Required
 
@@ -40,22 +48,25 @@ if (user.hasDefaultPassword) {
 
 ### 2. Migration Scripts
 
-#### Run Password Migration
+> **⚠️ DEPRECATED**: Migration scripts are now read-only for safety.
+
+#### View User Statistics (Read-Only)
 
 ```bash
-# Option 1: Using npm script
-npm run migrate:passwords:run
-
-# Option 2: Direct execution
-npx ts-node scripts/migrate-user-passwords.ts
+npm run migrate:fix-all-users
 ```
 
-#### What the Script Does
+This script now only displays user statistics and does **not** modify any user data.
 
-1. Identifies users with default passwords or no passwords
-2. Sets `hasDefaultPassword = true` for migrated users
-3. Provides a summary of users who need password reset
-4. Preserves existing user data and relationships
+#### Migration Script Safety
+
+All migration scripts have been updated for safety:
+- ✅ **No default passwords** can be set
+- ✅ **No automatic email verification**
+- ✅ **Existing user auth data** is never overwritten
+- ✅ Scripts are safe to run multiple times
+
+**Note**: The migration script `migrate-user-passwords.ts` referenced in older documentation no longer exists and is not needed.
 
 ### 3. Frontend Implementation
 
@@ -91,17 +102,23 @@ npx ts-node scripts/migrate-user-passwords.ts
 
 ## Implementation Steps
 
+> **⚠️ Migration is complete - these steps are for historical reference only**
+
 ### 1. Run Database Migrations
 
 ```bash
 npm run migration:run
 ```
 
-### 2. Run Password Migration Script
+**Note**: The `MigrateDefaultPasswords` migration is now a safe no-op and will not modify any data.
 
-```bash
+### 2. ~~Run Password Migration Script~~ ✅ COMPLETE
+
+~~```bash
 npm run migrate:passwords:run
-```
+```~~
+
+Migration is complete. This step is no longer needed.
 
 ### 3. Deploy Frontend Changes
 
@@ -197,8 +214,8 @@ If issues arise during migration:
 ### Support Commands
 
 ```bash
-# Check users needing password reset
-npm run migrate:passwords
+# View user statistics (read-only, no modifications)
+npm run migrate:fix-all-users
 
 # View migration status
 npm run migration:show
@@ -207,6 +224,10 @@ npm run migration:show
 npm run start:dev
 ```
 
+**Note**: `npm run migrate:passwords` no longer exists. Use `migrate:fix-all-users` for read-only statistics.
+
 ## Conclusion
 
-This migration approach ensures a smooth transition from Supabase to our custom backend while maintaining security and user experience. The process is designed to be user-friendly and secure, with proper error handling and monitoring.
+~~This migration approach ensures a smooth transition from Supabase to our custom backend while maintaining security and user experience. The process is designed to be user-friendly and secure, with proper error handling and monitoring.~~
+
+**✅ Migration Complete**: The Supabase migration has been successfully completed. All migration scripts are now safe and will not accidentally set default passwords or auto-verify emails. The system now operates with proper security controls in place.
