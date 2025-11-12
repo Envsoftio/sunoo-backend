@@ -4,12 +4,14 @@ import {
   ManyToOne,
   JoinColumn,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Book } from './book.entity';
 import { Chapter } from './chapter.entity';
 
 @Entity('user_progress')
+@Index(['userId', 'bookId', 'chapterId'], { unique: true })
 export class UserProgress {
   @PrimaryGeneratedColumn('increment')
   id: number;
@@ -31,9 +33,6 @@ export class UserProgress {
 
   @Column({ type: 'numeric', nullable: true })
   totalNumberOfReadingTimes?: number;
-
-  @Column({ type: 'numeric', nullable: true })
-  progress_time?: number;
 
   // Legacy fields for backward compatibility
   @Column({ type: 'decimal', precision: 10, scale: 6, default: 0 })

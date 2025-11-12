@@ -611,19 +611,28 @@ export class StoryController {
   @ApiOperation({ summary: 'Get user progress' })
   @ApiResponse({ status: 200, description: 'Progress retrieved successfully' })
   async getUserProgress(
-    @Query('userId') userId: string,
-    @Query('storyId') storyId?: string
+    @Param('userId') userId: string,
+    @Query('bookId') bookId?: string,
+    @Query('chapterId') chapterId?: string
   ) {
-    return await this.storyService.getProgress(userId, storyId);
+    return await this.storyService.getProgress(userId, bookId, chapterId);
   }
 
   @Post('progress')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Save user progress' })
   @ApiResponse({ status: 200, description: 'Progress saved successfully' })
   async saveProgress(
-    @Body(JsonValidationPipe) body: SaveProgressDto & { userId: string }
+    @Body(JsonValidationPipe) body: SaveProgressDto & { userId: string },
+    @Request() req
   ) {
-    return await this.storyService.saveProgress(body.userId, body);
+    // Use authenticated user's ID for security
+    const userId = body.userId || req.user?.id;
+    if (!userId) {
+      return { success: false, message: 'User ID is required' };
+    }
+    return await this.storyService.saveProgress(userId, body);
   }
 
   @Post('bookmark')

@@ -324,7 +324,7 @@ export class AdminService {
         .leftJoinAndSelect('progress.chapter', 'chapter')
         .select([
           'progress.id',
-          'progress.progress_time',
+          'progress.currentTime',
           'progress.updated_at',
           'user.id',
           'user.name',
@@ -384,7 +384,7 @@ export class AdminService {
           playbackTimeSec = activity.chapter.playbackTime;
         }
 
-        const prog = Number(activity.progress_time);
+        const prog = Number(activity.currentTime);
         let percent = 0;
         if (playbackTimeSec > 0 && !isNaN(prog)) {
           percent = Math.min(100, Math.round((prog / playbackTimeSec) * 100));
@@ -397,7 +397,7 @@ export class AdminService {
           userImage: activity.user?.imageURL || null,
           bookTitle: activity.book?.title || '',
           chapterName: activity.chapter?.name || '',
-          progress_time: activity.progress_time,
+          progress_time: activity.currentTime, // Using currentTime instead of progress_time
           playbackTime: playbackTimeSec,
           progressPercent: percent,
           updated_at: activity.updated_at,
@@ -1680,11 +1680,11 @@ export class AdminService {
           'category.name',
           'category.slug',
         ])
-        .addSelect('SUM(progress.progress_time)', 'total_play_time')
+        .addSelect('SUM(progress.currentTime)', 'total_play_time')
         .addSelect('COUNT(DISTINCT progress.userId)', 'unique_listeners')
         .addSelect('COUNT(progress.id)', 'total_plays')
-        .addSelect('AVG(progress.progress_time)', 'avg_play_time')
-        .where('progress.progress_time > 0')
+        .addSelect('AVG(progress.currentTime)', 'avg_play_time')
+        .where('progress.currentTime > 0')
         .groupBy(
           'book.id, book.title, book.slug, book.bookCoverUrl, book.language, book.isPublished, book.created_at, category.name, category.slug'
         );
@@ -1734,7 +1734,7 @@ export class AdminService {
         .leftJoin('progress.book', 'book')
         .leftJoin('book.category', 'category')
         .select('book.id')
-        .where('progress.progress_time > 0')
+        .where('progress.currentTime > 0')
         .groupBy('book.id');
 
       // Apply same filters to count query
@@ -1807,7 +1807,7 @@ export class AdminService {
         .leftJoinAndSelect('progress.book', 'book')
         .select([
           'progress.id',
-          'progress.progress_time',
+          'progress.currentTime',
           'progress.updated_at',
           'progress.created_at',
           'user.id',
@@ -1821,7 +1821,7 @@ export class AdminService {
           'book.title',
         ])
         .where('progress.bookId = :storyId', { storyId })
-        .andWhere('progress.progress_time > 0')
+        .andWhere('progress.currentTime > 0')
         .orderBy('progress.updated_at', 'DESC');
 
       // Get total count for pagination
@@ -1863,7 +1863,7 @@ export class AdminService {
           playbackTimeSec = progress.chapter.playbackTime;
         }
 
-        const prog = Number(progress.progress_time);
+        const prog = Number(progress.currentTime);
         let percent = 0;
         if (playbackTimeSec > 0 && !isNaN(prog)) {
           percent = Math.min(100, Math.round((prog / playbackTimeSec) * 100));
@@ -1878,7 +1878,7 @@ export class AdminService {
           chapterId: progress.chapter?.id,
           chapterName: progress.chapter?.name || '',
           playbackTime: playbackTimeSec,
-          progressTime: progress.progress_time,
+          progressTime: progress.currentTime, // Using currentTime instead of progress_time
           progressPercent: percent,
           updatedAt: progress.updated_at,
           createdAt: progress.created_at,

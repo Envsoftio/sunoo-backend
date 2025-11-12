@@ -666,26 +666,43 @@ export class StoryService {
       const { bookId, chapterId, progress, currentTime, totalTime } =
         progressData;
 
+      if (!userId || !bookId || !chapterId) {
+        return {
+          success: false,
+          message: 'userId, bookId, and chapterId are required',
+        };
+      }
+
+      // Use upsert pattern to handle race conditions
       // Find existing progress for this specific user, book, and chapter
       let userProgress = await this.userProgressRepository.findOne({
         where: { userId, bookId, chapterId },
       });
 
+      // Calculate progress percentage if totalTime is available
+      const progressPercent =
+        totalTime > 0
+          ? Math.min((currentTime / totalTime) * 100, 100)
+          : progress || 0;
+
       if (userProgress) {
         // Update existing progress
-        userProgress.progress = progress;
+        userProgress.progress = progressPercent;
         userProgress.currentTime = currentTime;
-        userProgress.totalTime = totalTime;
+        userProgress.totalTime = totalTime || userProgress.totalTime; // Keep existing if not provided
+        // progress_time removed - admin now uses currentTime
         userProgress.lastListenedAt = new Date();
+        userProgress.updated_at = new Date();
       } else {
         // Create new progress record
         userProgress = this.userProgressRepository.create({
           userId,
           bookId,
           chapterId,
-          progress,
+          progress: progressPercent,
           currentTime,
-          totalTime,
+          totalTime: totalTime || 0,
+          // progress_time removed - admin now uses currentTime
           lastListenedAt: new Date(),
         });
       }
@@ -694,6 +711,33 @@ export class StoryService {
 
       return { success: true, message: 'Progress saved successfully' };
     } catch (error) {
+      // Handle unique constraint violation (shouldn't happen with proper code, but safety net)
+      if (error.code === '23505' || error.message?.includes('unique')) {
+        // Retry once if unique constraint violation occurs
+        try {
+          const { bookId, chapterId, progress, currentTime, totalTime } =
+            progressData;
+          const userProgress = await this.userProgressRepository.findOne({
+            where: { userId, bookId, chapterId },
+          });
+          if (userProgress) {
+            const progressPercent =
+              totalTime > 0
+                ? Math.min((currentTime / totalTime) * 100, 100)
+                : progress || 0;
+            userProgress.progress = progressPercent;
+            userProgress.currentTime = currentTime;
+            userProgress.totalTime = totalTime || userProgress.totalTime;
+            // progress_time removed - using currentTime instead
+            userProgress.lastListenedAt = new Date();
+            userProgress.updated_at = new Date();
+            await this.userProgressRepository.save(userProgress);
+            return { success: true, message: 'Progress saved successfully' };
+          }
+        } catch (retryError) {
+          return { success: false, message: retryError.message };
+        }
+      }
       return { success: false, message: error.message };
     }
   }
@@ -1701,17 +1745,36 @@ export class StoryService {
 
   async trackUserListening(userId: string, body: any) {
     try {
-      // Track user listening progress
-      const progress = this.userProgressRepository.create({
-        userId,
-        bookId: body.storyId,
-        chapterId: body.chapterId,
-        progress: body.progress,
-        currentTime: body.progress,
-        totalTime: 0, // Will be updated when audio loads
+      // Check for existing progress to avoid duplicates
+      let userProgress = await this.userProgressRepository.findOne({
+        where: {
+          userId,
+          bookId: body.storyId,
+          chapterId: body.chapterId,
+        },
       });
 
-      await this.userProgressRepository.save(progress);
+      if (userProgress) {
+        // Update existing progress
+        userProgress.progress = body.progress || userProgress.progress;
+        userProgress.currentTime = body.progress || userProgress.currentTime;
+        // progress_time removed - using currentTime instead
+        userProgress.lastListenedAt = new Date();
+        userProgress.updated_at = new Date();
+      } else {
+        // Create new progress record
+        userProgress = this.userProgressRepository.create({
+          userId,
+          bookId: body.storyId,
+          chapterId: body.chapterId,
+          progress: body.progress || 0,
+          currentTime: body.progress || 0,
+          totalTime: 0, // Will be updated when audio loads
+          // progress_time removed - using currentTime instead
+        });
+      }
+
+      await this.userProgressRepository.save(userProgress);
 
       // Track unique listener count (like Supabase implementation)
       const existingListener = await this.audiobookListenerRepository.findOne({
