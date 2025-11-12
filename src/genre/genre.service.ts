@@ -140,6 +140,24 @@ export class GenreService {
           .filter((id): id is string => Boolean(id));
       }
 
+      // Get genre statistics (total chapters, listeners, ratings across all stories)
+      const statsQuery = this.bookRepository
+        .createQueryBuilder('book')
+        .leftJoin('book.chapters', 'chapters')
+        .leftJoin('book.bookRatings', 'bookRatings')
+        .leftJoin('book.audiobookListeners', 'audiobookListeners')
+        .select('COUNT(DISTINCT chapters.id)', 'totalChapters')
+        .addSelect(
+          'COALESCE(SUM(audiobookListeners.count), 0)',
+          'totalListeners'
+        )
+        .addSelect('COALESCE(AVG(bookRatings.rating), 0)', 'averageRating')
+        .addSelect('COUNT(DISTINCT bookRatings.id)', 'totalRatings')
+        .where('book.categoryId = :categoryId', { categoryId: genre.id })
+        .andWhere('book.isPublished = :isPublished', { isPublished: true });
+
+      const statsResult = await statsQuery.getRawOne();
+
       // Process results with aggregated data
       const processedStories = result.entities.map((story, index) => ({
         ...story,
@@ -155,6 +173,21 @@ export class GenreService {
       return {
         success: true,
         data: processedStories,
+        category: {
+          id: genre.id,
+          name: genre.name,
+          slug: genre.slug,
+          description: genre.description,
+          icon_url: genre.icon_url,
+          color: genre.color,
+        },
+        genreStats: {
+          totalStories: total,
+          totalChapters: parseInt(statsResult?.totalChapters || '0'),
+          totalListeners: parseInt(statsResult?.totalListeners || '0'),
+          averageRating: parseFloat(statsResult?.averageRating || '0') || null,
+          totalRatings: parseInt(statsResult?.totalRatings || '0'),
+        },
         pagination: {
           page,
           limit,
