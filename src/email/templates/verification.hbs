@@ -1,329 +1,347 @@
-<div class='' style='word-spacing :  normal; background-color :  #FBF1F1; '>
-  <div class='x_-1657111380body' style='background-color :  #FBF1F1; '>
-    <div class='x_-1657111380d-small-none' style='min-height:  40px; '></div>
-    <div
-      class='x_-1657111380header'
-      style='background :  #ffffff; background-color :  #ffffff; margin :  0px auto; border-radius :  10px 10px 0px 0px; max-width :  600px; '
-    >
-      <table
-        align='center'
-        border='0'
-        cellpadding='0'
-        cellspacing='0'
-        style='background :  #ffffff; background-color :  #ffffff; width :  100%; border-radius :  10px 10px 0px 0px; '
-      >
-        <tbody>
-          <tr>
-            <td
-              style='direction :  ltr; font-size :  0px; padding :  15px; padding-top :  35px; text-align :  center; '
+<html lang='en'>
+
+  <head>
+
+    <meta charset='utf-8' />
+
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+
+    <title>Verify your account</title>
+
+    <style>
+      body {
+        margin: 0;
+
+        padding: 0;
+
+        background: #f6f2fa;
+
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+      }
+
+      .wrapper {
+        display: flex;
+
+        justify-content: center;
+
+        background: #f6f2fa;
+      }
+
+      .card {
+        max-width: 600px;
+
+        width: 100%;
+
+        background: #fff;
+
+        border-radius: 12px;
+
+        overflow: hidden;
+      }
+
+      .card-topbar {
+        height: 8px;
+
+        background: linear-gradient(
+          90deg,
+          #ff8a00 0%,
+          #ff3d81 50%,
+          #6f49ff 100%
+        );
+      }
+
+      .logo {
+        text-align: center;
+
+        padding: 32px 24px 30px;
+      }
+
+      .logo img {
+        max-width: 160px;
+
+        height: auto;
+      }
+
+      .content {
+        padding: 0 20px 20px;
+
+        text-align: left;
+      }
+
+      .content p {
+        margin: 0 0 18px;
+
+        font-size: 15px;
+
+        line-height: 26px;
+
+        color: #374151;
+      }
+
+      .content ul {
+        padding-left: 18px;
+
+        margin: 0 0 20px;
+
+        color: #374151;
+
+        font-size: 15px;
+      }
+
+      .content ul li {
+        margin-bottom: 8px;
+
+        line-height: 24px;
+      }
+
+      .cta {
+        text-align: center;
+
+        padding: 10px 0 40px;
+
+        margin-top: 10px;
+      }
+
+      .cta a {
+        display: inline-block;
+
+        padding: 14px 40px;
+
+        font-size: 16px;
+
+        font-weight: 600;
+
+        color: #fff;
+
+        text-decoration: none;
+
+        border-radius: 999px;
+
+        background: linear-gradient(90deg, #ff8a00, #ff3d81, #6f49ff);
+      }
+
+      .footer {
+        background: #f5f6f8;
+
+        border-bottom-left-radius: 12px;
+
+        border-bottom-right-radius: 12px;
+
+        padding: 50px 30px 70px 30px;
+
+        text-align: center;
+      }
+
+      .footer p {
+        margin: 0;
+
+        font-size: 14px;
+
+        line-height: 24px;
+
+        color: #374151;
+      }
+
+      .socials {
+        display: flex;
+
+        justify-content: center;
+
+        margin: 14px 0;
+
+        gap: 12px;
+      }
+
+      .socials a {
+        width: 34px;
+
+        height: 34px;
+
+        border-radius: 50%;
+
+        border: 2px solid #c026d3;
+
+        margin-right: 5px;
+      }
+
+      .socials a img {
+        margin: auto;
+
+        padding: 10px 6px;
+      }
+
+      .footer .small {
+        font-size: 13px;
+
+        margin-top: 16px;
+
+        margin-bottom: 6px;
+      }
+
+      .heart {
+        color: #c026d3;
+      }
+
+      @media (max-width: 600px) {
+        .footer {
+          padding: 30px 10px 40px 10px !important;
+        }
+
+        .content {
+          padding: 0 10px 0 10px !important;
+        }
+
+        .content h1 {
+          font-size: 16px !important;
+        }
+
+        .content h2 {
+          font-size: 18px !important;
+        }
+
+        .cta a {
+          padding: 12px 24px;
+          font-size: 14px !important;
+        }
+      }
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class='wrapper'>
+
+      <div class='card'>
+
+        <div class='card-topbar'></div>
+
+        <div class='logo'>
+
+          <img
+            src='https://sunoo.app/images/sunoo-logo-black.png'
+            alt='Sunoo'
+          />
+
+        </div>
+
+        <div class='content'>
+
+          <p><span class='colour' style='color:rgb(85, 85, 85)'><span
+                class='size'
+                style='font-size:16px'
+              >Hello
+                <b>{{userName}}</b>, Welcome to
+                <b>{{appName}}</b>
+                your gateway to endless stories and adventures! in your own
+                language, We're so excited to have you join our growing family
+                of audiobook enthusiasts.</span></span><br /></p>
+
+          <p>Before we dive in, please confirm your email to activate your
+            account and start exploring:</p>
+
+          <div class='cta'>
+
+            <a href='{{verificationUrl}}'>Verify email</a>
+
+          </div>
+
+          <p>I am Neha Sharma, the CEO and founder of
+            {{appName}}. When I started this journey, my dream was to bring the
+            magic of storytelling to life for busy, curious minds like yours.
+            We've crafted
+            {{appName}}
+            to be your go-to destination for inspiration, relaxation, and
+            everything in between.</p>
+
+          <p>After confirming your email, you'll be ready to:</p>
+
+          <ul style='list-style-type: none; padding-left: 0;'>
+
+            <li>🎧 Explore thousands of audiobooks across genres.</li>
+
+            <li>🌟 Get personalized recommendations.</li>
+
+            <li>✨ Access exclusive content curated just for you.</li>
+
+          </ul>
+
+          <p>If you have any questions or feedback, we're always here to help.</p>
+
+          <p>Happy listening,<br />Neha Sharma<br />CEO & Founder,
+            {{appName}}</p>
+
+        </div>
+
+        <div class='footer'>
+
+          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+
+          <div class='socials'>
+
+            <a href='https://www.instagram.com/sunooapp/' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/instagram.png'
+                alt='Instagram'
+              />
+            </a>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/youtube.png'
+                alt='YouTube'
+              />
+            </a>
+            <a
+              href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
+              target='_blank'
             >
-              <div
-                class='x_-1657111380mj-column-per-100 x_-1657111380mj-outlook-group-fix x_-1657111380mj-column'
-                style='font-size :  0px; text-align :  left; direction :  ltr; display :  inline-block; vertical-align :  top; width :  100%; '
-              >
-                <table border='0' cellpadding='0' cellspacing='0' width='100%'>
-                  <tbody>
-                    <tr>
-                      <td
-                        style='text-align: center; vertical-align: top; padding: 0 20px;'
-                      >
-                        <img
-                          class='x_-1657111380dark-hide'
-                          width='130'
-                          height='40'
-                          src='https://sunoo.app/images/sunoo-logo.png'
-                          alt='SunooApp'
-                          style='width: 200px; height: 50px; display: block; margin: auto;'
-                        />
-                        <div
-                          class='x_-1657111380dark-show'
-                          style='display: none; text-align: center;'
-                        >
-                          <img
-                            class='x_-1657111380dark-show'
-                            width='130'
-                            height='40'
-                            src='https://sunoo.app/images/sunoo-logo.png'
-                            alt='SunooApp'
-                            style='width: 130px; height: 40px;  display: block; margin: auto;'
-                          />
-                        </div>
-                      </td>
-                    </tr>
-
-                  </tbody>
-                </table>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div
-      class='x_-1657111380content'
-      style='background :  #ffffff; background-color :  #ffffff; margin :  0px auto; border-radius :  0px 0px 10px 10px; max-width :  600px; '
-    >
-      <table
-        align='center'
-        border='0'
-        cellpadding='0'
-        cellspacing='0'
-        style='background :  #ffffff; background-color :  #ffffff; width :  100%; border-radius :  0px 0px 10px 10px; '
-      >
-        <tbody>
-          <tr>
-            <td
-              style='direction :  ltr; font-size :  0px; padding :  15px; text-align :  center; '
+              <img
+                src='https://sunoo.app/email-template/facebook.png'
+                alt='Facebook'
+              />
+            </a>
+            <a
+              href='https://www.linkedin.com/company/sunoo-app'
+              target='_blank'
             >
-              <div
-                class='x_-1657111380mj-column-per-100 x_-1657111380mj-outlook-group-fix x_-1657111380mj-column'
-                style='font-size :  0px; text-align :  left; direction :  ltr; display :  inline-block; vertical-align :  top; width :  100%; '
-              >
-                <table border='0' cellpadding='0' cellspacing='0' width='100%'>
-                  <tbody>
-                    <tr>
-                      <td style='vertical-align :  top; padding :  0 15px; '>
-                        <table
-                          border='0'
-                          cellpadding='0'
-                          cellspacing='0'
-                          width='100%'
-                        >
-                          <tbody>
-                            <tr>
-                              <td
-                                align='left'
-                                style='font-size :  0px; padding :  0; '
-                              >
-                                <div
-                                  style='font-family :  Work Sans, system-ui, -apple-system, sans-serif; font-size :  16px; font-weight :  400; letter-spacing :  -0.025em; line-height :  1.5; text-align :  left; color :  #000000; '
-                                >
-                                  <p
-                                    style='padding :  0; margin :  0 0 0; font-size :  16px; line-height :  28px; letter-spacing :  -0.72px; '
-                                  >
-                                    Hello
-                                    <strong>{{userName}}</strong>, Welcome to
-                                    <b>{{appName}}</b>
-                                    your gateway to endless stories and
-                                    adventures! in your own language, We're so
-                                    excited to have you join our growing family
-                                    of audiobook enthusiasts.
-                                  </p>
-                                  <p
-                                    style='padding :  0; margin :  15px 0 0;  '
-                                  >Before we dive in, please confirm your email
-                                    to activate your account and start
-                                    exploring:
-                                  </p>
+              <img
+                src='https://sunoo.app/email-template/linkedin.png'
+                alt='LinkedIn'
+              />
+            </a>
+            <a href='https://x.com/SunooApp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/twitter-x.png/'
+                alt='X'
+              />
+            </a>
 
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td
-                                class='x_-1657111380btn-primary'
-                                align='center'
-                                style='font-size :  0px; padding :  8px 0; '
-                              >
-                                <table
-                                  border='0'
-                                  cellpadding='0'
-                                  cellspacing='0'
-                                  style='border-collapse :  separate; width :  100%; line-height :  100%; '
-                                >
-                                  <tbody>
-                                    <tr>
-                                      <td
-                                        align='center'
-                                        bgcolor='#F97D83'
-                                        style='border :  none; border-radius :  8px; cursor :  auto; color :  #fff;  background-color: #CB0002;'
-                                        valign='middle'
-                                      ><a
-                                          href='{{verificationUrl}}'
-                                          style='display :  inline-block;  color :  #ffffff; font-family :  Inter, system-ui, -apple-system, sans-serif; font-size :  16px; font-weight :  normal; line-height :  1.4; letter-spacing :  -0.025em; margin :  0; text-decoration :  none; text-transform :  none; padding :  16px; border-radius :  8px; '
-                                          target='_blank'
-                                        ><strong>Verify email</strong></a></td>
-                                    </tr>
-                                    <tr>
-                                      <td>
-                                        <div
-                                          style='font-family :  Work Sans, system-ui, -apple-system, sans-serif; font-size :  16px; font-weight :  400; letter-spacing :  -0.025em; line-height :  1.5; text-align :  left; color :  #000000; margin-top:15px; '
-                                        >
-                                          <p
-                                            style='padding :  0; margin :  0 0 0; font-size :  16px; line-height :  28px; letter-spacing :  -0.72px; '
-                                          >
-                                            I am Neha Sharma, the CEO and
-                                            founder of
-                                            {{appName}}. When I started this
-                                            journey, my dream was to bring the
-                                            magic of storytelling to life for
-                                            busy, curious minds like yours.
-                                            We've crafted
-                                            {{appName}}
-                                            to be your go-to destination for
-                                            inspiration, relaxation, and
-                                            everything in between.
-                                          </p>
-                                          <p>
-                                            After confirming your email, you'll
-                                            be ready to:
-                                            <ul style='list-style-type: none;'>
-                                              <li>🎧 Explore thousands of
-                                                audiobooks across genres.</li>
-                                              <li>🌟 Get personalized
-                                                recommendations.</li>
-                                              <li>✨ Access exclusive content
-                                                curated just for you.</li>
+          </div>
 
-                                            </ul>
+          <p class='small'>© 2025 Sunoo.app
+            <span class='highlight'><b>💜</b></span>
+            All rights reserved.</p>
 
-                                          </p>
-                                          <p>
-                                            If you have any questions or
-                                            feedback, we're always here to help.
-                                          </p>
-                                          <p>
-                                            Happy listening,<br />
-                                            Neha Sharma<br />
-                                            CEO & Founder,
-                                            {{appName}}
-                                          </p>
-                                        </div>
+          <p>Visit
+            <a
+              href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
+              target='_blank'
+              style='text-decoration: none;'
+            ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
+            Today</p>
 
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </td>
-                            </tr>
+        </div>
 
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      </div>
+
     </div>
-    <div
-      style="font-family: 'Segoe UI', sans-serif; font-size: 12px; color: #666; margin-top: 30px; display: flex; justify-content: center; flex-direction: column; align-items: center;"
-    >
-      <br />© 2025
-      {{appName}}
-    </div>
-    <div
-      class='x_-1657111380footer'
-      style='margin :  0px auto; max-width :  600px; '
-    >
-      <table
-        align='center'
-        border='0'
-        cellpadding='0'
-        cellspacing='0'
-        style='width :  100%; '
-      >
-        <tbody>
-          <tr>
-            <td
-              style='direction :  ltr; font-size :  0px; padding :  15px; padding-top :  25px; text-align :  center; '
-            >
-              <div
-                class='x_-1657111380mj-column-per-100 x_-1657111380mj-outlook-group-fix'
-                style='font-size :  0; line-height :  0; text-align :  left; display :  inline-block; width :  100%; direction :  ltr; '
-              >
-                <div
-                  class='x_-1657111380mj-column-per-50 x_-1657111380mj-outlook-group-fix x_-1657111380mj-column'
-                  style='font-size :  0px; text-align :  left; direction :  ltr; display :  inline-block; vertical-align :  top; width :  50%; '
-                >
-                  <table
-                    border='0'
-                    cellpadding='0'
-                    cellspacing='0'
-                    width='100%'
-                  >
-                    <tbody>
-                      <tr>
-                        <td
-                          style='vertical-align :  top; padding :  0 15px; padding-top :  2px; '
-                        >
-                          <table
-                            border='0'
-                            cellpadding='0'
-                            cellspacing='0'
-                            width='100%'
-                          >
-                            <tbody>
-                              <tr>
-                                <td
-                                  align='left'
-                                  style='font-size :  0px; padding :  0; '
-                                >
 
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+  </body>
 
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div style='margin :  0px auto; max-width :  600px; '>
-      <table
-        align='center'
-        border='0'
-        cellpadding='0'
-        cellspacing='0'
-        style='width :  100%; '
-      >
-        <tbody>
-          <tr>
-            <td
-              style='direction :  ltr; font-size :  0px; padding :  15px; text-align :  center; '
-            >
-              <div
-                class='x_-1657111380mj-column-per-100 x_-1657111380mj-outlook-group-fix'
-                style='font-size :  0px; text-align :  left; direction :  ltr; display :  inline-block; vertical-align :  top; width :  100%; '
-              >
-                <table border='0' cellpadding='0' cellspacing='0' width='100%'>
-                  <tbody>
-                    <tr>
-                      <td style='vertical-align :  top; padding :  0 15px; '>
-                        <table
-                          border='0'
-                          cellpadding='0'
-                          cellspacing='0'
-                          width='100%'
-                        >
-                          <tbody>
-                            <tr>
-                              <td style='font-size :  0px; '>
-                                <div style='min-height:  0; line-height :  0; '>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+</html>

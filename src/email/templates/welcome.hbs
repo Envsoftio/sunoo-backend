@@ -1,195 +1,518 @@
 <html lang='en'>
+
   <head>
-    <meta charset='UTF-8' />
-    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+
+    <meta charset='utf-8' />
+
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+
     <title>Welcome to {{appName}}!</title>
+
     <style>
       body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        line-height: 1.6;
-        color: #333;
+        margin: 0;
+
+        padding: 0;
+
+        background: #f6f2fa;
+
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+      }
+
+      .wrapper {
+        display: flex;
+
+        justify-content: center;
+
+        background: #f6f2fa;
+      }
+
+      .card {
         max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f4f4f4;
+
+        width: 100%;
+
+        background: #fff;
+
+        border-radius: 12px;
+
+        overflow: hidden;
       }
-      .container {
-        background-color: #ffffff;
-        padding: 40px;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+
+      .card-topbar {
+        height: 8px;
+
+        background: linear-gradient(
+          90deg,
+          #ff8a00 0%,
+          #ff3d81 50%,
+          #6f49ff 100%
+        );
       }
-      .header {
-        text-align: center;
-        margin-bottom: 30px;
-      }
+
       .logo {
-        font-size: 32px;
-        font-weight: bold;
-        color: #6366f1;
-        margin-bottom: 10px;
+        text-align: center;
+
+        padding: 32px 24px 30px;
       }
-      .welcome-title {
-        color: #1f2937;
-        font-size: 28px;
-        margin-bottom: 20px;
+
+      .logo img {
+        max-width: 160px;
+
+        height: auto;
       }
+
       .content {
-        margin-bottom: 30px;
+        padding: 0 20px 20px;
+
+        text-align: left;
       }
+
+      .content p {
+        margin: 0 0 18px;
+
+        font-size: 15px;
+
+        line-height: 26px;
+
+        color: #374151;
+      }
+
+      .content h3 {
+        margin: 0 0 15px;
+
+        font-size: 18px;
+
+        font-weight: 600;
+
+        color: #111827;
+      }
+
       .highlight {
         background-color: #f0f9ff;
+
         padding: 20px;
+
         border-radius: 8px;
+
         border-left: 4px solid #3b82f6;
+
         margin: 20px 0;
       }
-      .button {
-        display: inline-block;
-        background-color: #6366f1;
-        color: white;
-        padding: 12px 30px;
-        text-decoration: none;
-        border-radius: 6px;
-        font-weight: 600;
-        margin: 20px 0;
-        transition: background-color 0.3s;
+
+      .highlight h3 {
+        color: #1e40af;
+
+        margin: 0 0 10px 0;
       }
-      .button:hover {
-        background-color: #4f46e5;
+
+      .highlight p {
+        color: #1e40af;
+
+        margin: 0;
       }
-      .footer {
-        text-align: center;
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 1px solid #e5e7eb;
-        color: #6b7280;
-        font-size: 14px;
-      }
-      .social-links {
-        margin: 20px 0;
-      }
-      .social-links a {
-        color: #6366f1;
-        text-decoration: none;
-        margin: 0 10px;
-      }
+
       .features {
         margin: 30px 0;
       }
+
       .feature {
         display: flex;
+
         align-items: center;
+
         margin: 15px 0;
+
+        font-size: 15px;
+
+        color: #374151;
       }
+
       .feature-icon {
         width: 24px;
+
         height: 24px;
+
         background-color: #10b981;
+
         border-radius: 50%;
+
         margin-right: 15px;
+
         display: flex;
+
         align-items: center;
+
         justify-content: center;
+
         color: white;
+
         font-weight: bold;
+
+        flex-shrink: 0;
+      }
+
+      .cta {
+        text-align: center;
+
+        padding: 10px 0 40px;
+
+        margin-top: 10px;
+      }
+
+      .cta a {
+        display: inline-block;
+
+        padding: 14px 40px;
+
+        font-size: 16px;
+
+        font-weight: 600;
+
+        color: #fff;
+
+        text-decoration: none;
+
+        border-radius: 999px;
+
+        background: linear-gradient(90deg, #ff8a00, #ff3d81, #6f49ff);
+      }
+
+      .verification-box {
+        background-color: #fef3c7;
+
+        padding: 25px;
+
+        border-radius: 8px;
+
+        border-left: 4px solid #f59e0b;
+
+        margin: 25px 0;
+
+        text-align: center;
+      }
+
+      .verification-box h3 {
+        color: #92400e;
+
+        margin: 0 0 15px 0;
+      }
+
+      .verification-box p {
+        margin: 0 0 20px 0;
+
+        color: #92400e;
+      }
+
+      .security-box {
+        background-color: #f0f9ff;
+
+        padding: 20px;
+
+        border-radius: 8px;
+
+        border-left: 4px solid #3b82f6;
+
+        margin: 20px 0;
+      }
+
+      .security-box h4 {
+        color: #1e40af;
+
+        margin: 0 0 10px 0;
+
+        font-size: 16px;
+      }
+
+      .security-box p {
+        margin: 0;
+
+        color: #1e40af;
+
+        font-size: 14px;
+      }
+
+      .footer {
+        background: #f5f6f8;
+
+        border-bottom-left-radius: 12px;
+
+        border-bottom-right-radius: 12px;
+
+        padding: 50px 30px 70px 30px;
+
+        text-align: center;
+      }
+
+      .footer p {
+        margin: 0;
+
+        font-size: 14px;
+
+        line-height: 24px;
+
+        color: #374151;
+      }
+
+      .socials {
+        display: flex;
+
+        justify-content: center;
+
+        margin: 14px 0;
+
+        gap: 12px;
+      }
+
+      .socials a {
+        width: 34px;
+
+        height: 34px;
+
+        border-radius: 50%;
+
+        border: 2px solid #c026d3;
+
+        margin-right: 5px;
+      }
+
+      .socials a img {
+        margin: auto;
+
+        padding: 10px 6px;
+      }
+
+      .footer .small {
+        font-size: 13px;
+
+        margin-top: 16px;
+
+        margin-bottom: 6px;
+      }
+
+      .heart {
+        color: #c026d3;
+      }
+
+      @media (max-width: 600px) {
+        .footer {
+          padding: 30px 10px 40px 10px !important;
+        }
+
+        .content {
+          padding: 0 10px 0 10px !important;
+        }
+
+        .content h1 {
+          font-size: 16px !important;
+        }
+
+        .content h2 {
+          font-size: 18px !important;
+        }
+
+        .cta a {
+          padding: 12px 24px;
+          font-size: 14px !important;
+        }
       }
     </style>
+
   </head>
+
   <body>
-    <div class='container'>
-      <div class='header'>
-        <div class='logo'>{{appName}}</div>
-        <h1 class='welcome-title'>Welcome aboard! 🎉</h1>
-      </div>
 
-      <div class='content'>
-        <p>Hello <strong>{{userName}}</strong>,</p>
+    <div class='wrapper'>
 
-        <p>Thank you for joining
-          {{appName}}! We're thrilled to have you as part of our community.</p>
+      <div class='card'>
 
-        <div class='highlight'>
-          <h3>🎯 What's Next?</h3>
-          <p>Your account has been created successfully! To complete your
-            registration and start exploring all the amazing features we have to
-            offer, please verify your email address.</p>
+        <div class='card-topbar'></div>
+
+        <div class='logo'>
+
+          <img
+            src='https://sunoo.app/images/sunoo-logo-black.png'
+            alt='Sunoo'
+          />
+
         </div>
 
-        <div class='features'>
-          <h3>✨ What you can do now:</h3>
-          <div class='feature'>
-            <div class='feature-icon'>📚</div>
-            <span>Discover and read amazing stories</span>
+        <div class='content'>
+
+          <p><span class='colour' style='color:rgb(85, 85, 85)'><span
+                class='size'
+                style='font-size:16px'
+              >Hello <b>{{userName}}</b>,</span></span><br /></p>
+
+          <p>Thank you for joining
+            {{appName}}! We're thrilled to have you as part of our community.</p>
+
+          <div class='highlight'>
+
+            <h3>🎯 What's Next?</h3>
+
+            <p>Your account has been created successfully! To complete your
+              registration and start exploring all the amazing features we have
+              to offer, please verify your email address.</p>
+
           </div>
-          <div class='feature'>
-            <div class='feature-icon'>📖</div>
-            <span>Create and share your own stories</span>
+
+          <div class='features'>
+
+            <h3>✨ What you can do now:</h3>
+
+            <div class='feature'>
+
+              <div class='feature-icon'>📚</div>
+
+              <span>Discover and read amazing stories</span>
+
+            </div>
+
+            <div class='feature'>
+
+              <div class='feature-icon'>📖</div>
+
+              <span>Create and share your own stories</span>
+
+            </div>
+
+            <div class='feature'>
+
+              <div class='feature-icon'>👥</div>
+
+              <span>Connect with other storytellers</span>
+
+            </div>
+
+            <div class='feature'>
+
+              <div class='feature-icon'>⭐</div>
+
+              <span>Rate and review stories</span>
+
+            </div>
+
           </div>
-          <div class='feature'>
-            <div class='feature-icon'>👥</div>
-            <span>Connect with other storytellers</span>
+
+          {{#if verificationUrl}}
+
+            <div class='verification-box'>
+
+              <h3>🔐 Email Verification Required</h3>
+
+              <p>Click the button below to verify your email address and
+                activate your account:</p>
+
+              <div class='cta'>
+
+                <a href='{{verificationUrl}}'>Verify Email Address</a>
+
+              </div>
+
+              <p
+                style='margin: 15px 0 0 0; font-size: 14px; color: #6b7280;'
+              >This link will expire in 24 hours for security reasons.</p>
+
+            </div>
+
+            <div class='security-box'>
+
+              <h4>🛡️ Security Information</h4>
+
+              <p>This verification link is unique to your account and should not
+                be shared with anyone. If you didn't create an account with
+                {{appName}}, please ignore this email.</p>
+
+            </div>
+
+          {{/if}}
+
+          <div class='cta'>
+
+            <a href='{{appUrl}}'>Start Exploring {{appName}}</a>
+
           </div>
-          <div class='feature'>
-            <div class='feature-icon'>⭐</div>
-            <span>Rate and review stories</span>
-          </div>
+
+          <p style='font-size: 14px; color: #6b7280; margin-top: 20px;'>If you
+            have any questions, feel free to reach out to our support team.</p>
+
+          <p style='font-size: 14px; color: #6b7280; margin-top: 10px;'>This
+            email was sent to
+            {{userEmail}}. If you didn't create an account with
+            {{appName}}, you can safely ignore this email.</p>
+
         </div>
 
-        {{#if verificationUrl}}
-          <div
-            style='background-color: #fef3c7; padding: 25px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 25px 0; text-align: center;'
-          >
-            <h3 style='color: #92400e; margin: 0 0 15px 0;'>🔐 Email
-              Verification Required</h3>
-            <p style='margin: 0 0 20px 0; color: #92400e;'>Click the button
-              below to verify your email address and activate your account:</p>
+        <div class='footer'>
+
+          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+
+          <div class='socials'>
+
+            <a href='https://www.instagram.com/sunooapp/' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/instagram.png'
+                alt='Instagram'
+              />
+            </a>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/youtube.png'
+                alt='YouTube'
+              />
+            </a>
             <a
-              href='{{verificationUrl}}'
-              style='display: inline-block; background-color: #10b981; color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin: 10px 0;'
-            >Verify Email Address</a>
-            <p style='margin: 15px 0 0 0; font-size: 14px; color: #6b7280;'>This
-              link will expire in 24 hours for security reasons.</p>
+              href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
+              target='_blank'
+            >
+              <img
+                src='https://sunoo.app/email-template/facebook.png'
+                alt='Facebook'
+              />
+            </a>
+            <a
+              href='https://www.linkedin.com/company/sunoo-app'
+              target='_blank'
+            >
+              <img
+                src='https://sunoo.app/email-template/linkedin.png'
+                alt='LinkedIn'
+              />
+            </a>
+            <a href='https://x.com/SunooApp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/twitter-x.png/'
+                alt='X'
+              />
+            </a>
+
           </div>
 
-          <div
-            style='background-color: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;'
-          >
-            <h4 style='color: #1e40af; margin: 0 0 10px 0;'>🛡️ Security
-              Information</h4>
-            <p style='margin: 0; color: #1e40af; font-size: 14px;'>This
-              verification link is unique to your account and should not be
-              shared with anyone. If you didn't create an account with
-              {{appName}}, please ignore this email.</p>
-          </div>
-        {{/if}}
+          <p class='small'>© 2025 Sunoo.app
+            <span class=''><b>💜</b></span>
+            All rights reserved.</p>
 
-        <div style='text-align: center; margin: 30px 0;'>
-          <a href='{{appUrl}}' class='button'>Start Exploring {{appName}}</a>
-        </div>
-      </div>
+          <p>Visit
+            <a
+              href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
+              target='_blank'
+              style='text-decoration: none;'
+            ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
+            Today</p>
 
-      <div class='footer'>
-        <p>If you have any questions, feel free to reach out to our support
-          team.</p>
-
-        <div class='social-links'>
-          <a href='{{appUrl}}'>Visit {{appName}}</a>
-          <a href='{{appUrl}}/help'>Help Center</a>
-          <a href='{{appUrl}}/contact'>Contact Us</a>
         </div>
 
-        <p style='margin-top: 20px;'>
-          This email was sent to
-          {{userEmail}}. If you didn't create an account with
-          {{appName}}, you can safely ignore this email.
-        </p>
-
-        <p style='font-size: 12px; color: #9ca3af;'>
-          © 2024
-          {{appName}}. All rights reserved.
-        </p>
       </div>
+
     </div>
+
   </body>
+
 </html>
