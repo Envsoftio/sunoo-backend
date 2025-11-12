@@ -249,7 +249,19 @@ async function migrateFromIndividualJson() {
         if (tableName === 'users') {
           if (!mappedRecord.name) mappedRecord.name = 'Unknown User';
           if (!mappedRecord.email) mappedRecord.email = `user-${record.id}@example.com`;
-          if (!mappedRecord.password) mappedRecord.password = 'default_password';
+          // SAFETY: Password is required - skip users without passwords
+          // Also reject default_password for security
+          if (!mappedRecord.password) {
+            console.log(`⚠️ Skipping user ${mappedRecord.id} - no password provided`);
+            skippedRecords++;
+            continue;
+          }
+          // SAFETY: Never allow default_password to be inserted
+          if (mappedRecord.password === 'default_password') {
+            console.log(`⚠️ Skipping user ${mappedRecord.id} - default_password is not allowed`);
+            skippedRecords++;
+            continue;
+          }
         }
         if (tableName === 'categories') {
           if (!mappedRecord.name) mappedRecord.name = 'Unnamed Category';
@@ -258,6 +270,28 @@ async function migrateFromIndividualJson() {
         if (tableName === 'books') {
           if (!mappedRecord.title) mappedRecord.title = 'Untitled Book';
           if (!mappedRecord.slug) mappedRecord.slug = `book-${record.id}`;
+        }
+
+        // SAFETY: For users table, never allow sensitive auth fields from migration data
+        // These should only be set through proper auth flows, not migration scripts
+        if (tableName === 'users') {
+          // For existing users, don't overwrite any sensitive auth fields
+          if (recordExists) {
+            delete mappedRecord.password;
+            delete mappedRecord.hasDefaultPassword;
+            delete mappedRecord.emailVerificationToken;
+            delete mappedRecord.isEmailVerified;
+          } else {
+            // For NEW users, strip out fields that should never come from migration
+            // Only password is allowed (and already validated above)
+            delete mappedRecord.hasDefaultPassword;
+            delete mappedRecord.emailVerificationToken;
+            // isEmailVerified should default to false for new users from migration
+            // They need to verify their email through proper channels
+            if (mappedRecord.isEmailVerified !== undefined) {
+              delete mappedRecord.isEmailVerified;
+            }
+          }
         }
 
         const insertColumns = Object.keys(mappedRecord);
