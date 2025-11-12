@@ -1136,9 +1136,13 @@ export class AdminService {
         storyData.slug = storyData.title.toLowerCase().replace(/\s+/g, '-');
       }
 
-      storyData.updated_at = new Date();
+      // Exclude bookCoverUrl from update if not provided
+      // Cover is handled separately via the cover upload endpoint
+      const { bookCoverUrl: _bookCoverUrl, ...updateData } = storyData;
 
-      await this.bookRepository.update(id, storyData);
+      updateData.updated_at = new Date();
+
+      await this.bookRepository.update(id, updateData);
       const updatedStory = await this.bookRepository.findOne({
         where: { id, deleted_at: IsNull() },
         relations: ['category', 'chapters'],
