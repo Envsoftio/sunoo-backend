@@ -91,6 +91,28 @@ export class HealthController {
             arch: { type: 'string' },
             cpuUsage: { type: 'number' },
             cpuUsageFormatted: { type: 'string' },
+            cpuCores: { type: 'number' },
+            cpuModel: { type: 'string' },
+            loadAverage: {
+              type: 'array',
+              items: { type: 'number' },
+              description: 'Load averages [1min, 5min, 15min]',
+            },
+            loadAverageFormatted: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            perCoreUsage: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  core: { type: 'number' },
+                  usage: { type: 'number' },
+                  usageFormatted: { type: 'string' },
+                },
+              },
+            },
             memoryUsage: {
               type: 'object',
               properties: {
@@ -99,6 +121,19 @@ export class HealthController {
                 percentage: { type: 'number' },
                 usedFormatted: { type: 'string' },
                 totalFormatted: { type: 'string' },
+                percentageFormatted: { type: 'string' },
+              },
+            },
+            diskUsage: {
+              type: 'object',
+              properties: {
+                total: { type: 'number' },
+                free: { type: 'number' },
+                used: { type: 'number' },
+                percentage: { type: 'number' },
+                totalFormatted: { type: 'string' },
+                freeFormatted: { type: 'string' },
+                usedFormatted: { type: 'string' },
                 percentageFormatted: { type: 'string' },
               },
             },

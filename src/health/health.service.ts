@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../database/database.service';
 import { FormatUtil } from '../utils/format.util';
+import * as os from 'os';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -19,10 +20,33 @@ export interface HealthStatus {
     platform: string;
     arch: string;
     cpuUsage: number;
+    cpuUsageFormatted: string;
+    cpuCores: number;
+    cpuModel: string;
+    loadAverage: number[];
+    loadAverageFormatted: string[];
+    perCoreUsage?: Array<{
+      core: number;
+      usage: number;
+      usageFormatted: string;
+    }>;
     memoryUsage: {
       used: number;
       total: number;
       percentage: number;
+      usedFormatted: string;
+      totalFormatted: string;
+      percentageFormatted: string;
+    };
+    diskUsage?: {
+      total: number;
+      free: number;
+      used: number;
+      percentage: number;
+      totalFormatted: string;
+      freeFormatted: string;
+      usedFormatted: string;
+      percentageFormatted: string;
     };
   };
 }
@@ -36,13 +60,71 @@ export interface ServiceHealth {
 }
 
 @Injectable()
-export class HealthService {
+export class HealthService implements OnModuleInit, OnModuleDestroy {
   private startTime = Date.now();
+  private previousCpuUsage: NodeJS.CpuUsage | null = null;
+  private previousCpuTime: number = 0;
+  private cpuUsageInterval: NodeJS.Timeout | null = null;
+  private currentCpuPercentage: number = 0;
+  private perCoreUsage: Array<{ core: number; usage: number }> = [];
 
   constructor(
     private configService: ConfigService,
     private databaseService: DatabaseService
   ) {}
+
+  onModuleInit() {
+    // Initialize CPU monitoring
+    this.previousCpuUsage = process.cpuUsage();
+    this.previousCpuTime = Date.now();
+
+    // Update CPU usage every second
+    this.cpuUsageInterval = setInterval(() => {
+      this.updateCpuUsage();
+    }, 1000);
+  }
+
+  onModuleDestroy() {
+    if (this.cpuUsageInterval) {
+      clearInterval(this.cpuUsageInterval);
+    }
+  }
+
+  private updateCpuUsage() {
+    if (!this.previousCpuUsage) {
+      this.previousCpuUsage = process.cpuUsage();
+      this.previousCpuTime = Date.now();
+      return;
+    }
+
+    const currentCpuUsage = process.cpuUsage(this.previousCpuUsage);
+    const currentTime = Date.now();
+    const timeDiff = (currentTime - this.previousCpuTime) / 1000; // in seconds
+
+    // Calculate CPU percentage
+    const totalCpuTime =
+      (currentCpuUsage.user + currentCpuUsage.system) / 1000000; // Convert to seconds
+    this.currentCpuPercentage = (totalCpuTime / timeDiff) * 100;
+
+    // Calculate per-core usage
+    this.calculatePerCoreUsage();
+
+    this.previousCpuUsage = process.cpuUsage();
+    this.previousCpuTime = currentTime;
+  }
+
+  private calculatePerCoreUsage() {
+    const cpus = os.cpus();
+    this.perCoreUsage = cpus.map((cpu, index) => {
+      const total = Object.values(cpu.times).reduce(
+        (acc, time) => acc + time,
+        0
+      );
+      const idle = cpu.times.idle;
+      const usage = ((total - idle) / total) * 100;
+      return { core: index, usage: Math.round(usage * 100) / 100 };
+    });
+  }
 
   async getHealthStatus(): Promise<HealthStatus> {
     const timestamp = new Date().toISOString();
@@ -101,10 +183,18 @@ export class HealthService {
               platform: process.platform,
               arch: process.arch,
               cpuUsage: 0,
+              cpuUsageFormatted: '0.0%',
+              cpuCores: os.cpus().length,
+              cpuModel: 'Unknown',
+              loadAverage: [0, 0, 0],
+              loadAverageFormatted: ['0.00', '0.00', '0.00'],
               memoryUsage: {
                 used: 0,
                 total: 0,
                 percentage: 0,
+                usedFormatted: '0 Bytes',
+                totalFormatted: '0 Bytes',
+                percentageFormatted: '0.0%',
               },
             },
     };
@@ -182,20 +272,45 @@ export class HealthService {
 
   private checkDisk(): ServiceHealth {
     try {
-      // const fs = require('fs');
-      // const path = require('path');
+      const fs = require('fs');
 
-      // Check disk space for the current directory
-      const _stats = require('fs').statSync('.');
-      const _diskUsage = require('os').totalmem(); // This is a simplified check
+      // Get disk stats for the root partition
+      const stats = fs.statfsSync ? fs.statfsSync('/') : null;
 
+      if (stats) {
+        // statfsSync returns bytes
+        const total = stats.blocks * stats.bsize;
+        const free = stats.bavail * stats.bsize;
+        const used = total - free;
+        const percentage = (used / total) * 100;
+
+        const isHealthy = percentage < 90;
+
+        return {
+          status: isHealthy ? 'up' : 'degraded',
+          message: isHealthy
+            ? 'Disk space is available'
+            : 'High disk usage detected',
+          details: {
+            total: Math.round(total / 1024 / 1024), // MB
+            free: Math.round(free / 1024 / 1024), // MB
+            used: Math.round(used / 1024 / 1024), // MB
+            percentage: Math.round(percentage * 100) / 100,
+            totalFormatted: FormatUtil.formatBytes(total),
+            freeFormatted: FormatUtil.formatBytes(free),
+            usedFormatted: FormatUtil.formatBytes(used),
+            percentageFormatted: FormatUtil.formatPercentage(percentage),
+          },
+        };
+      }
+
+      // Fallback: try to get disk space using df command (Unix-like systems)
       return {
         status: 'up',
-        message: 'Disk space is available',
+        message: 'Disk space check not available on this platform',
         details: {
-          // Note: This is a simplified implementation
-          // In production, you might want to use a proper disk usage library
           available: true,
+          note: 'Detailed disk stats require statfsSync support',
         },
       };
     } catch (error) {
@@ -208,35 +323,81 @@ export class HealthService {
   }
 
   private getSystemInfo() {
-    const os = require('os');
-    const _memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
+    const memoryPercentage = (usedMem / totalMem) * 100;
 
-    const cpuUsage = process.cpuUsage();
-    const totalCpuUsage = cpuUsage.user + cpuUsage.system;
+    // Get CPU info
+    const cpus = os.cpus();
+    const cpuModel = cpus.length > 0 ? cpus[0].model : 'Unknown';
+    const cpuCores = cpus.length;
+
+    // Get load averages (1min, 5min, 15min)
+    const loadAvg = os.loadavg();
+    const loadAvgFormatted = loadAvg.map(avg => avg.toFixed(2));
+
+    // Get disk usage if available
+    let diskUsage:
+      | {
+          total: number;
+          free: number;
+          used: number;
+          percentage: number;
+          totalFormatted: string;
+          freeFormatted: string;
+          usedFormatted: string;
+          percentageFormatted: string;
+        }
+      | undefined = undefined;
+    try {
+      const fs = require('fs');
+      if (fs.statfsSync) {
+        const stats = fs.statfsSync('/');
+        const total = stats.blocks * stats.bsize;
+        const free = stats.bavail * stats.bsize;
+        const used = total - free;
+        const percentage = (used / total) * 100;
+
+        diskUsage = {
+          total: Math.round(total / 1024 / 1024), // MB
+          free: Math.round(free / 1024 / 1024), // MB
+          used: Math.round(used / 1024 / 1024), // MB
+          percentage: Math.round(percentage * 100) / 100,
+          totalFormatted: FormatUtil.formatBytes(total),
+          freeFormatted: FormatUtil.formatBytes(free),
+          usedFormatted: FormatUtil.formatBytes(used),
+          percentageFormatted: FormatUtil.formatPercentage(percentage),
+        };
+      }
+    } catch {
+      // Disk stats not available
+    }
 
     return {
       nodeVersion: process.version,
       platform: process.platform,
       arch: process.arch,
-      cpuUsage: totalCpuUsage,
-      cpuUsageFormatted: FormatUtil.formatCpuUsage(
-        cpuUsage.user,
-        cpuUsage.system
-      ),
+      cpuUsage: Math.round(this.currentCpuPercentage * 100) / 100,
+      cpuUsageFormatted: FormatUtil.formatPercentage(this.currentCpuPercentage),
+      cpuCores,
+      cpuModel,
+      loadAverage: loadAvg,
+      loadAverageFormatted: loadAvgFormatted,
+      perCoreUsage: this.perCoreUsage.map(core => ({
+        core: core.core,
+        usage: core.usage,
+        usageFormatted: FormatUtil.formatPercentage(core.usage),
+      })),
       memoryUsage: {
         used: Math.round(usedMem / 1024 / 1024), // MB
         total: Math.round(totalMem / 1024 / 1024), // MB
-        percentage: Math.round((usedMem / totalMem) * 100 * 100) / 100,
-        // Human readable formats
+        percentage: Math.round(memoryPercentage * 100) / 100,
         usedFormatted: FormatUtil.formatBytes(usedMem),
         totalFormatted: FormatUtil.formatBytes(totalMem),
-        percentageFormatted: FormatUtil.formatPercentage(
-          (usedMem / totalMem) * 100
-        ),
+        percentageFormatted: FormatUtil.formatPercentage(memoryPercentage),
       },
+      diskUsage,
     };
   }
 
