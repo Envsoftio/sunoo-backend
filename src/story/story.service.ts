@@ -971,6 +971,7 @@ export class StoryService {
         averageRating,
         listeners: totalListeners,
         Chapters: processedChapters, // Use processed chapters with access control
+        chapters: processedChapters.length, // Add chapter count for easier access
         casts: casts || [], // Add cast data
       };
 
@@ -1718,6 +1719,7 @@ export class StoryService {
         averageRating,
         listeners: totalListeners,
         Chapters: processedChapters, // Use processed chapters with access control
+        chapters: processedChapters.length, // Add chapter count for easier access
         casts: casts || [], // Add cast data
       };
 
