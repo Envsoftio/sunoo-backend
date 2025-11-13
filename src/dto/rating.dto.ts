@@ -51,7 +51,7 @@ export class SaveRatingDto {
     }
     return value;
   })
-  @Matches(/^[a-zA-Z0-9\s.,!?\-_()@#$%&*+=:;'"<>/\\[\]{}|`~]*$/, {
+  @Matches(/^[\s\S]*$/, {
     message: 'Review contains invalid characters',
   })
   review?: string;
