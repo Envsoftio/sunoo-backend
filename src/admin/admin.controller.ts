@@ -45,6 +45,15 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
+  @Get('getSessions')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all user sessions (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Sessions retrieved successfully' })
+  async getSessions() {
+    return this.adminService.getAllSessions();
+  }
+
   @Post('deleteUser')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()

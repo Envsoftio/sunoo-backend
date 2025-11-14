@@ -70,6 +70,10 @@ export class AdminService {
           'subscription_emails_enabled',
           'hasDefaultPassword',
           'authId',
+          'country',
+          'isEmailVerified',
+          'lastLoginAt',
+          'avatar',
         ],
         relations: ['subscriptions'],
         order: { created_at: 'DESC' },
@@ -110,6 +114,36 @@ export class AdminService {
       });
 
       return { success: true, data: processedUsers };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getAllSessions() {
+    try {
+      const sessions = await this.userSessionRepository.find({
+        relations: ['user'],
+        order: { created_at: 'DESC' },
+        take: 1000, // Limit to prevent huge queries
+      });
+
+      const processedSessions = sessions.map(session => ({
+        id: session.id,
+        userId: session.userId,
+        userEmail: session.user?.email || 'Unknown',
+        userName: session.user?.name || 'Unknown',
+        refreshToken: session.refreshToken,
+        expiresAt: session.expiresAt,
+        lastUsedAt: session.lastUsedAt,
+        isActive: session.isActive,
+        userAgent: session.userAgent,
+        ipAddress: session.ipAddress,
+        deviceInfo: session.deviceInfo,
+        createdAt: session.created_at,
+        updatedAt: session.updated_at,
+      }));
+
+      return { success: true, data: processedSessions };
     } catch (error) {
       return { success: false, message: error.message };
     }
