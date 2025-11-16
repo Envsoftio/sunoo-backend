@@ -493,7 +493,7 @@ export class StoryController {
     status: 200,
     description: 'Continue listening stories retrieved successfully',
   })
-  async getContinueListeningStories(@Query('userId') userId: string) {
+  async getContinueListeningStories(@Param('userId') userId: string) {
     return await this.storyService.getContinueListeningStories(userId);
   }
 
