@@ -110,8 +110,7 @@ export class ReviewNotificationService {
         .filter(cast => cast.email);
       recipients.push(...castRecipients);
 
-      // 3. Get writers (users with writer role) - you might want to add a writer role to users
-      // For now, we'll get all users who have written reviews for this book as potential writers
+      // 3. Get writers from story_casts table (cast members with writer/author role)
       const writers = await this.getWritersForBook(bookId);
       recipients.push(
         ...writers
@@ -146,13 +145,30 @@ export class ReviewNotificationService {
     bookId: string
   ): Promise<Array<{ email: string; name: string }>> {
     try {
+      // Get story casts with voice artist roles (voice_artist, voice_over, narrator, etc.)
       const storyCasts = await this.storyCastRepository.find({
         where: { story_id: bookId },
       });
 
+      // Filter for voice artist roles (case-insensitive)
+      const voiceArtistRoles = [
+        'voice_artist',
+        'voice_over',
+        'voice artist',
+        'voice over',
+        'Voice Over artist',
+        'voice over artist',
+        'voice over artist team',
+      ];
+      const voiceArtistCasts = storyCasts.filter(cast =>
+        voiceArtistRoles.some(role =>
+          cast.role?.toLowerCase().includes(role.toLowerCase())
+        )
+      );
+
       const castMembers: Array<{ email: string; name: string }> = [];
-      for (const storyCast of storyCasts) {
-        if (storyCast.cast_id) {
+      for (const storyCast of voiceArtistCasts) {
+        if (storyCast.cast_id && storyCast.cast_id.trim() !== '') {
           const castMember = await this.castMemberRepository.findOne({
             where: { id: storyCast.cast_id },
           });
@@ -173,32 +189,47 @@ export class ReviewNotificationService {
   }
 
   /**
-   * Get writers associated with a book
-   * For now, we'll get users who have reviewed this book as potential writers
-   * You might want to add a proper writer role or relationship
+   * Get writers associated with a book from story_casts table
    */
   private async getWritersForBook(
     bookId: string
   ): Promise<Array<{ email: string; name: string }>> {
     try {
-      // This is a placeholder implementation
-      // You might want to add a proper writer relationship to books
-      // For now, we'll get users who have reviewed this book
-      const reviews = await this.bookRatingRepository.find({
-        where: { bookId },
-        relations: ['user'],
+      // Get story casts with writer/author roles
+      const storyCasts = await this.storyCastRepository.find({
+        where: { story_id: bookId },
       });
 
-      return reviews
-        .map(review => review.user)
-        .filter(
-          (user): user is NonNullable<typeof user> =>
-            user !== null && user !== undefined && !!user.email
+      // Filter for writer roles (case-insensitive)
+      const writerRoles = [
+        'Writer',
+        'writer',
+        'author',
+        'co-writer',
+        'co-author',
+      ];
+      const writerCasts = storyCasts.filter(cast =>
+        writerRoles.some(role =>
+          cast.role?.toLowerCase().includes(role.toLowerCase())
         )
-        .map(user => ({
-          email: user.email,
-          name: user.name || user.email,
-        }));
+      );
+
+      const writers: Array<{ email: string; name: string }> = [];
+      for (const storyCast of writerCasts) {
+        if (storyCast.cast_id && storyCast.cast_id.trim() !== '') {
+          const castMember = await this.castMemberRepository.findOne({
+            where: { id: storyCast.cast_id },
+          });
+          if (castMember && castMember.email) {
+            writers.push({
+              email: castMember.email,
+              name: castMember.name,
+            });
+          }
+        }
+      }
+
+      return writers;
     } catch (error) {
       this.logger.error('Failed to get writers for book:', error);
       return [];
