@@ -17,6 +17,8 @@ import { AudiobookListener } from '../entities/audiobook-listener.entity';
 import { EmailService } from '../email/email.service';
 import { ZeptomailService } from '../email/zeptomail.service';
 import { S3Service } from '../common/services/s3.service';
+import { ContactFormDto } from '../dto/contact.dto';
+import { SanitizationUtil } from '../common/utils/sanitization.util';
 
 @Injectable()
 export class AdminService {
@@ -1956,35 +1958,72 @@ export class AdminService {
     }
   }
 
-  async submitContactForm(contactFormDto: any) {
+  async submitContactForm(contactFormDto: ContactFormDto) {
     try {
-      const { name, email, message } = contactFormDto;
+      const { name, email, message, website } = contactFormDto;
+
+      // Honeypot check - if website field is filled, it's likely a bot
+      if (website && website.trim().length > 0) {
+        // Silently reject but return success message
+        return {
+          success: true,
+          message: 'Thank you for your message. We will get back to you soon!',
+        };
+      }
+
+      // Sanitize and validate inputs
+      const sanitizedName = SanitizationUtil.sanitizeInput(name);
+      const sanitizedEmail = SanitizationUtil.sanitizeEmail(email);
+      const sanitizedMessage = SanitizationUtil.sanitizeInput(message);
+
+      // Validate name format
+      if (!SanitizationUtil.isValidName(sanitizedName)) {
+        // Return generic success message to avoid revealing validation to spammers
+        return {
+          success: true,
+          message: 'Thank you for your message. We will get back to you soon!',
+        };
+      }
+
+      // Validate message content
+      if (!SanitizationUtil.isValidMessage(sanitizedMessage)) {
+        // Return generic success message to avoid revealing validation to spammers
+        return {
+          success: true,
+          message: 'Thank you for your message. We will get back to you soon!',
+        };
+      }
+
+      // Additional spam check on sanitized data
+      if (
+        SanitizationUtil.isSpamText(sanitizedName) ||
+        SanitizationUtil.isSpamText(sanitizedMessage)
+      ) {
+        // Silently reject spam but return success message
+        return {
+          success: true,
+          message: 'Thank you for your message. We will get back to you soon!',
+        };
+      }
 
       // Send email using the contact form template
       const emailSent = await this.emailService.sendContactFormEmail({
-        name,
-        email,
-        message,
+        name: sanitizedName,
+        email: sanitizedEmail,
+        message: sanitizedMessage,
       });
 
-      if (emailSent) {
-        return {
-          success: true,
-          message:
-            'Contact form submitted successfully. We will get back to you soon!',
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Failed to send contact form. Please try again later.',
-        };
-      }
+      // Always return generic success message (don't reveal if email failed to spammers)
+      return {
+        success: true,
+        message: 'Thank you for your message. We will get back to you soon!',
+      };
     } catch (error) {
       console.error('Error submitting contact form:', error);
+      // Always return generic success message even on error
       return {
-        success: false,
-        message:
-          'An error occurred while submitting the contact form. Please try again later.',
+        success: true,
+        message: 'Thank you for your message. We will get back to you soon!',
       };
     }
   }

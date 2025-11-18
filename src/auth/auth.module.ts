@@ -74,6 +74,6 @@ import { CountryDetectionService } from '../common/services/country-detection.se
     CountryDetectionService,
   ], // GoogleStrategy temporarily disabled
   controllers: [AuthController, SessionController, AnalyticsController],
-  exports: [AuthService, SessionService],
+  exports: [AuthService, SessionService, RateLimitService, RateLimitGuard],
 })
 export class AuthModule {}

@@ -1,5 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  MinLength,
+  Matches,
+  IsOptional,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ContactFormDto {
   @ApiProperty({
@@ -8,7 +16,11 @@ export class ContactFormDto {
   })
   @IsNotEmpty()
   @IsString()
+  @MinLength(2, { message: 'Name must be at least 2 characters long' })
   @MaxLength(100)
+  @Matches(/^[a-zA-Z\s'-]+$/, {
+    message: 'Name can only contain letters, spaces, hyphens, and apostrophes',
+  })
   name: string;
 
   @ApiProperty({
@@ -26,6 +38,15 @@ export class ContactFormDto {
   })
   @IsNotEmpty()
   @IsString()
+  @MinLength(10, { message: 'Message must be at least 10 characters long' })
   @MaxLength(2000)
   message: string;
+
+  @ApiPropertyOptional({
+    description: 'Honeypot field - should be empty for legitimate submissions',
+    example: '',
+  })
+  @IsOptional()
+  @IsString()
+  website?: string; // Honeypot field
 }
