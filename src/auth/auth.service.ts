@@ -229,16 +229,29 @@ export class AuthService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Send verification email
+    // Send verification email - this is critical, so we log errors but don't fail registration
     try {
-      await this.emailService.sendVerificationEmail(
+      const emailSent = await this.emailService.sendVerificationEmail(
         savedUser.email,
         savedUser.name || 'User',
         verificationToken
       );
+
+      if (!emailSent) {
+        console.error(
+          `Failed to send verification email to ${savedUser.email}. User ID: ${savedUser.id}`
+        );
+      } else {
+        console.log(
+          `Verification email sent successfully to ${savedUser.email}. User ID: ${savedUser.id}`
+        );
+      }
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Don't fail registration if email fails, but log it
+      console.error(
+        `Error sending verification email to ${savedUser.email}:`,
+        emailError
+      );
+      // Don't fail registration if email fails, but log it for admin review
     }
 
     // Don't return access token on registration - user needs to verify email first
