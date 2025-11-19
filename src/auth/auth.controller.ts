@@ -12,7 +12,6 @@ import {
   Put,
   Query,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -281,6 +280,15 @@ export class AuthController {
     try {
       return await this.authService.login(loginDto, req);
     } catch (error) {
+      // Handle email not verified error
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        throw new UnauthorizedException({
+          message: error.message,
+          code: error.code,
+          requiresEmailVerification: error.requiresEmailVerification,
+        });
+      }
+
       // Handle default password migration required error
       if (error.code === 'DEFAULT_PASSWORD_MIGRATION_REQUIRED') {
         throw new UnauthorizedException({
@@ -297,15 +305,6 @@ export class AuthController {
           message: error.message,
           code: error.code,
           requiresPasswordReset: error.requiresPasswordReset,
-        });
-      }
-
-      // Handle email not verified error
-      if (error.code === 'EMAIL_NOT_VERIFIED') {
-        throw new UnauthorizedException({
-          message: error.message,
-          code: error.code,
-          requiresEmailVerification: error.requiresEmailVerification,
         });
       }
 
@@ -351,21 +350,15 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
-  @Post('resend-verification-email')
+  @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RateLimitGuard)
   @RateLimit(true)
-  @ApiOperation({ summary: 'Resend email verification' })
-  @ApiResponse({
-    status: 200,
-    description: 'Verification email sent successfully',
-  })
-  @ApiResponse({ status: 429, description: 'Too many requests' })
-  async resendVerificationEmail(@Body('email') email: string) {
-    if (!email) {
-      throw new BadRequestException('Email is required');
-    }
-    return this.authService.resendVerificationEmail(email);
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async resendVerificationEmail(@Body() body: { email: string }) {
+    return this.authService.resendVerificationEmail(body.email);
   }
 
   @Post('logout')

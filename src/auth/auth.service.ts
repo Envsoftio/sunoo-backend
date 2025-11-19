@@ -256,9 +256,6 @@ export class AuthService {
 
     // Don't return access token on registration - user needs to verify email first
     return {
-      accessToken: null,
-      refreshToken: null,
-      expiresAt: null,
       user: {
         id: savedUser.id,
         email: savedUser.email,
@@ -268,7 +265,7 @@ export class AuthService {
       message:
         'Registration successful. Please check your email to verify your account before logging in.',
       requiresEmailVerification: true,
-    };
+    } as AuthResponseDto;
   }
 
   async findUserById(id: string): Promise<User | null> {

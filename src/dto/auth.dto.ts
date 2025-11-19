@@ -34,13 +34,13 @@ export class RegisterDto {
 
 export class AuthResponseDto {
   @ApiProperty({ required: false })
-  accessToken?: string | null;
+  accessToken?: string;
 
   @ApiProperty({ required: false })
-  refreshToken?: string | null;
+  refreshToken?: string;
 
   @ApiProperty({ required: false })
-  expiresAt?: Date | null;
+  expiresAt?: Date;
 
   @ApiProperty()
   user: {

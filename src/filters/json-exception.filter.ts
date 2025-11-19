@@ -27,8 +27,12 @@ export class JsonExceptionFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null
       ) {
-        // Preserve the original error response for authentication errors
-        if (status === HttpStatus.UNAUTHORIZED) {
+        // Preserve the original error response for specific status codes
+        if (
+          status === HttpStatus.UNAUTHORIZED ||
+          status === HttpStatus.CONFLICT ||
+          status === HttpStatus.BAD_REQUEST
+        ) {
           return response.status(status).json(exceptionResponse);
         }
         message = (exceptionResponse as any).message || exception.message;
@@ -59,13 +63,24 @@ export class JsonExceptionFilter implements ExceptionFilter {
       body: request.body,
     });
 
+    // Get appropriate error status text
+    const getErrorStatusText = (statusCode: number): string => {
+      const statusTexts: Record<number, string> = {
+        [HttpStatus.BAD_REQUEST]: 'Bad Request',
+        [HttpStatus.UNAUTHORIZED]: 'Unauthorized',
+        [HttpStatus.FORBIDDEN]: 'Forbidden',
+        [HttpStatus.NOT_FOUND]: 'Not Found',
+        [HttpStatus.CONFLICT]: 'Conflict',
+        [HttpStatus.TOO_MANY_REQUESTS]: 'Too Many Requests',
+        [HttpStatus.INTERNAL_SERVER_ERROR]: 'Internal Server Error',
+      };
+      return statusTexts[statusCode] || 'Internal Server Error';
+    };
+
     response.status(status).json({
       statusCode: status,
       message,
-      error:
-        status === HttpStatus.BAD_REQUEST
-          ? 'Bad Request'
-          : 'Internal Server Error',
+      error: getErrorStatusText(status),
       timestamp: new Date().toISOString(),
       path: request.url,
     });
