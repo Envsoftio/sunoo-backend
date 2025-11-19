@@ -23,6 +23,7 @@ import emailConfig from './config/email.config';
 import redisConfig from './config/redis.config';
 import s3Config from './config/s3.config';
 import { S3Module } from './common/services/s3.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { S3Module } from './common/services/s3.module';
     FeedbackModule,
     GenreModule,
     SupportTicketModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseLoggerService],
