@@ -33,14 +33,14 @@ export class RegisterDto {
 }
 
 export class AuthResponseDto {
-  @ApiProperty()
-  accessToken: string;
+  @ApiProperty({ required: false })
+  accessToken?: string | null;
 
   @ApiProperty({ required: false })
-  refreshToken?: string;
+  refreshToken?: string | null;
 
   @ApiProperty({ required: false })
-  expiresAt?: Date;
+  expiresAt?: Date | null;
 
   @ApiProperty()
   user: {
@@ -49,6 +49,12 @@ export class AuthResponseDto {
     name: string;
     avatar?: string;
   };
+
+  @ApiProperty({ required: false })
+  message?: string;
+
+  @ApiProperty({ required: false })
+  requiresEmailVerification?: boolean;
 }
 
 export class ForgotPasswordDto {

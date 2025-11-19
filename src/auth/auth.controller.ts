@@ -12,6 +12,7 @@ import {
   Put,
   Query,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -299,6 +300,15 @@ export class AuthController {
         });
       }
 
+      // Handle email not verified error
+      if (error.code === 'EMAIL_NOT_VERIFIED') {
+        throw new UnauthorizedException({
+          message: error.message,
+          code: error.code,
+          requiresEmailVerification: error.requiresEmailVerification,
+        });
+      }
+
       // Handle invalid credentials with attempt information
       if (error.code === 'INVALID_CREDENTIALS') {
         throw new UnauthorizedException({
@@ -339,6 +349,23 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification-email')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RateLimitGuard)
+  @RateLimit(true)
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent successfully',
+  })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async resendVerificationEmail(@Body('email') email: string) {
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+    return this.authService.resendVerificationEmail(email);
   }
 
   @Post('logout')

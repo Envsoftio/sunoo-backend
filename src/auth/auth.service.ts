@@ -112,6 +112,16 @@ export class AuthService {
       throw new UnauthorizedException('Account is deactivated');
     }
 
+    // Check if email is verified - this should be checked BEFORE password validation
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException({
+        message:
+          'Please verify your email address before logging in. Check your inbox for the verification email.',
+        code: 'EMAIL_NOT_VERIFIED',
+        requiresEmailVerification: true,
+      });
+    }
+
     // Check if user has default password (migrated user) - this should be checked BEFORE password validation
     if (user.hasDefaultPassword) {
       throw new UnauthorizedException({
@@ -205,25 +215,46 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
+    // Generate email verification token
+    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+
     const user = this.userRepository.create({
       ...registerDto,
       password: hashedPassword,
       country: detectedCountry,
+      role: 'user', // Set default role to 'user'
+      isEmailVerified: false, // Email not verified by default
+      emailVerificationToken: verificationToken,
     });
 
     const savedUser = await this.userRepository.save(user);
 
-    const payload = { email: savedUser.email, sub: savedUser.id };
-    const accessToken = this.jwtService.sign(payload);
+    // Send verification email
+    try {
+      await this.emailService.sendVerificationEmail(
+        savedUser.email,
+        savedUser.name || 'User',
+        verificationToken
+      );
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails, but log it
+    }
 
+    // Don't return access token on registration - user needs to verify email first
     return {
-      accessToken,
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
       user: {
         id: savedUser.id,
         email: savedUser.email,
         name: savedUser.name,
         avatar: savedUser.avatar,
       },
+      message:
+        'Registration successful. Please check your email to verify your account before logging in.',
+      requiresEmailVerification: true,
     };
   }
 
@@ -726,6 +757,63 @@ export class AuthService {
       success: true,
       message: 'Email verified successfully. You can now log in.',
     };
+  }
+
+  async resendVerificationEmail(email: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return {
+        success: true,
+        message:
+          'If an account exists with this email, a verification email has been sent.',
+      };
+    }
+
+    // If email is already verified, don't send another email
+    if (user.isEmailVerified) {
+      return {
+        success: true,
+        message: 'This email address is already verified.',
+      };
+    }
+
+    // Generate new verification token
+    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+
+    // Update user with new token
+    await this.userRepository.update(user.id, {
+      emailVerificationToken: verificationToken,
+    });
+
+    // Send verification email
+    try {
+      await this.emailService.sendVerificationEmail(
+        user.email,
+        user.name || 'User',
+        verificationToken
+      );
+
+      return {
+        success: true,
+        message: 'Verification email sent. Please check your inbox.',
+      };
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      throw new HttpException(
+        {
+          message: 'Failed to send verification email. Please try again later.',
+          code: 'EMAIL_SEND_FAILED',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   private getClientIp(request: any): string {
