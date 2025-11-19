@@ -745,7 +745,7 @@ export class AuthService {
 
   async verifyEmail(
     token: string
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; email?: string }> {
     const user = await this.userRepository.findOne({
       where: { emailVerificationToken: token },
     });
@@ -766,6 +766,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Email verified successfully. You can now log in.',
+      email: user.email,
     };
   }
 

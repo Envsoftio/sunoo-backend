@@ -103,7 +103,7 @@ export class EmailService {
       userEmail,
       appName: this.emailConfig.templates.appName,
       appUrl: this.emailConfig.templates.appUrl,
-      verificationUrl: `${this.emailConfig.templates.baseUrl}/api/auth/verify-email?token=${verificationToken}`,
+      verificationUrl: `${this.emailConfig.templates.appUrl}/email-verified?token=${verificationToken}`,
     };
 
     const html = template(data);
