@@ -7,6 +7,7 @@ import { Payment } from '../entities/payment.entity';
 import { RazorpayService } from './razorpay.service';
 import { LoggerService } from '../common/logger/logger.service';
 import { NotificationService } from './notification.service';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -19,7 +20,8 @@ export class SubscriptionService {
     private paymentRepository: Repository<Payment>,
     private razorpayService: RazorpayService,
     private loggerService: LoggerService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private cacheService: CacheService
   ) {}
 
   async getAllPlans() {
@@ -162,6 +164,9 @@ export class SubscriptionService {
           razorpaySubscriptionId,
         }
       );
+
+      // Invalidate user's story caches since subscription status changed
+      await this.invalidateUserStoryCaches(userId);
 
       return { success: true, data: savedSubscription };
     } catch (error) {
@@ -729,6 +734,11 @@ export class SubscriptionService {
     }
   ) {
     try {
+      // Get subscription to find userId before updating
+      const subscription = await this.subscriptionRepository.findOne({
+        where: { subscription_id: subscriptionId },
+      });
+
       const updateData: any = { status };
       if (additionalData) {
         Object.assign(updateData, additionalData);
@@ -739,9 +749,71 @@ export class SubscriptionService {
         updateData
       );
 
+      // Invalidate user's story caches if subscription status changed
+      // This ensures users see correct audio URLs based on their subscription status
+      // Invalidate for any status change that affects access (active, authenticated, pending, halted)
+      // or when subscription is cancelled/expired (to remove access)
+      if (subscription?.user_id) {
+        const accessGrantingStatuses = [
+          'active',
+          'authenticated',
+          'pending',
+          'halted',
+        ];
+        const accessRemovingStatuses = ['cancelled', 'expired', 'paused'];
+
+        if (
+          accessGrantingStatuses.includes(status) ||
+          accessRemovingStatuses.includes(status)
+        ) {
+          await this.invalidateUserStoryCaches(subscription.user_id);
+        }
+      }
+
       return { success: true, message: 'Subscription status updated' };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Invalidate all story-related caches for a specific user
+   * This is called when subscription status changes to ensure
+   * users see correct audio URLs based on their subscription status
+   */
+  private async invalidateUserStoryCaches(userId: string): Promise<void> {
+    try {
+      const patterns = [
+        `cache:*/show/*:user:${userId}*`, // Story show pages by slug/id
+        `cache:*/story/getStoryBySlugForShow*:user:${userId}*`, // Story by slug
+        `cache:*/story/getStoryByIdForShow*:user:${userId}*`, // Story by ID
+        `cache:*/story/getStoryBySlug*:user:${userId}*`, // Story by slug (alternative)
+        `cache:*/story/slug/*:user:${userId}*`, // Story by slug route
+      ];
+
+      let totalDeleted = 0;
+      for (const pattern of patterns) {
+        const deletedCount = await this.cacheService.delPattern(pattern);
+        totalDeleted += deletedCount;
+      }
+
+      this.loggerService.logSubscriptionEvent(
+        'info',
+        'Invalidated user story caches after subscription change',
+        {
+          userId,
+          deletedKeys: totalDeleted,
+        }
+      );
+    } catch (error) {
+      this.loggerService.logSubscriptionEvent(
+        'error',
+        'Failed to invalidate user story caches',
+        {
+          userId,
+          error: error.message,
+        }
+      );
     }
   }
 
@@ -1017,6 +1089,9 @@ export class SubscriptionService {
           },
         }
       );
+
+      // Invalidate user's story caches since subscription status changed to active
+      await this.invalidateUserStoryCaches(userId);
 
       this.loggerService.logSubscriptionEvent(
         'info',
