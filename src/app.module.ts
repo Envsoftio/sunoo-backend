@@ -24,12 +24,21 @@ import redisConfig from './config/redis.config';
 import s3Config from './config/s3.config';
 import { S3Module } from './common/services/s3.module';
 import { UploadModule } from './upload/upload.module';
+import { PushNotificationModule } from './push-notification/push-notification.module';
+import firebaseConfig from './config/firebase.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, securityConfig, emailConfig, redisConfig, s3Config],
+      load: [
+        appConfig,
+        securityConfig,
+        emailConfig,
+        redisConfig,
+        s3Config,
+        firebaseConfig,
+      ],
       envFilePath: ['.env.local', '.env'],
     }),
     CacheModule,
@@ -54,6 +63,7 @@ import { UploadModule } from './upload/upload.module';
     GenreModule,
     SupportTicketModule,
     UploadModule,
+    PushNotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseLoggerService],

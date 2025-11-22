@@ -81,6 +81,22 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   email_preferences_updated_at?: Date;
 
+  // Push notification preferences
+  @Column({ default: true })
+  push_notifications_enabled: boolean;
+
+  @Column({ default: true })
+  push_subscription_enabled: boolean;
+
+  @Column({ default: true })
+  push_engagement_enabled: boolean;
+
+  @Column({ default: true })
+  push_marketing_enabled: boolean;
+
+  @Column({ nullable: true })
+  push_preferences_updated_at?: Date;
+
   @Column({ default: false })
   hasDefaultPassword: boolean;
 

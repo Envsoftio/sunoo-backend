@@ -14,11 +14,21 @@ import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
 import { AudiobookListener } from '../entities/audiobook-listener.entity';
+import { DeviceToken } from '../entities/device-token.entity';
 import { EmailService } from '../email/email.service';
 import { ZeptomailService } from '../email/zeptomail.service';
 import { S3Service } from '../common/services/s3.service';
 import { ContactFormDto } from '../dto/contact.dto';
 import { SanitizationUtil } from '../common/utils/sanitization.util';
+import { PushNotificationService } from '../push-notification/push-notification.service';
+import {
+  SendNotificationDto,
+  ContentNotificationDto,
+  EngagementNotificationDto,
+  EngagementType,
+  NotificationType,
+} from '../dto/push-notification.dto';
+import { In } from 'typeorm';
 
 @Injectable()
 export class AdminService {
@@ -49,9 +59,12 @@ export class AdminService {
     private bookRatingRepository: Repository<BookRating>,
     @InjectRepository(AudiobookListener)
     private audiobookListenerRepository: Repository<AudiobookListener>,
+    @InjectRepository(DeviceToken)
+    private deviceTokenRepository: Repository<DeviceToken>,
     private emailService: EmailService,
     private zeptomailService: ZeptomailService,
-    private s3Service: S3Service
+    private s3Service: S3Service,
+    private pushNotificationService: PushNotificationService
   ) {}
 
   // User Management
@@ -2007,7 +2020,7 @@ export class AdminService {
       }
 
       // Send email using the contact form template
-      const emailSent = await this.emailService.sendContactFormEmail({
+      await this.emailService.sendContactFormEmail({
         name: sanitizedName,
         email: sanitizedEmail,
         message: sanitizedMessage,
@@ -2024,6 +2037,277 @@ export class AdminService {
       return {
         success: true,
         message: 'Thank you for your message. We will get back to you soon!',
+      };
+    }
+  }
+
+  // Push Notification Methods
+  async sendPushNotification(dto: SendNotificationDto) {
+    try {
+      let userIds: string[] = [];
+      let anonymousTokens: string[] = [];
+
+      // Determine target users based on filters
+      if (dto.targetFilters?.allUsers) {
+        // Get all active users
+        const users = await this.userRepository.find({
+          where: { isActive: true },
+          select: ['id'],
+        });
+        userIds = users.map(u => u.id);
+      } else {
+        if (dto.targetFilters?.activeSubscriptions) {
+          const subscriptions = await this.subscriptionRepository.find({
+            where: { status: 'active' },
+            select: ['user_id'],
+          });
+          const subUserIds = subscriptions
+            .map(s => s.user_id)
+            .filter((id): id is string => id !== null && id !== undefined);
+          userIds.push(...subUserIds);
+        }
+
+        if (dto.targetFilters?.withBookmarks) {
+          const bookmarks = await this.bookmarkRepository.find({
+            select: ['userId'],
+          });
+          const bookmarkUserIds = [
+            ...new Set(
+              bookmarks
+                .map(b => b.userId)
+                .filter((id): id is string => id !== null && id !== undefined)
+            ),
+          ];
+          userIds.push(...bookmarkUserIds);
+        }
+
+        if (dto.targetFilters?.withProgress) {
+          const progress = await this.userProgressRepository.find({
+            select: ['userId'],
+          });
+          const progressUserIds = [
+            ...new Set(
+              progress
+                .map(p => p.userId)
+                .filter((id): id is string => id !== null && id !== undefined)
+            ),
+          ];
+          userIds.push(...progressUserIds);
+        }
+
+        if (dto.targetFilters?.userIds) {
+          userIds.push(...dto.targetFilters.userIds);
+        }
+
+        if (dto.targetFilters?.anonymousUsers) {
+          // Get anonymous device tokens - we'll need to add a method to PushNotificationService
+          // For now, we'll handle this in the service method
+          anonymousTokens = []; // Will be handled by sendToAnonymousUsers
+        }
+      }
+
+      // Remove duplicates
+      userIds = [...new Set(userIds)];
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+
+      // Send to authenticated users
+      if (userIds.length > 0) {
+        const result = await this.pushNotificationService.sendToUsers(
+          userIds,
+          dto.title,
+          dto.message,
+          dto.data,
+          dto.type
+        );
+        totalSuccess += result.success;
+        totalFailed += result.failed;
+      }
+
+      // Send to anonymous users (if requested)
+      if (dto.targetFilters?.anonymousUsers) {
+        // Get all anonymous tokens
+        const allTokens = await this.deviceTokenRepository.find({
+          where: { userId: IsNull(), isActive: true },
+        });
+        const anonymousTokenStrings = allTokens.map(dt => dt.token);
+
+        if (anonymousTokenStrings.length > 0) {
+          const result =
+            await this.pushNotificationService.sendToAnonymousUsers(
+              anonymousTokenStrings,
+              dto.title,
+              dto.message,
+              dto.data,
+              dto.type
+            );
+          totalSuccess += result.success;
+          totalFailed += result.failed;
+        }
+      }
+
+      return {
+        success: true,
+        message: `Notification sent to ${totalSuccess} devices`,
+        data: {
+          success: totalSuccess,
+          failed: totalFailed,
+          totalTargeted: userIds.length + anonymousTokens.length,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to send push notification',
+      };
+    }
+  }
+
+  async sendPushToAll(dto: {
+    title: string;
+    message: string;
+    data?: any;
+    type?: NotificationType;
+  }) {
+    try {
+      const result = await this.pushNotificationService.sendToAll(
+        dto.title,
+        dto.message,
+        dto.data,
+        dto.type || NotificationType.CUSTOM
+      );
+
+      return {
+        success: true,
+        message: `Notification broadcast to ${result.success} devices`,
+        data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to broadcast push notification',
+      };
+    }
+  }
+
+  async sendContentNotification(dto: ContentNotificationDto) {
+    try {
+      // Prepare data payload with deep linking information
+      const data = {
+        type: 'new_content',
+        storyId: dto.storyId,
+        ...(dto.chapterId && { chapterId: dto.chapterId }),
+        ...dto.targetFilters,
+      };
+
+      // Use sendPushNotification with NEW_CONTENT type (always sent regardless of preferences)
+      const result = await this.sendPushNotification({
+        title: dto.title,
+        message: dto.message,
+        type: NotificationType.NEW_CONTENT,
+        targetFilters: dto.targetFilters,
+        data,
+      });
+
+      return {
+        success: true,
+        message: 'Content notification sent successfully',
+        data: result.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to send content notification',
+      };
+    }
+  }
+
+  async sendEngagementNotification(dto: EngagementNotificationDto) {
+    try {
+      let userIds: string[] = [];
+
+      // Determine target users based on engagement type
+      if (dto.type === EngagementType.BOOKMARK_REMINDER) {
+        const bookmarks = await this.bookmarkRepository.find({
+          select: ['userId'],
+        });
+        userIds = [
+          ...new Set(
+            bookmarks
+              .map(b => b.userId)
+              .filter((id): id is string => id !== null && id !== undefined)
+          ),
+        ];
+      } else if (dto.type === EngagementType.CONTINUE_LISTENING) {
+        const progress = await this.userProgressRepository.find({
+          where: { progress: In([1, 2, 3, 4, 5, 6, 7, 8, 9]) }, // Progress between 1-90%
+          select: ['userId'],
+        });
+        userIds = [
+          ...new Set(
+            progress
+              .map(p => p.userId)
+              .filter((id): id is string => id !== null && id !== undefined)
+          ),
+        ];
+      }
+
+      // Apply additional filters if provided
+      if (dto.targetFilters) {
+        if (dto.targetFilters.activeSubscriptions) {
+          const subscriptions = await this.subscriptionRepository.find({
+            where: { status: 'active' },
+            select: ['user_id'],
+          });
+          const subUserIds = subscriptions
+            .map(s => s.user_id)
+            .filter((id): id is string => id !== null && id !== undefined);
+          userIds = userIds.filter(id => subUserIds.includes(id));
+        }
+
+        if (dto.targetFilters.userIds && dto.targetFilters.userIds.length > 0) {
+          userIds = userIds.filter(id =>
+            dto.targetFilters!.userIds!.includes(id)
+          );
+        }
+      }
+
+      // Remove duplicates
+      userIds = [...new Set(userIds)];
+
+      const result = await this.pushNotificationService.sendToUsers(
+        userIds,
+        dto.title,
+        dto.message,
+        { type: 'engagement', engagementType: dto.type },
+        NotificationType.ENGAGEMENT
+      );
+
+      return {
+        success: true,
+        message: `Engagement notification sent to ${result.success} devices`,
+        data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to send engagement notification',
+      };
+    }
+  }
+
+  async getPushNotificationStats() {
+    try {
+      const stats = await this.pushNotificationService.getStats();
+      return {
+        success: true,
+        data: stats,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to get push notification statistics',
       };
     }
   }

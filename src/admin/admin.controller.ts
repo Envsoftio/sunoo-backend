@@ -792,4 +792,72 @@ export class AdminController {
 
     return await this.adminService.handleHlsWebhook(body);
   }
+
+  // Push Notification Endpoints
+  @Post('push/send')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send push notification with targeting (SuperAdmin only)',
+  })
+  @ApiResponse({ status: 200, description: 'Notification sent successfully' })
+  async sendPushNotification(@Body() body: any) {
+    return await this.adminService.sendPushNotification(body);
+  }
+
+  @Post('push/send-to-all')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Broadcast push notification to all users (SuperAdmin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification broadcast successfully',
+  })
+  async sendPushToAll(@Body() body: any) {
+    return await this.adminService.sendPushToAll(body);
+  }
+
+  @Post('push/send-content-notification')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send new content notification (SuperAdmin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Content notification sent successfully',
+  })
+  async sendContentNotification(@Body() body: any) {
+    return await this.adminService.sendContentNotification(body);
+  }
+
+  @Post('push/send-engagement-notification')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send engagement notification (SuperAdmin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Engagement notification sent successfully',
+  })
+  async sendEngagementNotification(@Body() body: any) {
+    return await this.adminService.sendEngagementNotification(body);
+  }
+
+  @Get('push/stats')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get push notification statistics (SuperAdmin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics retrieved successfully',
+  })
+  async getPushNotificationStats() {
+    return await this.adminService.getPushNotificationStats();
+  }
 }

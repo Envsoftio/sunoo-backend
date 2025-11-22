@@ -8,6 +8,10 @@
       "name": "Sunoo Frontend",
       "path": "/Users/vishnusharma/Vue/SunooApp",
     },
+    {
+      "name": "Sunoo Mobile App",
+      "path": "/Users/vishnusharma/AndroidStudioProjects/sunoomobile",
+    },
   ],
   "settings": {
     "typescript.preferences.includePackageJsonAutoImports": "on",

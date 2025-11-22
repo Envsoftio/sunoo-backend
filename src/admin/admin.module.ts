@@ -15,8 +15,10 @@ import { UserProgress } from '../entities/user-progress.entity';
 import { Chapter } from '../entities/chapter.entity';
 import { BookRating } from '../entities/book-rating.entity';
 import { AudiobookListener } from '../entities/audiobook-listener.entity';
+import { DeviceToken } from '../entities/device-token.entity';
 import { EmailModule } from '../email/email.module';
 import { AuthModule } from '../auth/auth.module';
+import { PushNotificationModule } from '../push-notification/push-notification.module';
 
 @Module({
   imports: [
@@ -34,9 +36,11 @@ import { AuthModule } from '../auth/auth.module';
       Chapter,
       BookRating,
       AudiobookListener,
+      DeviceToken,
     ]),
     EmailModule,
     AuthModule,
+    PushNotificationModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],
