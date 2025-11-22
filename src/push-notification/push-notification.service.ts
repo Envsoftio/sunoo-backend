@@ -71,7 +71,10 @@ export class PushNotificationService {
 
       if (deviceToken) {
         // Update existing token
-        deviceToken.userId = userId || deviceToken.userId;
+        // If userId is provided, update it (even if it was null before)
+        if (userId !== undefined) {
+          deviceToken.userId = userId;
+        }
         deviceToken.platform = platform;
         deviceToken.deviceId = deviceId || deviceToken.deviceId;
         deviceToken.deviceInfo = deviceInfo || deviceToken.deviceInfo;
