@@ -185,6 +185,11 @@ jobs:
 
           # Webhook Authentication
           WEBHOOK_AUTH_TOKEN=${{ secrets.PROD_WEBHOOK_AUTH_TOKEN }}
+
+          # Firebase Configuration
+          FIREBASE_PROJECT_ID=${{ secrets.PROD_FIREBASE_PROJECT_ID }}
+          FIREBASE_PRIVATE_KEY="${{ secrets.PROD_FIREBASE_PRIVATE_KEY }}"
+          FIREBASE_CLIENT_EMAIL=${{ secrets.PROD_FIREBASE_CLIENT_EMAIL }}
           EOF
 
       - name: Create deployment directory

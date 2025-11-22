@@ -184,6 +184,11 @@ jobs:
           RAZORPAY_KEY_ID: ${{ secrets.STAGING_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET: ${{ secrets.STAGING_RAZORPAY_SECRET }}
 
+          # Firebase Configuration
+          FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.STAGING_FIREBASE_CLIENT_EMAIL }}
+
       - name: Create staging environment file
         run: |
           cat > .env.staging << EOF
@@ -253,6 +258,11 @@ jobs:
 
           # Webhook Authentication
           WEBHOOK_AUTH_TOKEN=${{ secrets.STAGING_WEBHOOK_AUTH_TOKEN }}
+
+          # Firebase Configuration
+          FIREBASE_PROJECT_ID=${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
+          FIREBASE_PRIVATE_KEY="${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}"
+          FIREBASE_CLIENT_EMAIL=${{ secrets.STAGING_FIREBASE_CLIENT_EMAIL }}
           EOF
 
       - name: Create deployment directory
