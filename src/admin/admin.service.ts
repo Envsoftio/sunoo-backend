@@ -2049,12 +2049,20 @@ export class AdminService {
 
       // Determine target users based on filters
       if (dto.targetFilters?.allUsers) {
-        // Get all active users
-        const users = await this.userRepository.find({
-          where: { isActive: true },
-          select: ['id'],
-        });
-        userIds = users.map(u => u.id);
+        // Get all active users with device tokens
+        const usersWithTokens = await this.deviceTokenRepository
+          .createQueryBuilder('dt')
+          .innerJoin('dt.user', 'user')
+          .where('user.isActive = :isActive', { isActive: true })
+          .andWhere('dt.isActive = :tokenActive', { tokenActive: true })
+          .andWhere('dt.userId IS NOT NULL')
+          .select('DISTINCT dt.userId', 'userId')
+          .getRawMany();
+        userIds = usersWithTokens
+          .map(u => u.userId)
+          .filter((id): id is string => id !== null && id !== undefined);
+
+        // Anonymous users will be handled separately below when allUsers is selected
       } else {
         if (dto.targetFilters?.activeSubscriptions) {
           const subscriptions = await this.subscriptionRepository.find({
@@ -2125,8 +2133,8 @@ export class AdminService {
         totalFailed += result.failed;
       }
 
-      // Send to anonymous users (if requested)
-      if (dto.targetFilters?.anonymousUsers) {
+      // Send to anonymous users (if requested OR if allUsers is selected)
+      if (dto.targetFilters?.anonymousUsers || dto.targetFilters?.allUsers) {
         // Get all anonymous tokens
         const allTokens = await this.deviceTokenRepository.find({
           where: { userId: IsNull(), isActive: true },
@@ -2193,10 +2201,23 @@ export class AdminService {
 
   async sendContentNotification(dto: ContentNotificationDto) {
     try {
+      // Look up story by slug to get the story ID for deep linking
+      const story = await this.bookRepository.findOne({
+        where: { slug: dto.storySlug, isPublished: true },
+        select: ['id'],
+      });
+
+      if (!story) {
+        return {
+          success: false,
+          message: `Story with slug "${dto.storySlug}" not found or not published`,
+        };
+      }
+
       // Prepare data payload with deep linking information
       const data = {
         type: 'new_content',
-        storyId: dto.storyId,
+        storyId: story.id,
         ...(dto.chapterId && { chapterId: dto.chapterId }),
         ...dto.targetFilters,
       };
@@ -2308,6 +2329,89 @@ export class AdminService {
       return {
         success: false,
         message: error.message || 'Failed to get push notification statistics',
+      };
+    }
+  }
+
+  async getTargetAudienceCounts() {
+    try {
+      // All Users: Count distinct users with active device tokens + anonymous tokens
+      const allUsersWithTokens = await this.deviceTokenRepository
+        .createQueryBuilder('dt')
+        .innerJoin('dt.user', 'user')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere('dt.isActive = :tokenActive', { tokenActive: true })
+        .andWhere('dt.userId IS NOT NULL')
+        .select('COUNT(DISTINCT dt.userId)', 'count')
+        .getRawOne();
+
+      const anonymousTokensCount = await this.deviceTokenRepository.count({
+        where: { userId: IsNull(), isActive: true },
+      });
+
+      const allUsersCount =
+        parseInt(allUsersWithTokens?.count || '0', 10) + anonymousTokensCount;
+
+      // Users with Active Subscriptions (with device tokens)
+      const activeSubsWithTokens = await this.deviceTokenRepository
+        .createQueryBuilder('dt')
+        .innerJoin('dt.user', 'user')
+        .innerJoin(Subscription, 'sub', 'sub.user_id = dt.userId')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere('dt.isActive = :tokenActive', { tokenActive: true })
+        .andWhere('dt.userId IS NOT NULL')
+        .andWhere('sub.status = :status', { status: 'active' })
+        .select('COUNT(DISTINCT dt.userId)', 'count')
+        .getRawOne();
+      const activeSubscriptionsCount = parseInt(
+        activeSubsWithTokens?.count || '0',
+        10
+      );
+
+      // Users with Bookmarks (with device tokens)
+      const bookmarksWithTokens = await this.deviceTokenRepository
+        .createQueryBuilder('dt')
+        .innerJoin('dt.user', 'user')
+        .innerJoin(Bookmark, 'bm', 'bm.userId = dt.userId')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere('dt.isActive = :tokenActive', { tokenActive: true })
+        .andWhere('dt.userId IS NOT NULL')
+        .select('COUNT(DISTINCT dt.userId)', 'count')
+        .getRawOne();
+      const withBookmarksCount = parseInt(
+        bookmarksWithTokens?.count || '0',
+        10
+      );
+
+      // Users with Story Progress (with device tokens)
+      const progressWithTokens = await this.deviceTokenRepository
+        .createQueryBuilder('dt')
+        .innerJoin('dt.user', 'user')
+        .innerJoin(UserProgress, 'up', 'up.userId = dt.userId')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere('dt.isActive = :tokenActive', { tokenActive: true })
+        .andWhere('dt.userId IS NOT NULL')
+        .select('COUNT(DISTINCT dt.userId)', 'count')
+        .getRawOne();
+      const withProgressCount = parseInt(progressWithTokens?.count || '0', 10);
+
+      // Anonymous Users (device tokens without userId)
+      const anonymousUsersCount = anonymousTokensCount;
+
+      return {
+        success: true,
+        data: {
+          allUsers: allUsersCount,
+          activeSubscriptions: activeSubscriptionsCount,
+          withBookmarks: withBookmarksCount,
+          withProgress: withProgressCount,
+          anonymousUsers: anonymousUsersCount,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to get target audience counts',
       };
     }
   }

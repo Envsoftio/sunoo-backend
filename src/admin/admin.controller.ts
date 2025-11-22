@@ -860,4 +860,18 @@ export class AdminController {
   async getPushNotificationStats() {
     return await this.adminService.getPushNotificationStats();
   }
+
+  @Get('push/target-audience-counts')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get target audience counts (users with device tokens only) (SuperAdmin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Target audience counts retrieved successfully',
+  })
+  async getTargetAudienceCounts() {
+    return await this.adminService.getTargetAudienceCounts();
+  }
 }

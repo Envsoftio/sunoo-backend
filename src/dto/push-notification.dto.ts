@@ -158,9 +158,9 @@ export class SendNotificationDto {
 }
 
 export class ContentNotificationDto {
-  @ApiProperty({ description: 'Story ID (required for deep linking)' })
-  @IsUUID()
-  storyId: string;
+  @ApiProperty({ description: 'Story slug (used to lookup story for deep linking)' })
+  @IsString()
+  storySlug: string;
 
   @ApiProperty({
     required: false,
