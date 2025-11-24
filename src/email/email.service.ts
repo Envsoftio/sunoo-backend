@@ -309,6 +309,37 @@ export class EmailService {
     });
   }
 
+  async sendNewStoryAddedEmail(
+    userEmail: string,
+    userName: string,
+    storyData: {
+      bookTitle: string;
+      bookLanguage?: string;
+      bookCategory?: string;
+      bookDescription?: string;
+      bookLink: string;
+    }
+  ): Promise<boolean> {
+    const template = this.loadTemplate('new-story-added');
+    const data = {
+      username: userName,
+      bookTitle: storyData.bookTitle,
+      bookLanguage: storyData.bookLanguage,
+      bookCategory: storyData.bookCategory,
+      bookDescription: storyData.bookDescription,
+      bookLink: storyData.bookLink,
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: userEmail,
+      subject: `A New Story Awaits You - ${storyData.bookTitle} - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

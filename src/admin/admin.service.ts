@@ -1664,7 +1664,74 @@ export class AdminService {
 
   async sendEmail(user: any, templateKey: string, dynamicFields: any) {
     try {
-      // Use Zeptomail service to send email with template
+      // Check if this is a new story added email - use our own template instead of Zepto
+      const isNewStoryEmail =
+        (templateKey &&
+          templateKey.toLowerCase().includes('new') &&
+          templateKey.toLowerCase().includes('story')) ||
+        dynamicFields?.bookTitle ||
+        dynamicFields?.book_title;
+
+      if (isNewStoryEmail) {
+        // Build book link - try multiple possible field names
+        let bookLink = dynamicFields?.bookLink || dynamicFields?.book_link;
+        if (!bookLink) {
+          const bookSlug =
+            dynamicFields?.bookSlug ||
+            dynamicFields?.book_slug ||
+            dynamicFields?.slug;
+          if (bookSlug) {
+            bookLink = `https://sunoo.app/story/${bookSlug}`;
+          } else {
+            bookLink = 'https://sunoo.app';
+          }
+        }
+
+        // Use our own email service for new story emails
+        const emailSent = await this.emailService.sendNewStoryAddedEmail(
+          user.email,
+          user.name || user.email,
+          {
+            bookTitle:
+              dynamicFields?.bookTitle ||
+              dynamicFields?.book_title ||
+              'New Story',
+            bookLanguage:
+              dynamicFields?.bookLanguage ||
+              dynamicFields?.book_language ||
+              dynamicFields?.language,
+            bookCategory:
+              dynamicFields?.bookCategory ||
+              dynamicFields?.book_category ||
+              dynamicFields?.category,
+            bookDescription:
+              dynamicFields?.bookDescription ||
+              dynamicFields?.book_description ||
+              dynamicFields?.description,
+            bookLink: bookLink,
+          }
+        );
+
+        if (emailSent) {
+          return {
+            success: true,
+            message: 'Email sent successfully',
+            data: {
+              recipient: user.email,
+              template: 'new-story-added',
+              sentAt: new Date().toISOString(),
+            },
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Failed to send email',
+            error: 'Email service returned false',
+          };
+        }
+      }
+
+      // For other emails, continue using Zeptomail service
       const emailSent = await this.zeptomailService.sendEmailWithTemplate({
         to: user.email,
         templateKey: templateKey,
