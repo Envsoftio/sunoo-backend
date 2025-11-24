@@ -1664,13 +1664,85 @@ export class AdminService {
 
   async sendEmail(user: any, templateKey: string, dynamicFields: any) {
     try {
+      // Check if this is a new chapter added email FIRST (more specific) - use our own template instead of Zepto
+      const isNewChapterEmail =
+        (templateKey && templateKey.toLowerCase().includes('chapter')) ||
+        dynamicFields?.chapterTitle ||
+        dynamicFields?.chapter_title;
+
+      if (
+        isNewChapterEmail &&
+        (dynamicFields?.chapterTitle || dynamicFields?.chapter_title)
+      ) {
+        // Build book link - try multiple possible field names
+        let bookLink = dynamicFields?.bookLink || dynamicFields?.book_link;
+        if (!bookLink) {
+          const bookSlug =
+            dynamicFields?.bookSlug ||
+            dynamicFields?.book_slug ||
+            dynamicFields?.slug;
+          if (bookSlug) {
+            bookLink = `https://sunoo.app/story/${bookSlug}`;
+          } else {
+            bookLink = 'https://sunoo.app';
+          }
+        }
+
+        // Use our own email service for new chapter emails
+        const emailSent = await this.emailService.sendNewChapterAddedEmail(
+          user.email,
+          user.name || user.email,
+          {
+            chapterTitle:
+              dynamicFields?.chapterTitle ||
+              dynamicFields?.chapter_title ||
+              'New Chapter',
+            bookTitle:
+              (dynamicFields?.bookTitle && dynamicFields.bookTitle.trim()) ||
+              (dynamicFields?.book_title && dynamicFields.book_title.trim()) ||
+              (dynamicFields?.seriesTitle &&
+                dynamicFields.seriesTitle.trim()) ||
+              (dynamicFields?.series_title &&
+                dynamicFields.series_title.trim()) ||
+              undefined,
+            chapterDuration:
+              dynamicFields?.chapterDuration ||
+              dynamicFields?.chapter_duration ||
+              dynamicFields?.duration ||
+              'N/A',
+            bookLink: bookLink,
+          }
+        );
+
+        if (emailSent) {
+          return {
+            success: true,
+            message: 'Email sent successfully',
+            data: {
+              recipient: user.email,
+              template: 'new-chapter-added',
+              sentAt: new Date().toISOString(),
+            },
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Failed to send email',
+            error: 'Email service returned false',
+          };
+        }
+      }
+
       // Check if this is a new story added email - use our own template instead of Zepto
+      // Only match if NOT a chapter email (check for chapterTitle absence)
       const isNewStoryEmail =
         (templateKey &&
           templateKey.toLowerCase().includes('new') &&
-          templateKey.toLowerCase().includes('story')) ||
-        dynamicFields?.bookTitle ||
-        dynamicFields?.book_title;
+          templateKey.toLowerCase().includes('story') &&
+          !templateKey.toLowerCase().includes('chapter')) ||
+        ((dynamicFields?.bookTitle || dynamicFields?.book_title) &&
+          !dynamicFields?.chapterTitle &&
+          !dynamicFields?.chapter_title);
 
       if (isNewStoryEmail) {
         // Build book link - try multiple possible field names

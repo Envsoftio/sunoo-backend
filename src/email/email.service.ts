@@ -363,6 +363,41 @@ export class EmailService {
     });
   }
 
+  async sendNewChapterAddedEmail(
+    userEmail: string,
+    userName: string,
+    chapterData: {
+      chapterTitle: string;
+      bookTitle?: string;
+      chapterDuration: string;
+      bookLink: string;
+    }
+  ): Promise<boolean> {
+    const template = this.loadTemplate('new-chapter-added');
+    const data = {
+      username: userName,
+      chapterTitle: chapterData.chapterTitle,
+      bookTitle: chapterData.bookTitle,
+      chapterDuration: chapterData.chapterDuration,
+      bookLink: chapterData.bookLink,
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+    };
+
+    const html = template(data);
+    // Include bookTitle in subject if it exists and is not empty
+    const hasBookTitle =
+      chapterData.bookTitle && chapterData.bookTitle.trim().length > 0;
+    const subject = hasBookTitle
+      ? `A New Chapter Has Just Arrived - ${chapterData.bookTitle}: ${chapterData.chapterTitle} - ${this.emailConfig.templates.appName}`
+      : `A New Chapter Has Just Arrived - ${chapterData.chapterTitle} - ${this.emailConfig.templates.appName}`;
+    return this.sendEmail({
+      to: userEmail,
+      subject,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

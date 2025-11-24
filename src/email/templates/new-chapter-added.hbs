@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Chapter Released</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f6f2fa;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    .wrapper {
+      display: flex;
+      justify-content: center;
+      background: #F6F2FA;
+    }
+    .card {
+      max-width: 600px;
+      width: 100%;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card-topbar {
+      height: 8px;
+      background: linear-gradient(90deg,#FF8A00 0%, #FF3D81 50%, #6F49FF 100%);
+    }
+    .logo {
+      text-align: center;
+      padding: 32px 24px 30px;
+    }
+    .logo img {
+      max-width: 160px;
+      height: auto;
+    }
+    .content {
+      padding: 0 20px 20px;
+      text-align: left;
+    }
+    .content h1 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .content ul li {
+        margin-bottom: 5px;
+    }
+    .content h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #C026D3;
+    }
+    .content p {
+      margin: 0 0 18px;
+      font-size: 15px;
+      line-height: 26px;
+      color: #374151;
+    }
+   .story-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #fbf7ff;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 5px solid #d240a8;
+      position: relative;
+    }
+    .story-card p{
+        margin: 0;
+        font-size: 15px;
+    }
+    .story-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111;
+      margin: 0;
+      margin-bottom: 5px;
+    }
+    .story-lang {
+      font-size: 14px;
+      color: #4a5568;
+      margin-top: 4px;
+    }
+    ul {
+      padding-left: 18px;
+      margin: 0 0 20px;
+      color: #374151;
+      font-size: 15px;
+    }
+    .cta {
+      text-align: center;
+      padding: 10px 0 40px;
+      margin-top: 10px;
+    }
+    .cta a {
+      display: inline-block;
+      padding: 14px 40px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 999px;
+      background: linear-gradient(90deg,#FF8A00,#FF3D81,#6F49FF);
+    }
+    .footer {
+      background: #F5F6F8;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      padding: 50px 30px 70px 30px;
+      text-align: center;
+    }
+    .footer p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 24px;
+      color: #374151;
+    }
+    .socials {
+      display: flex;
+      justify-content: center;
+      margin: 14px 0;
+      gap: 12px;
+    }
+    .socials a {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2px solid #C026D3;
+        margin-right: 5px;
+    }
+    .socials a img {
+        margin: auto;
+        padding: 10px 6px;
+    }
+    .footer .small {
+      font-size: 13px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+    .heart{
+        color: #C026D3;
+    }
+    @media(max-width:600px) {
+      .footer{padding: 30px 10px 40px 10px!important;}
+      .content { padding: 0 10px 0 10px!important;}
+      .content h1 { font-size: 16px!important;}
+      .content h2 { font-size: 18px!important;}
+      .cta a { padding: 12px 24px; font-size: 14px!important;}
+    }
+  </style>
+ </head>
+ <body>
+  <div class="wrapper">
+   <div class="card">
+    <div class="card-topbar">
+     <br>
+    </div>
+    <div class="logo" style="text-align: center;">
+     <img src="https://sunoo.app/images/sunoo-logo-black.png" alt="Sunoo" style="max-width: 160px; height: auto;">
+     <br>
+    </div>
+    <div class="content">
+     <h1>Hi, {{username}}<br></h1>
+     <h2>A New Chapter Has Just Arrived!<br></h2>
+     <p>Continue the journey with the latest chapter from your favorite book, now live on Sunoo.</p>
+
+     <div class="story-card">
+      {{#if bookTitle}}
+      <p style="font-size: 15px; color: #C026D3; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">{{bookTitle}}</p>
+      {{/if}}
+      <h3 class="story-title">{{chapterTitle}}<br></h3>
+      <p class="story-lang">Released: Today | Duration: {{chapterDuration}}</p>
+     </div>
+
+     <p>Don't miss what unfolds next. Tune in to the latest episode and let the story speak to you.</p>
+
+     <ul>
+      <li>Fresh narration, full of life<br></li>
+      <li>Deeper emotions and twists<br></li>
+      <li>Perfect for any time of the day<br></li>
+     </ul>
+
+     <div>
+      <p>Happy listening!</p>
+     </div>
+
+     <div class="cta">
+      <a href="{{bookLink}}">Listen Now</a>
+      <br>
+     </div>
+    </div>
+    <div class="footer" style="background: #F5F6F8; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;text-align: center;">
+     <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+     <div class="socials">
+      <a href="https://www.instagram.com/sunooapp/" target="_blank"><img src="https://sunoo.app/email-template/instagram.png" alt="Instagram"> </a> <a href="https://www.youtube.com/@sunooapp" target="_blank"> <img src="https://sunoo.app/email-template/youtube.png" alt="YouTube"> </a> <a href="https://www.facebook.com/people/Sunoo-App/61576276623770/" target="_blank"> <img src="https://sunoo.app/email-template/facebook.png" alt="Facebook"> </a> <a href="https://www.linkedin.com/company/sunoo-app" target="_blank"> <img src="https://sunoo.app/email-template/linkedin.png" alt="LinkedIn"> </a> <a href="https://x.com/SunooApp" target="_blank"> <img src="https://sunoo.app/email-template/twitter-x.png/" alt="X"> </a>
+     </div>
+     <p class="small">© 2025 Sunoo.app <span class="highlight"><b>💜</b></span> All rights reserved.</p>
+     <p>Visit <a href="https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer" target="_blank" style="text-decoration: none;"><span class="colour" style="color:#9933ff"><b>Sunoo</b></span></a> Today</p>
+    </div>
+   </div>
+  </div>
+  <div>
+   <br>
+  </div>
+ </body>
+</html>
+
