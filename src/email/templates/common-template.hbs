@@ -1,0 +1,185 @@
+<html lang='en'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <title>{{subject}}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f6f2fa;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+      }
+      .wrapper {
+        display: flex;
+        justify-content: center;
+        background: #f6f2fa;
+      }
+      .card {
+        max-width: 600px;
+        width: 100%;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .card-topbar {
+        height: 8px;
+        background: linear-gradient(
+          90deg,
+          #ff8a00 0%,
+          #ff3d81 50%,
+          #6f49ff 100%
+        );
+      }
+      .logo {
+        text-align: center;
+        padding: 32px 24px 30px;
+      }
+      .logo img {
+        max-width: 160px;
+        height: auto;
+      }
+      .content {
+        padding: 0 20px 20px;
+        text-align: left;
+      }
+      .content p {
+        margin: 0 0 18px;
+        font-size: 15px;
+        line-height: 26px;
+        color: #374151;
+      }
+      .content-content {
+        width: 100%;
+        font-size: 15px;
+        line-height: 26px;
+        color: #374151;
+      }
+      .footer {
+        background: #f5f6f8;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        padding: 50px 30px 70px 30px;
+        text-align: center;
+      }
+      .footer p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 24px;
+        color: #374151;
+      }
+      .socials {
+        display: flex;
+        justify-content: center;
+        margin: 14px 0;
+        gap: 12px;
+      }
+      .socials a {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 2px solid #c026d3;
+        margin-right: 5px;
+      }
+      .socials a img {
+        margin: auto;
+        padding: 10px 6px;
+      }
+      .footer .small {
+        font-size: 13px;
+        margin-top: 16px;
+        margin-bottom: 6px;
+      }
+      .heart {
+        color: #c026d3;
+      }
+      @media (max-width: 600px) {
+        .footer {
+          padding: 30px 10px 40px 10px !important;
+        }
+        .content {
+          padding: 0 10px 0 10px !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class='wrapper'>
+      <div class='card'>
+        <div class='card-topbar'></div>
+        <div class='logo'>
+          <img
+            src='https://sunoo.app/images/sunoo-logo-black.png'
+            alt='Sunoo'
+          />
+        </div>
+        <div class='content'>
+          <p><span class='colour' style='color:rgb(85, 85, 85)'><span
+                class='size'
+                style='font-size:16px'
+              >Hi <b>{{username}}</b>,</span></span><br /></p>
+          <div class='content-content'>
+            {{{content}}}
+          </div>
+        </div>
+        <div class='footer'>
+          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+          <div class='socials'>
+            <a href='https://www.instagram.com/sunooapp/' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/instagram.png'
+                alt='Instagram'
+              />
+            </a>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/youtube.png'
+                alt='YouTube'
+              />
+            </a>
+            <a
+              href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
+              target='_blank'
+            >
+              <img
+                src='https://sunoo.app/email-template/facebook.png'
+                alt='Facebook'
+              />
+            </a>
+            <a
+              href='https://www.linkedin.com/company/sunoo-app'
+              target='_blank'
+            >
+              <img
+                src='https://sunoo.app/email-template/linkedin.png'
+                alt='LinkedIn'
+              />
+            </a>
+            <a href='https://x.com/SunooApp' target='_blank'>
+              <img
+                src='https://sunoo.app/email-template/twitter-x.png/'
+                alt='X'
+              />
+            </a>
+          </div>
+          <p class='small'>© 2025 Sunoo.app
+            <span class='highlight'><b>💜</b></span>
+            All rights reserved.</p>
+          <p>Visit
+            <a
+              href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
+              target='_blank'
+              style='text-decoration: none;'
+            ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
+            Today</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

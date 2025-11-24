@@ -340,6 +340,29 @@ export class EmailService {
     });
   }
 
+  async sendCommonTemplateEmail(
+    userEmail: string,
+    userName: string,
+    content: string,
+    subject?: string
+  ): Promise<boolean> {
+    const template = this.loadTemplate('common-template');
+    const data = {
+      username: userName,
+      content: content, // HTML content - will be rendered with triple braces
+      subject: subject || `${this.emailConfig.templates.appName} Update`,
+      appName: this.emailConfig.templates.appName,
+      appUrl: this.emailConfig.templates.appUrl,
+    };
+
+    const html = template(data);
+    return this.sendEmail({
+      to: userEmail,
+      subject: subject || `${this.emailConfig.templates.appName} Update`,
+      html,
+    });
+  }
+
   private loadTemplate(templateName: string): HandlebarsTemplateDelegate {
     const templatePath = path.join(
       process.cwd(),

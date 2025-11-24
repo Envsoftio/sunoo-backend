@@ -1731,6 +1731,41 @@ export class AdminService {
         }
       }
 
+      // Check if this is a common template email - use our own template instead of Zepto
+      const isCommonTemplate =
+        (templateKey &&
+          (templateKey.toLowerCase().includes('common') ||
+            templateKey.toLowerCase().includes('template'))) ||
+        dynamicFields?.content;
+
+      if (isCommonTemplate && dynamicFields?.content) {
+        // Use our own email service for common template emails
+        const emailSent = await this.emailService.sendCommonTemplateEmail(
+          user.email,
+          user.name || user.email,
+          dynamicFields.content,
+          dynamicFields?.subject
+        );
+
+        if (emailSent) {
+          return {
+            success: true,
+            message: 'Email sent successfully',
+            data: {
+              recipient: user.email,
+              template: 'common-template',
+              sentAt: new Date().toISOString(),
+            },
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Failed to send email',
+            error: 'Email service returned false',
+          };
+        }
+      }
+
       // For other emails, continue using Zeptomail service
       const emailSent = await this.zeptomailService.sendEmailWithTemplate({
         to: user.email,
