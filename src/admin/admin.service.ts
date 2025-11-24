@@ -2415,4 +2415,32 @@ export class AdminService {
       };
     }
   }
+
+  async cleanupDeviceTokens() {
+    try {
+      const [inactiveCount, unusedCount, orphanedCount] = await Promise.all([
+        this.pushNotificationService.cleanupInactiveTokens(),
+        this.pushNotificationService.cleanupUnusedTokens(),
+        this.pushNotificationService.cleanupOrphanedTokens(),
+      ]);
+
+      const totalCleaned = inactiveCount + unusedCount + orphanedCount;
+
+      return {
+        success: true,
+        message: `Token cleanup completed: ${totalCleaned} tokens cleaned`,
+        data: {
+          inactiveTokensRemoved: inactiveCount,
+          unusedTokensDeactivated: unusedCount,
+          orphanedTokensRemoved: orphanedCount,
+          totalCleaned,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to cleanup device tokens',
+      };
+    }
+  }
 }

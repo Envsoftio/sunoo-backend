@@ -865,7 +865,8 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get target audience counts (users with device tokens only) (SuperAdmin only)',
+    summary:
+      'Get target audience counts (users with device tokens only) (SuperAdmin only)',
   })
   @ApiResponse({
     status: 200,
@@ -873,5 +874,19 @@ export class AdminController {
   })
   async getTargetAudienceCounts() {
     return await this.adminService.getTargetAudienceCounts();
+  }
+
+  @Post('push/cleanup-tokens')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Manually trigger device token cleanup (SuperAdmin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token cleanup completed successfully',
+  })
+  async cleanupDeviceTokens() {
+    return await this.adminService.cleanupDeviceTokens();
   }
 }

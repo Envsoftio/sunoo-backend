@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not, IsNull } from 'typeorm';
+import { Repository, In, Not, IsNull, LessThan } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { Cron } from '@nestjs/schedule';
 import * as admin from 'firebase-admin';
 import { DeviceToken, Platform } from '../entities/device-token.entity';
 import { User } from '../entities/user.entity';
@@ -503,5 +504,129 @@ export class PushNotificationService {
       authenticated,
       anonymous,
     };
+  }
+
+  /**
+   * Cleanup inactive device tokens (tokens marked as inactive)
+   * This removes tokens from devices where the app was uninstalled
+   * Note: Removes all inactive tokens immediately (no 90-day delay)
+   */
+  async cleanupInactiveTokens(): Promise<number> {
+    try {
+      const result = await this.deviceTokenRepository
+        .createQueryBuilder()
+        .delete()
+        .where('isActive = :isActive', { isActive: false })
+        .execute();
+
+      const deletedCount = result.affected || 0;
+      if (deletedCount > 0) {
+        this.logger.log(
+          `Cleaned up ${deletedCount} inactive device tokens (uninstalled apps)`
+        );
+      }
+      return deletedCount;
+    } catch (error) {
+      this.logger.error(
+        `Error cleaning up inactive tokens: ${error.message}`,
+        error.stack
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Mark tokens as inactive if they haven't been used in 180 days
+   * These are likely from devices where the app is no longer being used
+   */
+  async cleanupUnusedTokens(): Promise<number> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 180); // 180 days ago
+
+      const result = await this.deviceTokenRepository.update(
+        {
+          isActive: true,
+          lastUsedAt: LessThan(cutoffDate),
+        },
+        { isActive: false }
+      );
+
+      const updatedCount = result.affected || 0;
+      if (updatedCount > 0) {
+        this.logger.log(
+          `Marked ${updatedCount} unused device tokens as inactive (not used in 180+ days)`
+        );
+      }
+      return updatedCount;
+    } catch (error) {
+      this.logger.error(
+        `Error cleaning up unused tokens: ${error.message}`,
+        error.stack
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Cleanup tokens for deleted users
+   * Removes device tokens associated with users that no longer exist
+   */
+  async cleanupOrphanedTokens(): Promise<number> {
+    try {
+      // Find tokens with userId that don't have a corresponding user
+      const orphanedTokens = await this.deviceTokenRepository
+        .createQueryBuilder('dt')
+        .leftJoin('dt.user', 'user')
+        .where('dt.userId IS NOT NULL')
+        .andWhere('user.id IS NULL')
+        .getMany();
+
+      if (orphanedTokens.length > 0) {
+        const tokenIds = orphanedTokens.map(t => t.id);
+        await this.deviceTokenRepository.delete(tokenIds);
+        this.logger.log(
+          `Cleaned up ${orphanedTokens.length} orphaned device tokens (deleted users)`
+        );
+        return orphanedTokens.length;
+      }
+      return 0;
+    } catch (error) {
+      this.logger.error(
+        `Error cleaning up orphaned tokens: ${error.message}`,
+        error.stack
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Scheduled job: Cleanup device tokens daily at 2 AM
+   * Removes tokens from uninstalled apps, unused tokens, and orphaned tokens
+   */
+  @Cron('0 2 * * *', {
+    name: 'device-token-cleanup',
+    timeZone: 'UTC',
+  })
+  async handleTokenCleanup() {
+    this.logger.log('Starting scheduled device token cleanup...');
+
+    try {
+      const [inactiveCount, unusedCount, orphanedCount] = await Promise.all([
+        this.cleanupInactiveTokens(),
+        this.cleanupUnusedTokens(),
+        this.cleanupOrphanedTokens(),
+      ]);
+
+      const totalCleaned = inactiveCount + unusedCount + orphanedCount;
+      this.logger.log(
+        `Device token cleanup completed: ${totalCleaned} tokens cleaned (${inactiveCount} inactive, ${unusedCount} unused, ${orphanedCount} orphaned)`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error in scheduled token cleanup: ${error.message}`,
+        error.stack
+      );
+    }
   }
 }
