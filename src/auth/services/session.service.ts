@@ -56,9 +56,13 @@ export class SessionService {
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Generate access token
+    const accessTokenExpiry =
+      this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
+      this.configService.get('security')?.jwt?.accessTokenExpiry ||
+      '24h';
     const accessToken = this.jwtService.sign(
       { sub: data.userId, email: user.email, role: user.role },
-      { expiresIn: '15m' }
+      { expiresIn: accessTokenExpiry }
     );
 
     // Create session record
@@ -114,13 +118,17 @@ export class SessionService {
     }
 
     // Generate new access token
+    const accessTokenExpiry =
+      this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
+      this.configService.get('security')?.jwt?.accessTokenExpiry ||
+      '24h';
     const newAccessToken = this.jwtService.sign(
       {
         sub: session.userId,
         email: session.user.email,
         role: session.user.role,
       },
-      { expiresIn: '15m' }
+      { expiresIn: accessTokenExpiry }
     );
 
     // Update session

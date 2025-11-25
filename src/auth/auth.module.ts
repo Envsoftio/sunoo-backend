@@ -49,7 +49,7 @@ import { CountryDetectionService } from '../common/services/country-detection.se
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
             expiresIn:
-              configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m',
+              configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '24h',
             issuer: configService.get<string>('JWT_ISSUER'),
             audience: configService.get<string>('JWT_AUDIENCE'),
             algorithm: (configService.get<string>('JWT_ALGORITHM') ||

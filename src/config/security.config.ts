@@ -21,7 +21,7 @@ export default registerAs('security', () => ({
   // JWT settings
   jwt: {
     secret: process.env.JWT_SECRET,
-    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRES_IN || '15m', // 15 minutes
+    accessTokenExpiry: process.env.JWT_ACCESS_EXPIRES_IN || '24h', // 24 hours
     refreshTokenExpiry: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
     issuer: process.env.JWT_ISSUER || 'sunoo-backend',
     audience: process.env.JWT_AUDIENCE || 'sunoo-app',
