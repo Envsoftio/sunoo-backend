@@ -183,6 +183,10 @@ jobs:
           RAZORPAY_KEY_ID=${{ secrets.PROD_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET=${{ secrets.PROD_RAZORPAY_SECRET }}
 
+          # RevenueCat Configuration
+          REVENUECAT_WEBHOOK_SECRET=${{ secrets.PROD_REVENUECAT_WEBHOOK_SECRET }}
+          REVENUECAT_API_KEY=${{ secrets.PROD_REVENUECAT_API_KEY }}
+
           # Webhook Authentication
           WEBHOOK_AUTH_TOKEN=${{ secrets.PROD_WEBHOOK_AUTH_TOKEN }}
 

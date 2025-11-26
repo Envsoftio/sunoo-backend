@@ -184,6 +184,10 @@ jobs:
           RAZORPAY_KEY_ID: ${{ secrets.STAGING_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET: ${{ secrets.STAGING_RAZORPAY_SECRET }}
 
+          # RevenueCat Configuration
+          REVENUECAT_WEBHOOK_SECRET: ${{ secrets.STAGING_REVENUECAT_WEBHOOK_SECRET }}
+          REVENUECAT_API_KEY: ${{ secrets.STAGING_REVENUECAT_API_KEY }}
+
           # Firebase Configuration
           FIREBASE_PROJECT_ID: ${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}
@@ -255,6 +259,10 @@ jobs:
           # Payment Gateway
           RAZORPAY_KEY_ID=${{ secrets.STAGING_RAZORPAY_KEY_ID }}
           RAZORPAY_SECRET=${{ secrets.STAGING_RAZORPAY_SECRET }}
+
+          # RevenueCat Configuration
+          REVENUECAT_WEBHOOK_SECRET=${{ secrets.STAGING_REVENUECAT_WEBHOOK_SECRET }}
+          REVENUECAT_API_KEY=${{ secrets.STAGING_REVENUECAT_API_KEY }}
 
           # Webhook Authentication
           WEBHOOK_AUTH_TOKEN=${{ secrets.STAGING_WEBHOOK_AUTH_TOKEN }}

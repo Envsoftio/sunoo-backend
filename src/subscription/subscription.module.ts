@@ -4,8 +4,10 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SubscriptionService } from './subscription.service';
 import { SubscriptionController } from './subscription.controller';
 import { WebhookController } from './webhook.controller';
+import { RevenueCatWebhookController } from './revenuecat-webhook.controller';
 import { SseController } from './sse.controller';
 import { RazorpayService } from './razorpay.service';
+import { RevenueCatService } from './revenuecat.service';
 import { PaymentService } from './payment.service';
 import { NotificationService } from './notification.service';
 import { LoggerService } from '../common/logger/logger.service';
@@ -23,14 +25,21 @@ import { EmailModule } from '../email/email.module';
   providers: [
     SubscriptionService,
     RazorpayService,
+    RevenueCatService,
     PaymentService,
     NotificationService,
     LoggerService,
   ],
-  controllers: [SubscriptionController, WebhookController, SseController],
+  controllers: [
+    SubscriptionController,
+    WebhookController,
+    RevenueCatWebhookController,
+    SseController,
+  ],
   exports: [
     SubscriptionService,
     RazorpayService,
+    RevenueCatService,
     PaymentService,
     NotificationService,
   ],
