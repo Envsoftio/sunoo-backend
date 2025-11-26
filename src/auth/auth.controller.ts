@@ -356,7 +356,10 @@ export class AuthController {
   @UseGuards(RateLimitGuard)
   @RateLimit(true)
   @ApiOperation({ summary: 'Resend verification email' })
-  @ApiResponse({ status: 200, description: 'Verification email sent successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent successfully',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async resendVerificationEmail(@Body() body: { email: string }) {
     return this.authService.resendVerificationEmail(body.email);
@@ -458,7 +461,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Request account deletion (sends confirmation email)' })
+  @ApiOperation({
+    summary: 'Request account deletion (sends confirmation email)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Deletion confirmation email sent',
@@ -472,7 +477,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirm account deletion with token (authenticated)' })
+  @ApiOperation({
+    summary: 'Confirm account deletion with token (authenticated)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Account deleted successfully',
