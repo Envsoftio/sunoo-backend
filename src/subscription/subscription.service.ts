@@ -316,10 +316,15 @@ export class SubscriptionService {
       const now = new Date();
 
       // Check if cancelled subscription is still in grace period
-      if (subscription.status === 'cancelled' && subscription.end_date) {
-        const endDate = new Date(subscription.end_date);
+      if (subscription.status === 'cancelled') {
+        // Use next_billing_date for grace period calculation (matches access-details logic)
+        const gracePeriodEndDate = subscription.next_billing_date
+          ? new Date(subscription.next_billing_date)
+          : subscription.end_date
+            ? new Date(subscription.end_date)
+            : null;
 
-        if (now <= endDate) {
+        if (gracePeriodEndDate && now <= gracePeriodEndDate) {
           // Still in grace period - return the subscription
           return {
             success: true,
@@ -327,7 +332,8 @@ export class SubscriptionService {
               ...subscription,
               isInGracePeriod: true,
               daysRemaining: Math.ceil(
-                (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+                (gracePeriodEndDate.getTime() - now.getTime()) /
+                  (1000 * 60 * 60 * 24)
               ),
             },
           };
