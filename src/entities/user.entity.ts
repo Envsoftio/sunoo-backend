@@ -1,4 +1,4 @@
-import { Entity, Column, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Exclude } from 'class-transformer';
 import { Subscription } from './subscription.entity';
@@ -136,4 +136,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => SupportTicket, supportTicket => supportTicket.user)
   supportTickets: SupportTicket[];
+
+  @DeleteDateColumn({ nullable: true })
+  deleted_at?: Date;
 }

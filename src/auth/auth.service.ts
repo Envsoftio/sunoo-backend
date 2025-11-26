@@ -881,4 +881,163 @@ export class AuthService {
   async getIpProvidersHealth() {
     return this.countryDetectionService.getProviderHealthStatus();
   }
+
+  /**
+   * Request account deletion - sends confirmation email (authenticated only)
+   */
+  async requestAccountDeletion(userId: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+          },
+        };
+      }
+
+      // Generate deletion token
+      const deletionToken = require('crypto').randomBytes(32).toString('hex');
+      const deletionExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await this.userRepository.update(user.id, {
+        passwordResetToken: deletionToken, // Reuse passwordResetToken field for deletion
+        passwordResetExpires: deletionExpires,
+      });
+
+      // Send deletion confirmation email
+      try {
+        await this.emailService.sendAccountDeletionEmail(
+          user.email,
+          user.name || 'User',
+          deletionToken
+        );
+
+        return {
+          success: true,
+          message:
+            'Account deletion confirmation email sent. Please check your inbox.',
+        };
+      } catch (emailError) {
+        console.error('Failed to send deletion email:', emailError);
+        return {
+          success: false,
+          error: {
+            message: 'Failed to send deletion email. Please try again later.',
+            code: 'EMAIL_SEND_FAILED',
+          },
+        };
+      }
+    } catch {
+      return {
+        success: false,
+        error: {
+          message: 'Failed to process deletion request',
+          code: 'DELETION_REQUEST_FAILED',
+        },
+      };
+    }
+  }
+
+  /**
+   * Confirm and process account deletion (authenticated user only)
+   */
+  async confirmAccountDeletion(userId: string, token: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId, passwordResetToken: token },
+      });
+
+      if (
+        !user ||
+        !user.passwordResetExpires ||
+        user.passwordResetExpires < new Date()
+      ) {
+        return {
+          success: false,
+          error: {
+            message: 'Invalid or expired deletion token',
+            code: 'INVALID_DELETION_TOKEN',
+          },
+        };
+      }
+
+      // Delete user account (soft delete)
+      await this.userRepository.softDelete(user.id);
+
+      // Cancel all active subscriptions
+      await this.subscriptionRepository.update(
+        { user_id: user.id },
+        { status: 'cancelled', cancelledAt: new Date() }
+      );
+
+      // Invalidate all user sessions
+      await this.sessionService.invalidateAllUserSessions(user.id);
+
+      return {
+        success: true,
+        message:
+          'Your account and all associated data have been deleted successfully.',
+      };
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      return {
+        success: false,
+        error: {
+          message: 'Failed to delete account',
+          code: 'DELETION_FAILED',
+        },
+      };
+    }
+  }
+
+  /**
+   * Delete account immediately (authenticated user)
+   */
+  async deleteAccount(userId: string) {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            message: 'User not found',
+            code: 'USER_NOT_FOUND',
+          },
+        };
+      }
+
+      // Delete user account (soft delete)
+      await this.userRepository.softDelete(userId);
+
+      // Cancel all active subscriptions
+      await this.subscriptionRepository.update(
+        { user_id: userId },
+        { status: 'cancelled', cancelledAt: new Date() }
+      );
+
+      // Invalidate all user sessions
+      await this.sessionService.invalidateAllUserSessions(userId);
+
+      return {
+        success: true,
+        message:
+          'Your account and all associated data have been deleted successfully.',
+      };
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      return {
+        success: false,
+        error: {
+          message: 'Failed to delete account',
+          code: 'DELETION_FAILED',
+        },
+      };
+    }
+  }
 }

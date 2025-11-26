@@ -313,9 +313,10 @@ export class SubscriptionService {
         };
       }
 
+      const now = new Date();
+
       // Check if cancelled subscription is still in grace period
       if (subscription.status === 'cancelled' && subscription.end_date) {
-        const now = new Date();
         const endDate = new Date(subscription.end_date);
 
         if (now <= endDate) {
@@ -339,7 +340,22 @@ export class SubscriptionService {
         }
       }
 
-      return { success: true, data: subscription };
+      // For active subscriptions, calculate daysRemaining using next_billing_date
+      const daysRemaining = subscription.next_billing_date
+        ? Math.ceil(
+            (new Date(subscription.next_billing_date).getTime() -
+              now.getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        : null;
+
+      return {
+        success: true,
+        data: {
+          ...subscription,
+          daysRemaining,
+        },
+      };
     } catch (error) {
       return { success: false, message: error.message };
     }

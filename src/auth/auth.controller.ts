@@ -11,6 +11,7 @@ import {
   Patch,
   Put,
   Query,
+  Delete,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -450,6 +451,57 @@ export class AuthController {
   })
   async getIpProvidersHealth() {
     return this.authService.getIpProvidersHealth();
+  }
+
+  // Account deletion endpoints (authenticated only)
+  @Post('delete-account-request')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request account deletion (sends confirmation email)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Deletion confirmation email sent',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async requestAccountDeletion(@Request() req) {
+    return this.authService.requestAccountDeletion(req.user.id);
+  }
+
+  @Post('confirm-delete-account')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirm account deletion with token (authenticated)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account deleted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async confirmAccountDeletion(
+    @Request() req,
+    @Body() body: { token: string }
+  ) {
+    return this.authService.confirmAccountDeletion(req.user.id, body.token);
+  }
+
+  // Immediate account deletion (authenticated)
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete own account immediately (authenticated)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Account deleted successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async deleteAccount(@Request() req) {
+    return this.authService.deleteAccount(req.user.id);
   }
 
   // Helper method to get client IP

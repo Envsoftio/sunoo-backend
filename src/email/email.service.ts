@@ -136,6 +136,59 @@ export class EmailService {
     });
   }
 
+  async sendAccountDeletionEmail(
+    userEmail: string,
+    userName: string,
+    deletionToken: string
+  ): Promise<boolean> {
+    const profileUrl = `${this.emailConfig.templates.appUrl}/profile?deletionToken=${deletionToken}`;
+
+    // Email template directing users to profile section
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+          .warning { background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>Account Deletion Request</h2>
+          <p>Hello ${userName},</p>
+          <p>You have requested to delete your ${this.emailConfig.templates.appName} account.</p>
+          <div class="warning">
+            <strong>Warning:</strong> This action cannot be undone. All your data including:
+            <ul>
+              <li>Profile information</li>
+              <li>Bookmarks and reading progress</li>
+              <li>Ratings and reviews</li>
+              <li>Subscription information</li>
+            </ul>
+            will be permanently deleted.
+          </div>
+          <p>To confirm the deletion of your account, please go to your profile settings in the app:</p>
+          <a href="${profileUrl}" class="button">Go to Profile Settings</a>
+          <p>Or manually navigate to: <strong>Profile → Account Settings → Delete Account</strong></p>
+          <p>This deletion request will expire in 24 hours.</p>
+          <p>If you did not request this, please ignore this email or contact support.</p>
+          <p>Best regards,<br>The ${this.emailConfig.templates.appName} Team</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: `Confirm Account Deletion - ${this.emailConfig.templates.appName}`,
+      html,
+    });
+  }
+
   async sendFeedbackNotification(
     feedbackData: any,
     adminEmail: string
