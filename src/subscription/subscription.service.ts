@@ -659,6 +659,7 @@ export class SubscriptionService {
     metadata?: any;
     isTrial?: boolean;
     trialEndDate?: Date;
+    provider?: string;
   }) {
     try {
       this.loggerService.logSubscriptionEvent(
@@ -668,12 +669,44 @@ export class SubscriptionService {
           subscriptionId: subscriptionData.subscription_id,
           userId: subscriptionData.user_id,
           status: subscriptionData.status,
+          provider: subscriptionData.provider,
         }
       );
 
-      const existingSubscription = await this.subscriptionRepository.findOne({
+      // First, try to find by subscription_id
+      let existingSubscription = await this.subscriptionRepository.findOne({
         where: { subscription_id: subscriptionData.subscription_id },
       });
+
+      // For RevenueCat, if not found by subscription_id, also check by user_id + provider + plan_id
+      // This handles cases where original_transaction_id might not match exactly
+      if (
+        !existingSubscription &&
+        subscriptionData.provider === 'revenuecat' &&
+        subscriptionData.user_id
+      ) {
+        existingSubscription = await this.subscriptionRepository.findOne({
+          where: {
+            user_id: subscriptionData.user_id,
+            provider: 'revenuecat',
+            plan_id: subscriptionData.plan_id,
+            status: 'active', // Only match active subscriptions
+          },
+          order: { created_at: 'DESC' }, // Get the most recent one
+        });
+
+        if (existingSubscription) {
+          this.loggerService.logSubscriptionEvent(
+            'info',
+            'Found existing RevenueCat subscription by user_id + provider + plan_id',
+            {
+              existingSubscriptionId: existingSubscription.subscription_id,
+              newSubscriptionId: subscriptionData.subscription_id,
+              userId: subscriptionData.user_id,
+            }
+          );
+        }
+      }
 
       if (existingSubscription) {
         this.loggerService.logSubscriptionEvent(
@@ -681,12 +714,22 @@ export class SubscriptionService {
           'Updating existing subscription',
           {
             subscriptionId: subscriptionData.subscription_id,
+            existingSubscriptionId: existingSubscription.subscription_id,
             existingStatus: existingSubscription.status,
             newStatus: subscriptionData.status,
+            nextBillingDate: subscriptionData.next_billing_date,
           }
         );
 
-        Object.assign(existingSubscription, subscriptionData);
+        // Update the subscription with new data
+        // Preserve the original subscription_id if it's different (for RevenueCat renewals)
+        const updateData = {
+          ...subscriptionData,
+          // Keep the original subscription_id if we found by user_id+provider+plan_id
+          subscription_id: existingSubscription.subscription_id,
+        };
+
+        Object.assign(existingSubscription, updateData);
         const updatedSubscription =
           await this.subscriptionRepository.save(existingSubscription);
 
@@ -694,9 +737,10 @@ export class SubscriptionService {
           'info',
           'Subscription updated successfully',
           {
-            subscriptionId: subscriptionData.subscription_id,
+            subscriptionId: updatedSubscription.subscription_id,
             userId: subscriptionData.user_id,
             status: updatedSubscription.status,
+            nextBillingDate: updatedSubscription.next_billing_date,
           }
         );
 
@@ -709,6 +753,7 @@ export class SubscriptionService {
             subscriptionId: subscriptionData.subscription_id,
             userId: subscriptionData.user_id,
             status: subscriptionData.status,
+            provider: subscriptionData.provider,
           }
         );
 
@@ -725,6 +770,7 @@ export class SubscriptionService {
             userId: subscriptionData.user_id,
             status: savedSubscription.status,
             id: savedSubscription.id,
+            nextBillingDate: savedSubscription.next_billing_date,
           }
         );
 

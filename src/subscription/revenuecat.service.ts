@@ -108,9 +108,11 @@ export class RevenueCatService {
         null;
 
       // Extract subscription/transaction ID
+      // For RevenueCat, use original_transaction_id as primary identifier
+      // (stays constant across renewals), transaction_id changes with each renewal
       const subscriptionId =
-        event.transaction_id ||
         event.original_transaction_id ||
+        event.transaction_id ||
         event.id ||
         event.subscription_id ||
         null;
@@ -153,6 +155,7 @@ export class RevenueCatService {
             ? new Date(event.created_at)
             : new Date();
 
+      // Extract expiration date - this is the next billing date for renewals
       const expiresDate = event.expires_at_ms
         ? new Date(event.expires_at_ms)
         : event.expires_at
@@ -162,7 +165,9 @@ export class RevenueCatService {
                 const entitlement = Object.values(event.entitlements)[0] as any;
                 return entitlement?.expires_date
                   ? new Date(entitlement.expires_date)
-                  : null;
+                  : entitlement?.expires_at_ms
+                    ? new Date(entitlement.expires_at_ms)
+                    : null;
               })()
             : null;
 
