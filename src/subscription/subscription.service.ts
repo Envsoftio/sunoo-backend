@@ -662,6 +662,14 @@ export class SubscriptionService {
     provider?: string;
   }) {
     try {
+      // Default provider to 'razorpay' if not specified (for backward compatibility)
+      // This ensures Razorpay webhooks continue to work without changes
+      const provider = subscriptionData.provider || 'razorpay';
+      const subscriptionDataWithProvider = {
+        ...subscriptionData,
+        provider,
+      };
+
       this.loggerService.logSubscriptionEvent(
         'info',
         'Upserting subscription',
@@ -669,31 +677,71 @@ export class SubscriptionService {
           subscriptionId: subscriptionData.subscription_id,
           userId: subscriptionData.user_id,
           status: subscriptionData.status,
-          provider: subscriptionData.provider,
+          provider: provider,
         }
       );
 
       // First, try to find by subscription_id
+      this.loggerService.logSubscriptionEvent(
+        'debug',
+        'Looking up subscription by subscription_id',
+        {
+          subscriptionId: subscriptionData.subscription_id,
+          provider: provider,
+        }
+      );
+
       let existingSubscription = await this.subscriptionRepository.findOne({
         where: { subscription_id: subscriptionData.subscription_id },
       });
 
-      // For RevenueCat, if not found by subscription_id, also check by user_id + provider + plan_id
+      if (existingSubscription) {
+        this.loggerService.logSubscriptionEvent(
+          'info',
+          'Found subscription by subscription_id',
+          {
+            subscriptionId: subscriptionData.subscription_id,
+            existingStatus: existingSubscription.status,
+            existingProvider: existingSubscription.provider,
+          }
+        );
+      }
+
+      // For RevenueCat ONLY, if not found by subscription_id, also check by user_id + provider + plan_id
       // This handles cases where original_transaction_id might not match exactly
+      // Razorpay subscriptions always have stable subscription_ids, so this fallback is not needed
       if (
         !existingSubscription &&
-        subscriptionData.provider === 'revenuecat' &&
+        provider === 'revenuecat' &&
         subscriptionData.user_id
       ) {
+        // First try to find active subscription
         existingSubscription = await this.subscriptionRepository.findOne({
           where: {
             user_id: subscriptionData.user_id,
             provider: 'revenuecat',
             plan_id: subscriptionData.plan_id,
-            status: 'active', // Only match active subscriptions
+            status: 'active',
           },
-          order: { created_at: 'DESC' }, // Get the most recent one
+          order: { created_at: 'DESC' },
         });
+
+        // If not found and this is a renewal, also check cancelled/expired subscriptions
+        // (user might have cancelled and then renewed)
+        if (
+          !existingSubscription &&
+          (subscriptionData.status === 'active' ||
+            subscriptionData.metadata?.revenuecatEventType === 'RENEWAL')
+        ) {
+          existingSubscription = await this.subscriptionRepository.findOne({
+            where: {
+              user_id: subscriptionData.user_id,
+              provider: 'revenuecat',
+              plan_id: subscriptionData.plan_id,
+            },
+            order: { created_at: 'DESC' },
+          });
+        }
 
         if (existingSubscription) {
           this.loggerService.logSubscriptionEvent(
@@ -701,8 +749,21 @@ export class SubscriptionService {
             'Found existing RevenueCat subscription by user_id + provider + plan_id',
             {
               existingSubscriptionId: existingSubscription.subscription_id,
+              existingStatus: existingSubscription.status,
               newSubscriptionId: subscriptionData.subscription_id,
+              newStatus: subscriptionData.status,
               userId: subscriptionData.user_id,
+            }
+          );
+        } else {
+          this.loggerService.logSubscriptionEvent(
+            'warn',
+            'No existing RevenueCat subscription found for renewal',
+            {
+              subscriptionId: subscriptionData.subscription_id,
+              userId: subscriptionData.user_id,
+              planId: subscriptionData.plan_id,
+              status: subscriptionData.status,
             }
           );
         }
@@ -722,14 +783,41 @@ export class SubscriptionService {
         );
 
         // Update the subscription with new data
-        // Preserve the original subscription_id if it's different (for RevenueCat renewals)
-        const updateData = {
-          ...subscriptionData,
-          // Keep the original subscription_id if we found by user_id+provider+plan_id
-          subscription_id: existingSubscription.subscription_id,
+        // For RevenueCat, update subscription_id if original_transaction_id is provided
+        // (this ensures we track the correct identifier)
+        // For Razorpay, always preserve the existing subscription_id (it's stable)
+        const updateData: any = {
+          ...subscriptionDataWithProvider,
         };
 
+        // Only update subscription_id for RevenueCat subscriptions
+        // Razorpay subscription_ids are stable and should never be changed
+        if (
+          provider === 'revenuecat' &&
+          existingSubscription.subscription_id !==
+            subscriptionData.subscription_id &&
+          subscriptionData.subscription_id
+        ) {
+          this.loggerService.logSubscriptionEvent(
+            'info',
+            'Updating subscription_id for RevenueCat subscription',
+            {
+              oldSubscriptionId: existingSubscription.subscription_id,
+              newSubscriptionId: subscriptionData.subscription_id,
+            }
+          );
+          updateData.subscription_id = subscriptionData.subscription_id;
+        } else if (provider === 'razorpay') {
+          // For Razorpay, always preserve the existing subscription_id
+          updateData.subscription_id = existingSubscription.subscription_id;
+        }
+
+        // Update all fields
         Object.assign(existingSubscription, updateData);
+
+        // Ensure updated_at is set
+        existingSubscription.updated_at = new Date();
+
         const updatedSubscription =
           await this.subscriptionRepository.save(existingSubscription);
 
@@ -757,8 +845,9 @@ export class SubscriptionService {
           }
         );
 
-        const subscription =
-          this.subscriptionRepository.create(subscriptionData);
+        const subscription = this.subscriptionRepository.create(
+          subscriptionDataWithProvider
+        );
         const savedSubscription =
           await this.subscriptionRepository.save(subscription);
 

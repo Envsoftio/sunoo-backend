@@ -214,26 +214,57 @@ export class RevenueCatWebhookController {
           userId: subscriptionData.user_id,
           subscriptionId: subscriptionData.subscription_id,
           productId: subscriptionData.plan_id,
+          nextBillingDate: subscriptionData.next_billing_date,
+          status: subscriptionData.status,
+          originalTransactionId:
+            subscriptionData.metadata?.revenuecatOriginalTransactionId,
+          transactionId: subscriptionData.metadata?.revenuecatTransactionId,
         }
+      );
+
+      // Log the full webhook payload for debugging
+      this.loggerService.logWebhookEvent(
+        'debug',
+        'RevenueCat RENEWAL webhook payload',
+        {
+          event: body?.event,
+          subscriptionData: subscriptionData,
+          fullPayload: body,
+        },
+        'RevenueCatWebhookController'
       );
 
       const result =
         await this.subscriptionService.upsertSubscription(subscriptionData);
+
+      if (!result.success) {
+        this.loggerService.logSubscriptionEvent(
+          'error',
+          'Failed to upsert subscription during RENEWAL',
+          {
+            userId: subscriptionData.user_id,
+            subscriptionId: subscriptionData.subscription_id,
+            error: result.message,
+          }
+        );
+      }
 
       if (result.success && subscriptionData.user_id) {
         await this.invalidateUserCaches(subscriptionData.user_id);
       }
 
       return {
-        success: true,
-        message: 'Renewal processed successfully',
+        success: result.success,
+        message: result.success
+          ? 'Renewal processed successfully'
+          : `Renewal failed: ${result.message}`,
         data: result.data,
       };
     } catch (error) {
       this.loggerService.logSubscriptionEvent(
         'error',
         'Failed to process RevenueCat RENEWAL',
-        { error: error.message, payload: body }
+        { error: error.message, stack: error.stack, payload: body }
       );
       throw error;
     }
