@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { S3Service } from '../common/services/s3.service';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class UploadService {
@@ -9,7 +12,9 @@ export class UploadService {
 
   constructor(
     private readonly s3Service: S3Service,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>
   ) {
     const s3Config = this.configService.get('s3');
     // Use hlsUrl if available, otherwise construct from bucket and region
@@ -20,8 +25,12 @@ export class UploadService {
 
   async uploadAvatar(file: any, userId?: string): Promise<any> {
     try {
-      const folder = userId ? `users/${userId}` : 'users';
-      const filename = userId ? 'picture.jpg' : undefined;
+      if (!userId) {
+        throw new NotFoundException('User ID is required');
+      }
+
+      const folder = `users/${userId}`;
+      const filename = 'picture.jpg';
 
       const fileKey = await this.s3Service.uploadMulterFile(
         file,
@@ -30,6 +39,9 @@ export class UploadService {
       );
 
       const fileUrl = `${this.s3Url}/${fileKey}`;
+
+      // Update user's avatar field in database with key only
+      await this.userRepository.update(userId, { avatar: fileKey });
 
       return {
         success: true,

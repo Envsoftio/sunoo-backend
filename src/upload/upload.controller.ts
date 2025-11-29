@@ -8,6 +8,7 @@ import {
   HttpStatus,
   BadRequestException,
   Body,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -66,12 +67,18 @@ export class UploadController {
   )
   async uploadAvatar(
     @UploadedFile() file: any,
+    @Request() req: any,
     @Body('userId') userId?: string
   ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
-    return await this.uploadService.uploadAvatar(file, userId);
+    // Use userId from body if provided, otherwise use authenticated user from JWT
+    const targetUserId = userId || req.user?.id;
+    if (!targetUserId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return await this.uploadService.uploadAvatar(file, targetUserId);
   }
 
   @Post('cast-picture')
@@ -99,7 +106,10 @@ export class UploadController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Cast picture uploaded successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cast picture uploaded successfully',
+  })
   @ApiResponse({
     status: 400,
     description: 'Bad request - file missing or invalid',
@@ -226,4 +236,3 @@ export class UploadController {
     return await this.uploadService.uploadAudio(file, storyId, filename);
   }
 }
-

@@ -4,7 +4,7 @@ import { DatabaseLoggerService } from '../common/logger/database-logger.service'
 
 export const getDatabaseConfig = (
   configService: ConfigService,
-  databaseLogger?: DatabaseLoggerService
+  _databaseLogger?: DatabaseLoggerService
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -15,10 +15,8 @@ export const getDatabaseConfig = (
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   synchronize: false, // Disabled to prevent TypeORM from modifying existing schema
-  logging: databaseLogger
-    ? ['query', 'error', 'schema', 'warn', 'info', 'log', 'migration']
-    : false,
-  logger: databaseLogger ? (databaseLogger as any) : 'advanced-console',
+  logging: false, // Disable all database query logging
+  logger: 'advanced-console',
   ssl:
     configService.get('NODE_ENV') === 'production'
       ? { rejectUnauthorized: false }
