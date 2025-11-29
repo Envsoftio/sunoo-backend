@@ -84,3 +84,9 @@ export class ChangePasswordDto {
   @MinLength(6)
   newPassword: string;
 }
+
+export class ResendVerificationDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}

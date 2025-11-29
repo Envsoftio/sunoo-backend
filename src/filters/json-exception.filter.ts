@@ -33,6 +33,10 @@ export class JsonExceptionFilter implements ExceptionFilter {
           status === HttpStatus.CONFLICT ||
           status === HttpStatus.BAD_REQUEST
         ) {
+          // Log for debugging EMAIL_NOT_VERIFIED
+          if ((exceptionResponse as any)?.code === 'EMAIL_NOT_VERIFIED') {
+            console.log('EMAIL_NOT_VERIFIED error being returned:', exceptionResponse);
+          }
           return response.status(status).json(exceptionResponse);
         }
         message = (exceptionResponse as any).message || exception.message;

@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -32,6 +33,8 @@ import { CountryDetectionService } from '../common/services/country-detection.se
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -215,8 +218,9 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Generate email verification token
-    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+    // Generate secure email verification token
+    const crypto = require('crypto');
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     const user = this.userRepository.create({
       ...registerDto,
@@ -746,81 +750,248 @@ export class AuthService {
   async verifyEmail(
     token: string
   ): Promise<{ success: boolean; message: string; email?: string }> {
-    const user = await this.userRepository.findOne({
-      where: { emailVerificationToken: token },
-    });
-
-    if (!user) {
+    // Validate token input
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      this.logger.warn('Email verification attempted with invalid token');
       throw new BadRequestException({
-        message: 'Invalid or expired verification token',
-        code: 'INVALID_VERIFICATION_TOKEN',
+        message: 'Verification token is required',
+        code: 'MISSING_VERIFICATION_TOKEN',
       });
     }
 
-    // Mark email as verified and clear token
-    await this.userRepository.update(user.id, {
-      isEmailVerified: true,
-      emailVerificationToken: undefined,
-    });
+    // Trim and normalize token
+    const normalizedToken = token.trim();
 
-    return {
-      success: true,
-      message: 'Email verified successfully. You can now log in.',
-      email: user.email,
-    };
+    try {
+      // Find user by verification token (case-sensitive match for security)
+      const user = await this.userRepository.findOne({
+        where: { emailVerificationToken: normalizedToken },
+      });
+
+      if (!user) {
+        this.logger.warn(`Email verification failed: Invalid token provided`);
+        throw new BadRequestException({
+          message: 'Invalid or expired verification token',
+          code: 'INVALID_VERIFICATION_TOKEN',
+        });
+      }
+
+      // If already verified, return success (idempotent operation)
+      if (user.isEmailVerified) {
+        this.logger.log(
+          `Email already verified for user ${user.id} (${user.email})`
+        );
+        return {
+          success: true,
+          message: 'Email is already verified. You can log in.',
+          email: user.email,
+        };
+      }
+
+      // Mark email as verified and clear token using save method for better reliability
+      // Use transaction-like approach with explicit save
+      user.isEmailVerified = true;
+      user.emailVerificationToken = undefined;
+
+      // Save with explicit error handling
+      const savedUser = await this.userRepository.save(user);
+
+      // Double-check the save succeeded
+      if (!savedUser || !savedUser.isEmailVerified) {
+        this.logger.error(
+          `Failed to verify email for user ${user.id}. Save operation did not persist correctly.`
+        );
+        throw new HttpException(
+          {
+            message: 'Failed to verify email. Please try again.',
+            code: 'VERIFICATION_FAILED',
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+
+      // Verify the update persisted in database
+      const verificationCheck = await this.userRepository.findOne({
+        where: { id: user.id },
+        select: ['id', 'email', 'isEmailVerified', 'emailVerificationToken'],
+      });
+
+      if (!verificationCheck || !verificationCheck.isEmailVerified) {
+        this.logger.error(
+          `Email verification did not persist for user ${user.id}. Database verification failed.`
+        );
+        throw new HttpException(
+          {
+            message: 'Failed to verify email. Please try again.',
+            code: 'VERIFICATION_FAILED',
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+
+      this.logger.log(
+        `Email successfully verified for user ${user.id} (${user.email})`
+      );
+
+      return {
+        success: true,
+        message: 'Email verified successfully. You can now log in.',
+        email: user.email,
+      };
+    } catch (error) {
+      // Re-throw known exceptions
+      if (
+        error instanceof BadRequestException ||
+        error instanceof HttpException
+      ) {
+        throw error;
+      }
+
+      // Log unexpected errors
+      this.logger.error(
+        `Unexpected error during email verification: ${error.message}`,
+        error.stack
+      );
+      throw new HttpException(
+        {
+          message:
+            'An error occurred while verifying your email. Please try again.',
+          code: 'VERIFICATION_ERROR',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   async resendVerificationEmail(email: string): Promise<{
     success: boolean;
     message: string;
   }> {
-    const user = await this.userRepository.findOne({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!user) {
-      // Don't reveal if user exists or not for security
-      return {
-        success: true,
-        message:
-          'If an account exists with this email, a verification email has been sent.',
-      };
+    // Validate email input
+    if (!email || typeof email !== 'string' || email.trim().length === 0) {
+      throw new BadRequestException({
+        message: 'Email address is required',
+        code: 'MISSING_EMAIL',
+      });
     }
 
-    // If email is already verified, don't send another email
-    if (user.isEmailVerified) {
-      return {
-        success: true,
-        message: 'This email address is already verified.',
-      };
-    }
+    // Normalize email (lowercase and trim)
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Generate new verification token
-    const verificationToken = require('crypto').randomBytes(32).toString('hex');
-
-    // Update user with new token
-    await this.userRepository.update(user.id, {
-      emailVerificationToken: verificationToken,
-    });
-
-    // Send verification email
     try {
-      await this.emailService.sendVerificationEmail(
-        user.email,
-        user.name || 'User',
-        verificationToken
-      );
+      const user = await this.userRepository.findOne({
+        where: { email: normalizedEmail },
+      });
 
-      return {
-        success: true,
-        message: 'Verification email sent. Please check your inbox.',
-      };
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        this.logger.warn(
+          `Resend verification requested for non-existent email: ${normalizedEmail}`
+        );
+        return {
+          success: true,
+          message:
+            'If an account exists with this email, a verification email has been sent.',
+        };
+      }
+
+      // If email is already verified, don't send another email
+      if (user.isEmailVerified) {
+        this.logger.log(
+          `Resend verification requested for already verified email: ${normalizedEmail}`
+        );
+        return {
+          success: true,
+          message: 'This email address is already verified.',
+        };
+      }
+
+      // Generate new secure verification token
+      const crypto = require('crypto');
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Update user with new token using save for better reliability
+      user.emailVerificationToken = verificationToken;
+      const updatedUser = await this.userRepository.save(user);
+
+      if (
+        !updatedUser ||
+        updatedUser.emailVerificationToken !== verificationToken
+      ) {
+        this.logger.error(
+          `Failed to update verification token for user ${user.id}`
+        );
+        throw new HttpException(
+          {
+            message: 'Failed to generate verification token. Please try again.',
+            code: 'TOKEN_GENERATION_FAILED',
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+
+      // Send verification email
+      try {
+        const emailSent = await this.emailService.sendVerificationEmail(
+          user.email,
+          user.name || 'User',
+          verificationToken
+        );
+
+        if (!emailSent) {
+          this.logger.error(
+            `Failed to send verification email to ${user.email} (User ID: ${user.id})`
+          );
+          throw new HttpException(
+            {
+              message:
+                'Failed to send verification email. Please try again later.',
+              code: 'EMAIL_SEND_FAILED',
+            },
+            HttpStatus.INTERNAL_SERVER_ERROR
+          );
+        }
+
+        this.logger.log(
+          `Verification email resent successfully to ${user.email} (User ID: ${user.id})`
+        );
+
+        return {
+          success: true,
+          message: 'Verification email sent. Please check your inbox.',
+        };
+      } catch (emailError) {
+        this.logger.error(
+          `Error sending verification email to ${user.email}:`,
+          emailError
+        );
+        throw new HttpException(
+          {
+            message:
+              'Failed to send verification email. Please try again later.',
+            code: 'EMAIL_SEND_FAILED',
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+    } catch (error) {
+      // Re-throw known exceptions
+      if (
+        error instanceof BadRequestException ||
+        error instanceof HttpException
+      ) {
+        throw error;
+      }
+
+      // Log unexpected errors
+      this.logger.error(
+        `Unexpected error during resend verification: ${error.message}`,
+        error.stack
+      );
       throw new HttpException(
         {
-          message: 'Failed to send verification email. Please try again later.',
-          code: 'EMAIL_SEND_FAILED',
+          message: 'An error occurred. Please try again later.',
+          code: 'RESEND_VERIFICATION_ERROR',
         },
         HttpStatus.INTERNAL_SERVER_ERROR
       );

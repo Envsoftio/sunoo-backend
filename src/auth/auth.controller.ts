@@ -13,6 +13,7 @@ import {
   Query,
   Delete,
   UnauthorizedException,
+  HttpException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,6 +30,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   ChangePasswordDto,
+  ResendVerificationDto,
 } from '../dto/auth.dto';
 import { UpdateEmailPreferencesDto } from '../dto/user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -283,11 +285,13 @@ export class AuthController {
     } catch (error) {
       // Handle email not verified error
       if (error.code === 'EMAIL_NOT_VERIFIED') {
-        throw new UnauthorizedException({
+        const errorResponse = {
           message: error.message,
           code: error.code,
-          requiresEmailVerification: error.requiresEmailVerification,
-        });
+          requiresEmailVerification: error.requiresEmailVerification || true,
+        };
+        console.log('Throwing EMAIL_NOT_VERIFIED exception:', errorResponse);
+        throw new UnauthorizedException(errorResponse);
       }
 
       // Handle default password migration required error
@@ -344,11 +348,53 @@ export class AuthController {
   }
 
   @Get('verify-email')
-  @ApiOperation({ summary: 'Verify user email with token' })
-  @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiOperation({
+    summary: 'Verify user email with token',
+    description:
+      "Verifies a user's email address using the token sent in the verification email. This endpoint should be called from the frontend when the user clicks the verification link.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Email verified successfully. You can now log in.',
+        },
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'string', example: 'INVALID_VERIFICATION_TOKEN' },
+      },
+    },
+  })
   async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+    try {
+      return await this.authService.verifyEmail(token);
+    } catch (error) {
+      // Ensure proper error format is returned
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        {
+          message: 'An error occurred while verifying your email.',
+          code: 'VERIFICATION_ERROR',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   @Post('resend-verification')
@@ -361,8 +407,12 @@ export class AuthController {
     description: 'Verification email sent successfully',
   })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async resendVerificationEmail(@Body() body: { email: string }) {
-    return this.authService.resendVerificationEmail(body.email);
+  async resendVerificationEmail(
+    @Body() resendVerificationDto: ResendVerificationDto
+  ) {
+    return this.authService.resendVerificationEmail(
+      resendVerificationDto.email
+    );
   }
 
   @Post('logout')
