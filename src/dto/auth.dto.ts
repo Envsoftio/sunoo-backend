@@ -90,3 +90,9 @@ export class ResendVerificationDto {
   @IsEmail()
   email: string;
 }
+
+export class GoogleTokenDto {
+  @ApiProperty({ example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEyMzQ1NiJ9...' })
+  @IsString()
+  idToken: string;
+}

@@ -21,7 +21,8 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
     "migrate:data": "ts-node scripts/migrate-data.ts",
-    "migrate:fix-all-users": "ts-node scripts/fix-all-users.ts"
+    "migrate:fix-all-users": "ts-node scripts/fix-all-users.ts",
+    "set-email-provider": "ts-node scripts/set-email-provider.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.925.0",
@@ -47,6 +48,7 @@
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "firebase-admin": "^13.6.0",
+    "google-auth-library": "^10.5.0",
     "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
     "nodemailer": "^7.0.6",

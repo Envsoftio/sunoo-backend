@@ -31,6 +31,7 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   ResendVerificationDto,
+  GoogleTokenDto,
 } from '../dto/auth.dto';
 import { UpdateEmailPreferencesDto } from '../dto/user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -174,7 +175,7 @@ export class AuthController {
   // Google OAuth endpoints
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  @ApiOperation({ summary: 'Google OAuth login' })
+  @ApiOperation({ summary: 'Google OAuth login (redirect flow)' })
   @ApiResponse({ status: 302, description: 'Redirects to Google OAuth' })
   async googleAuth() {
     // This endpoint initiates Google OAuth flow
@@ -182,26 +183,29 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiOperation({ summary: 'Google OAuth callback (redirect flow)' })
   @ApiResponse({ status: 200, description: 'Google OAuth successful' })
-  googleAuthRedirect(@Request() req) {
+  async googleAuthRedirect(@Request() req): Promise<AuthResponseDto> {
     const user = req.user;
-    const payload = { email: user.email, sub: user.id };
-    const accessToken = this.authService['jwtService'].sign(payload);
+    return this.authService.loginWithGoogleRedirect(user, req);
+  }
 
-    return {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          avatar: user.avatar,
-        },
-        accessToken,
-      },
-    };
+  @Post('google/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Google OAuth login with ID token (token-based flow)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Google OAuth successful',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid Google token' })
+  async loginWithGoogleToken(
+    @Body() googleTokenDto: GoogleTokenDto,
+    @Request() req
+  ): Promise<AuthResponseDto> {
+    return this.authService.loginWithGoogleToken(googleTokenDto.idToken, req);
   }
 
   // Admin management endpoints

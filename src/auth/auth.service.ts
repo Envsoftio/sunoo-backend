@@ -30,6 +30,8 @@ import { AccountLockoutService } from './services/account-lockout.service';
 import { PasswordValidationService } from './services/password-validation.service';
 import { SecureJwtService } from './services/secure-jwt.service';
 import { CountryDetectionService } from '../common/services/country-detection.service';
+import { OAuth2Client } from 'google-auth-library';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -47,14 +49,24 @@ export class AuthService {
     private accountLockoutService: AccountLockoutService,
     private passwordValidationService: PasswordValidationService,
     private secureJwtService: SecureJwtService,
-    private countryDetectionService: CountryDetectionService
+    private countryDetectionService: CountryDetectionService,
+    private configService: ConfigService
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: { email: email.toLowerCase() },
     });
-    if (user && (await bcrypt.compare(password, user.password))) {
+    // Only validate password for email/password accounts
+    // - provider is null (legacy users - backward compatible)
+    // - provider is 'email' (new email/password users)
+    // OAuth accounts (provider === 'google' or other OAuth providers) should not use password validation
+    if (
+      user &&
+      user.password &&
+      (!user.provider || user.provider === 'email') &&
+      (await bcrypt.compare(password, user.password))
+    ) {
       return user;
     }
     return null;
@@ -135,6 +147,36 @@ export class AuthService {
       });
     }
 
+    // Check if user is OAuth-only - reject password-based login
+    // OAuth accounts have provider set to 'google' (or other OAuth providers)
+    // Password-based accounts have provider as null (legacy) or 'email' (new)
+    // NOTE: Existing users with provider=null will pass this check (null && anything = false)
+    if (user.provider && user.provider !== 'email') {
+      throw new UnauthorizedException({
+        message: `This account was created with ${user.provider} Sign-In. Please use ${user.provider} Sign-In to log in.`,
+        code: 'OAUTH_ONLY_ACCOUNT',
+        requiresOAuth: true,
+        provider: user.provider,
+      });
+    }
+
+    // Fallback: Also check if password is null (for safety - handles edge cases)
+    // NOTE: Existing password users will have a password hash, so this check passes
+    if (!user.password) {
+      throw new UnauthorizedException({
+        message:
+          'This account was created with OAuth. Please use OAuth Sign-In to log in.',
+        code: 'OAUTH_ONLY_ACCOUNT',
+        requiresOAuth: true,
+        provider: user.provider || 'google',
+      });
+    }
+
+    // Validate password is provided in request
+    if (!loginDto.password || loginDto.password.trim().length === 0) {
+      throw new BadRequestException('Password is required');
+    }
+
     // Now validate the password
     const isValidPassword =
       user.password && (await bcrypt.compare(loginDto.password, user.password));
@@ -191,6 +233,11 @@ export class AuthService {
     registerDto: RegisterDto,
     request?: any
   ): Promise<AuthResponseDto> {
+    // Validate password is provided and not empty (required for email/password signup)
+    if (!registerDto.password || registerDto.password.trim().length === 0) {
+      throw new BadRequestException('Password is required for registration');
+    }
+
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
     });
@@ -229,6 +276,7 @@ export class AuthService {
       role: 'user', // Set default role to 'user'
       isEmailVerified: false, // Email not verified by default
       emailVerificationToken: verificationToken,
+      provider: 'email', // Mark as email/password account
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -290,7 +338,7 @@ export class AuthService {
         email: email.toLowerCase(),
         name,
         avatar,
-        password: '', // No password for OAuth users
+        password: null, // No password for OAuth users (nullable field)
         role: 'user', // Default role
         isEmailVerified: true, // Google emails are pre-verified
         authId: providerId,
@@ -298,14 +346,158 @@ export class AuthService {
       });
       user = await this.userRepository.save(user);
     } else if (!user.authId) {
-      // Link existing user with Google account
-      user.authId = providerId;
-      user.provider = 'google';
-      user.avatar = avatar || user.avatar;
-      user = await this.userRepository.save(user);
+      // Link existing email/password user with Google account
+      // Only link if user is email-based (provider is null or 'email')
+      if (!user.provider || user.provider === 'email') {
+        user.authId = providerId;
+        user.provider = 'google'; // User can now use Google Sign-In
+        user.avatar = avatar || user.avatar;
+        user = await this.userRepository.save(user);
+      }
+      // If user already has a different OAuth provider, don't overwrite
     }
 
     return user;
+  }
+
+  async loginWithGoogleRedirect(
+    user: User,
+    request?: any
+  ): Promise<AuthResponseDto> {
+    const clientIp = this.getClientIp(request);
+    const userAgent = request?.headers?.['user-agent'];
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is deactivated');
+    }
+
+    // Detect and update user's country if needed
+    await this.updateUserCountryIfNeeded(user, clientIp, userAgent);
+
+    // Update last login
+    await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+
+    // Create session
+    const session = await this.sessionService.createSession({
+      userId: user.id,
+      userAgent: userAgent,
+      ipAddress: clientIp,
+      deviceInfo: request?.headers?.['x-device-info'],
+      metadata: {
+        loginMethod: 'google_oauth_redirect',
+        timestamp: new Date().toISOString(),
+      },
+    });
+
+    return {
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt: session.expiresAt,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+      },
+    };
+  }
+
+  async loginWithGoogleToken(
+    idToken: string,
+    request?: any
+  ): Promise<AuthResponseDto> {
+    const clientIp = this.getClientIp(request);
+    const userAgent = request?.headers?.['user-agent'];
+
+    try {
+      // Get Google Client ID from config
+      const googleClientId =
+        this.configService.get<string>('GOOGLE_WEB_CLIENT_ID') ||
+        this.configService.get<string>('GOOGLE_CLIENT_ID');
+
+      if (!googleClientId) {
+        throw new BadRequestException('Google OAuth is not configured');
+      }
+
+      // Verify the Google ID token
+      const client = new OAuth2Client(googleClientId);
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: googleClientId,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new UnauthorizedException('Invalid Google token');
+      }
+
+      // Extract user information from token
+      const email = payload.email;
+      const name =
+        payload.name ||
+        `${payload.given_name || ''} ${payload.family_name || ''}`.trim() ||
+        email;
+      const avatar = payload.picture || null;
+      const providerId = payload.sub;
+
+      if (!email) {
+        throw new BadRequestException('Email not found in Google token');
+      }
+
+      // Validate and get/create user
+      const googleUser = {
+        email,
+        name,
+        avatar,
+        provider: 'google',
+        providerId,
+      };
+
+      const user = await this.validateGoogleUser(googleUser);
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('Account is deactivated');
+      }
+
+      // Detect and update user's country if needed
+      await this.updateUserCountryIfNeeded(user, clientIp, userAgent);
+
+      // Update last login
+      await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+
+      // Create session
+      const session = await this.sessionService.createSession({
+        userId: user.id,
+        userAgent: userAgent,
+        ipAddress: clientIp,
+        deviceInfo: request?.headers?.['x-device-info'],
+        metadata: {
+          loginMethod: 'google_oauth',
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return {
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresAt: session.expiresAt,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Google token verification failed:', error);
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new UnauthorizedException('Google authentication failed');
+    }
   }
 
   async createSuperAdmin(
@@ -524,6 +716,33 @@ export class AuthService {
           error: {
             message: 'User not found',
             code: 'USER_NOT_FOUND',
+          },
+        };
+      }
+
+      // Check if user is OAuth-only - cannot change password
+      // OAuth accounts have provider set to 'google' (or other OAuth providers)
+      // Password-based accounts have provider as null (legacy) or 'email' (new)
+      // NOTE: Existing users with provider=null will pass this check (null && anything = false)
+      if (user.provider && user.provider !== 'email') {
+        return {
+          success: false,
+          error: {
+            message: `This account uses ${user.provider} authentication. Password cannot be changed.`,
+            code: 'OAUTH_ONLY_ACCOUNT',
+          },
+        };
+      }
+
+      // Fallback: Also check if password is null (for safety - handles edge cases)
+      // NOTE: Existing password users will have a password hash, so this check passes
+      if (!user.password) {
+        return {
+          success: false,
+          error: {
+            message:
+              'This account uses OAuth authentication. Password cannot be changed.',
+            code: 'OAUTH_ONLY_ACCOUNT',
           },
         };
       }
@@ -1012,7 +1231,7 @@ export class AuthService {
   /**
    * Update user's country if needed
    */
-  private async updateUserCountryIfNeeded(
+  async updateUserCountryIfNeeded(
     user: User,
     clientIP?: string,
     userAgent?: string

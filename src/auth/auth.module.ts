@@ -12,6 +12,7 @@ import { AuthController } from './auth.controller';
 import { SessionController } from './controllers/session.controller';
 import { AnalyticsController } from './controllers/analytics.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 import { UsersModule } from '../users/users.module';
 import { PasswordValidationService } from './services/password-validation.service';
 import { AccountLockoutService } from './services/account-lockout.service';
@@ -65,6 +66,7 @@ import { CountryDetectionService } from '../common/services/country-detection.se
   providers: [
     AuthService,
     JwtStrategy,
+    GoogleStrategy,
     PasswordValidationService,
     AccountLockoutService,
     SecureJwtService,
@@ -72,7 +74,7 @@ import { CountryDetectionService } from '../common/services/country-detection.se
     RateLimitGuard,
     SessionService,
     CountryDetectionService,
-  ], // GoogleStrategy temporarily disabled
+  ],
   controllers: [AuthController, SessionController, AnalyticsController],
   exports: [AuthService, SessionService, RateLimitService, RateLimitGuard],
 })

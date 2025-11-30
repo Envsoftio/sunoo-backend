@@ -271,6 +271,12 @@ jobs:
           FIREBASE_PROJECT_ID=${{ secrets.STAGING_FIREBASE_PROJECT_ID }}
           FIREBASE_PRIVATE_KEY="${{ secrets.STAGING_FIREBASE_PRIVATE_KEY }}"
           FIREBASE_CLIENT_EMAIL=${{ secrets.STAGING_FIREBASE_CLIENT_EMAIL }}
+
+          # Google OAuth Configuration
+          GOOGLE_CLIENT_ID=${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.STAGING_GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL=${{ secrets.STAGING_GOOGLE_CALLBACK_URL }}
+          GOOGLE_WEB_CLIENT_ID=${{ secrets.STAGING_GOOGLE_WEB_CLIENT_ID }}
           EOF
 
       - name: Create deployment directory
