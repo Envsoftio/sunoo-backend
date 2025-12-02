@@ -24,7 +24,7 @@ export class CacheInterceptor implements NestInterceptor {
     const method = request.method;
     const url = request.url;
 
-    // Skip caching for non-HTTP contexts, health checks, auth, payment, subscription, notifications, and admin endpoints
+    // Skip caching for non-HTTP contexts, health checks, auth, payment, subscription, notifications, and webhooks
     if (
       context.getType() !== 'http' ||
       url.includes('/health') ||
@@ -33,9 +33,15 @@ export class CacheInterceptor implements NestInterceptor {
       url.includes('/notifications') || // All notification endpoints including SSE
       url.includes('/payment') ||
       url.includes('/razorpay') ||
-      url.includes('/webhook') ||
-      url.includes('/admin/') // All admin endpoints (more specific pattern)
+      url.includes('/webhook') || // Webhooks (matches both /webhook and /webhooks)
+      url.includes('/webhooks') // Explicit check for plural form
     ) {
+      return next.handle();
+    }
+
+    // Skip caching GET requests for admin endpoints (but allow invalidation for mutations)
+    const isAdminEndpoint = url.includes('/admin/');
+    if (isAdminEndpoint && method === 'GET') {
       return next.handle();
     }
 
@@ -44,7 +50,7 @@ export class CacheInterceptor implements NestInterceptor {
       return this.handleGetRequest(request, next);
     }
 
-    // Handle POST/PUT/PATCH/DELETE - invalidate cache
+    // Handle POST/PUT/PATCH/DELETE - invalidate cache (including admin endpoints)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       return this.handleMutationRequest(request, next);
     }
