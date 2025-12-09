@@ -156,20 +156,22 @@ export class RevenueCatService {
             : new Date();
 
       // Extract expiration date - this is the next billing date for renewals
-      const expiresDate = event.expires_at_ms
-        ? new Date(event.expires_at_ms)
-        : event.expires_at
-          ? new Date(event.expires_at)
-          : event.entitlements
-            ? (() => {
-                const entitlement = Object.values(event.entitlements)[0] as any;
-                return entitlement?.expires_date
-                  ? new Date(entitlement.expires_date)
-                  : entitlement?.expires_at_ms
-                    ? new Date(entitlement.expires_at_ms)
-                    : null;
-              })()
-            : null;
+      const expiresDate = event.expiration_at_ms
+        ? new Date(event.expiration_at_ms)
+        : event.expires_at_ms
+          ? new Date(event.expires_at_ms)
+          : event.expires_at
+            ? new Date(event.expires_at)
+            : event.entitlements
+              ? (() => {
+                  const entitlement = Object.values(event.entitlements)[0] as any;
+                  return entitlement?.expires_date
+                    ? new Date(entitlement.expires_date)
+                    : entitlement?.expires_at_ms
+                      ? new Date(entitlement.expires_at_ms)
+                      : null;
+                })()
+              : null;
 
       // Determine if it's a trial
       const isTrial =

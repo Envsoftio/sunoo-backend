@@ -281,6 +281,7 @@ export class RevenueCatWebhookController {
         {
           userId: subscriptionData.user_id,
           subscriptionId: subscriptionData.subscription_id,
+          nextBillingDate: subscriptionData.next_billing_date,
         }
       );
 
@@ -289,6 +290,7 @@ export class RevenueCatWebhookController {
         status: 'cancelled',
         user_cancelled: true,
         cancelledAt: new Date(),
+        next_billing_date: subscriptionData.next_billing_date,
       });
 
       if (result.success && subscriptionData.user_id) {
