@@ -353,8 +353,7 @@ export class WebhookController {
               );
               if (planRes.success && planRes.data) {
                 // support different possible naming fields
-                planName =
-                  (planRes.data as any).planName || (planRes.data as any).name;
+                planName = planRes.data.planName || planRes.data.name;
               }
             }
           } catch (_e) {
