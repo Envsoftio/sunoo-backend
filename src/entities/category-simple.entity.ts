@@ -21,10 +21,7 @@ export class CategorySimple {
   description?: string;
 
   @Column({ nullable: true })
-  icon_url?: string;
-
-  @Column({ nullable: true })
-  color?: string;
+  banner_url?: string;
 
   @Column({ default: true })
   is_active: boolean;

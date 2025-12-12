@@ -296,6 +296,41 @@ export class AdminController {
     return this.adminService.deleteCategory(id);
   }
 
+  @Post('categories/:id/upload-banner')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Upload category banner (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Banner uploaded successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - file missing or invalid',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      fileFilter: (req, file, cb) => {
+        // Accept only images
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
+          return cb(new Error('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
+  async uploadCategoryBanner(
+    @Param('id') id: string,
+    @UploadedFile() file: any
+  ) {
+    if (!file) {
+      return {
+        success: false,
+        message: 'No file provided. Please select an image file.',
+      };
+    }
+    return await this.adminService.uploadCategoryBanner(id, file);
+  }
+
   // Dashboard Analytics Endpoints
   @Get('dashboard-stats')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)

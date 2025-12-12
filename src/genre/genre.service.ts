@@ -178,8 +178,7 @@ export class GenreService {
           name: genre.name,
           slug: genre.slug,
           description: genre.description,
-          icon_url: genre.icon_url,
-          color: genre.color,
+          banner_url: genre.banner_url,
         },
         genreStats: {
           totalStories: total,
@@ -215,8 +214,7 @@ export class GenreService {
           'category.name',
           'category.slug',
           'category.description',
-          'category.icon_url',
-          'category.color',
+          'category.banner_url',
           'category.sort_order',
           'category.featured',
           'category.is_active',
@@ -267,8 +265,7 @@ export class GenreService {
           'category.name',
           'category.slug',
           'category.description',
-          'category.icon_url',
-          'category.color',
+          'category.banner_url',
         ])
         .addSelect('COUNT(DISTINCT book.id)', 'storyCount')
         .addSelect('COALESCE(AVG(rating.rating), 0)', 'averageRating')
@@ -287,8 +284,7 @@ export class GenreService {
         name: category.name,
         slug: category.slug,
         description: category.description,
-        iconUrl: category.icon_url,
-        color: category.color,
+        bannerUrl: category.banner_url,
         storyCount: parseInt(result.raw[index]?.storyCount || '0'),
         averageRating: parseFloat(
           parseFloat(result.raw[index]?.averageRating || '0').toFixed(1)

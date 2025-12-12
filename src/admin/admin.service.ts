@@ -839,6 +839,44 @@ export class AdminService {
     }
   }
 
+  async uploadCategoryBanner(id: string, file: any) {
+    try {
+      if (!file) {
+        return { success: false, message: 'No file provided' };
+      }
+
+      const category = await this.categoryRepository.findOne({
+        where: { id },
+      });
+      if (!category) {
+        return { success: false, message: 'Category not found' };
+      }
+
+      // Upload to S3 - returns only the key (path), not full URL
+      // Use categories/{id}/banner.{ext} format so updates overwrite existing file
+      const fileExtension = this.getFileExtension(file.originalname) || '.jpg';
+      const fileKey = await this.s3Service.uploadMulterFile(
+        file,
+        'categories',
+        `${id}/banner${fileExtension}`
+      );
+
+      // Update category with S3 key (path only)
+      await this.categoryRepository.update(id, { banner_url: fileKey });
+
+      // Return both key and full URL for API response
+      const fileUrl = this.s3Service.getFileUrl(fileKey);
+
+      return {
+        success: true,
+        message: 'Banner uploaded successfully',
+        data: { bannerKey: fileKey, bannerUrl: fileUrl },
+      };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   private getFileExtension(filename: string): string {
     const lastDot = filename.lastIndexOf('.');
     return lastDot !== -1 ? filename.substring(lastDot) : '';

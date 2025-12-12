@@ -28,11 +28,8 @@ export class Category {
   @Column({ nullable: true, name: 'description' })
   description?: string;
 
-  @Column({ nullable: true, name: 'icon_url' })
-  icon_url?: string;
-
-  @Column({ nullable: true, name: 'color' })
-  color?: string;
+  @Column({ nullable: true, name: 'banner_url' })
+  banner_url?: string;
 
   @Column({ default: true, name: 'is_active' })
   is_active: boolean;
