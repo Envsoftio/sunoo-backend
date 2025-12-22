@@ -17,8 +17,6 @@
           sans-serif;
       }
       .wrapper {
-        display: flex;
-        justify-content: center;
         background: #f6f2fa;
       }
       .card {
@@ -30,12 +28,7 @@
       }
       .card-topbar {
         height: 8px;
-        background: linear-gradient(
-          90deg,
-          #ff8a00 0%,
-          #ff3d81 50%,
-          #6f49ff 100%
-        );
+        background: #6f49ff;
       }
       .logo {
         text-align: center;
@@ -71,15 +64,11 @@
         color: #374151;
       }
       .story-card {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
         background: #fbf7ff;
         border-radius: 12px;
         padding: 20px;
         margin: 20px 0;
         border-left: 5px solid #d240a8;
-        position: relative;
       }
       .story-card p {
         margin: 0;
@@ -93,17 +82,12 @@
         margin-bottom: 8px;
       }
       .story-meta {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
         margin-top: 8px;
       }
       .story-meta-item {
         font-size: 14px;
         color: #4a5568;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        margin-bottom: 6px;
       }
       .story-meta-label {
         font-weight: 600;
@@ -141,7 +125,7 @@
         color: #fff;
         text-decoration: none;
         border-radius: 999px;
-        background: linear-gradient(90deg, #ff8a00, #ff3d81, #6f49ff);
+        background: #6f49ff;
       }
       .footer {
         background: #f5f6f8;
@@ -157,17 +141,17 @@
         color: #374151;
       }
       .socials {
-        display: flex;
-        justify-content: center;
+        text-align: center;
         margin: 14px 0;
-        gap: 12px;
       }
       .socials a {
+        display: inline-block;
         width: 34px;
         height: 34px;
         border-radius: 50%;
         border: 2px solid #c026d3;
-        margin-right: 5px;
+        margin: 0 6px;
+        vertical-align: middle;
       }
       .socials a img {
         margin: auto;
@@ -201,112 +185,128 @@
       }
     </style>
   </head>
-  <body>
-    <div class='wrapper'>
-      <div class='card'>
-        <div class='card-topbar'>
+  <body style='margin: 0; padding: 0; background: #f6f2fa; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;'>
+    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background: #f6f2fa;'>
+      <tr>
+        <td align='center' style='padding: 20px 0;'>
+          <table role='presentation' width='600' cellpadding='0' cellspacing='0' border='0' class='card' style='max-width: 600px; width: 100%; background: #fff; border-radius: 12px; overflow: hidden;'>
+            <tr>
+              <td class='card-topbar' style='height: 8px; background: #6f49ff;'>
           <br />
-        </div>
-        <div class='logo' style='text-align: center;'>
+              </td>
+            </tr>
+            <tr>
+              <td class='logo' style='text-align: center; padding: 32px 24px 30px;'>
           <img
             src='https://sunoo.app/images/sunoo-logo-black.png'
             alt='Sunoo'
             style='max-width: 160px; height: auto;'
           />
           <br />
-        </div>
-        <div class='content'>
-          <h1>Hi, {{username}}<br /></h1>
-          <h2>A New Story Awaits You on Sunoo!<br /></h2>
-          <p>We're excited to announce a fresh addition to our
+              </td>
+            </tr>
+            <tr>
+              <td class='content' style='padding: 0 20px 20px; text-align: left;'>
+          <h1 style='margin: 0 0 15px; font-size: 16px; font-weight: 600; color: #111827;'>Hi, {{username}}<br /></h1>
+          <h2 style='margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #c026d3;'>A New Story Awaits You on Sunoo!<br /></h2>
+          <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'>We're excited to announce a fresh addition to our
             collection—immerse yourself in the captivating world of
             {{bookTitle}}</p>
 
-          <div class='story-card'>
-            <h3 class='story-title'>{{bookTitle}}<br /></h3>
+          <div class='story-card' style='background: #fbf7ff; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 5px solid #d240a8;'>
+            <h3 class='story-title' style='font-size: 16px; font-weight: 600; color: #111; margin: 0; margin-bottom: 8px;'>{{bookTitle}}<br /></h3>
 
-            <div class='story-meta'>
+            <div class='story-meta' style='margin-top: 8px;'>
               {{#if bookLanguage}}
-                <div class='story-meta-item'>
-                  <span class='story-meta-label'>Language:</span>
-                  <span>{{bookLanguage}}</span>
+                <div class='story-meta-item' style='font-size: 14px; color: #4a5568; margin-bottom: 6px;'>
+                  <span class='story-meta-label' style='font-weight: 600; color: #6b7280;'>Language:</span>
+                  <span> {{bookLanguage}}</span>
                 </div>
               {{/if}}
 
               {{#if bookCategory}}
-                <div class='story-meta-item'>
-                  <span class='story-meta-label'>Genre:</span>
-                  <span>{{bookCategory}}</span>
+                <div class='story-meta-item' style='font-size: 14px; color: #4a5568; margin-bottom: 6px;'>
+                  <span class='story-meta-label' style='font-weight: 600; color: #6b7280;'>Genre:</span>
+                  <span> {{bookCategory}}</span>
                 </div>
               {{/if}}
             </div>
 
             {{#if bookDescription}}
-              <div class='story-description'>
+              <div class='story-description' style='font-size: 14px; color: #374151; line-height: 22px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;'>
                 {{bookDescription}}
               </div>
             {{/if}}
           </div>
 
-          <ul>
-            <li>Ideal for: Leisure time, travel, or bedtime<br /></li>
-            <li>Narration: Real voices that connect emotionally<br /></li>
+          <ul style='padding-left: 18px; margin: 0 0 20px; color: #374151; font-size: 15px;'>
+            <li style='margin-bottom: 5px;'>Ideal for: Leisure time, travel, or bedtime<br /></li>
+            <li style='margin-bottom: 5px;'>Narration: Real voices that connect emotionally<br /></li>
           </ul>
 
-          <p>Sunoo is your go-to place for heartfelt audio stories in your
+          <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'>Sunoo is your go-to place for heartfelt audio stories in your
             native language. Let
             {{bookTitle}}
             inspire your imagination and create a deeper connection to
             storytelling.</p>
 
           <div>
-            <p>Happy listening!</p>
+            <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'>Happy listening!</p>
           </div>
 
-          <div class='cta'>
-            <a href='{{bookLink}}'>Listen Now</a>
+          <div class='cta' style='text-align: center; padding: 10px 0 40px; margin-top: 10px;'>
+            <a href='{{bookLink}}' style='display: inline-block; padding: 14px 40px; font-size: 16px; font-weight: 600; color: #fff; text-decoration: none; border-radius: 999px; background: #6f49ff;'>Listen Now</a>
             <br />
           </div>
-        </div>
-        <div
+              </td>
+            </tr>
+            <tr>
+              <td
           class='footer'
-          style='background: #F5F6F8; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;text-align: center;'
-        >
-          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
-          <div class='socials'>
-            <a href='https://www.instagram.com/sunooapp/' target='_blank'><img
+                style='background: #F5F6F8; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; text-align: center; padding: 50px 30px 70px 30px;'
+              >
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+          <div class='socials' style='text-align: center; margin: 14px 0;'>
+            <a href='https://www.instagram.com/sunooapp/' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'><img
                 src='https://sunoo.app/email-template/instagram.png'
                 alt='Instagram'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/youtube.png'
                 alt='YouTube'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/facebook.png'
                 alt='Facebook'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.linkedin.com/company/sunoo-app'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/linkedin.png'
                 alt='LinkedIn'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://x.com/SunooApp' target='_blank'>
+            <a href='https://x.com/SunooApp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/twitter-x.png/'
                 alt='X'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
           </div>
@@ -320,32 +320,32 @@
             <a
               href='https://play.google.com/store/apps/details?id=app.sunoo.envsoft&utm_source=email&utm_medium=email&utm_campaign=new_chapter&utm_content=google_play_button'
               target='_blank'
-              style='display: inline-flex; align-items: center; padding: 12px 20px;'
+              style='display: inline-block; padding: 12px 20px;'
             >
               <img
                 src='https://sunoo.app/images/google-play.png'
                 alt='Google Play'
-                style='height: 50px; margin-right: 8px; filter: brightness(0) invert(1);''
+                style='height: 50px; margin-right: 8px;'
               />
 
             </a>
           </div>
 
-          <p class='small'>© 2025 Sunoo.app
-            <span class='highlight'><b>💜</b></span>
+          <p class='small' style='font-size: 13px; margin-top: 16px; margin-bottom: 6px; color: #374151;'>© 2025 Sunoo.app
+            <span class='highlight' style='color: #c026d3;'><b>💜</b></span>
             All rights reserved.</p>
-          <p>Visit
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Visit
             <a
               href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
               target='_blank'
               style='text-decoration: none;'
             ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
             Today</p>
-        </div>
-      </div>
-    </div>
-    <div>
-      <br />
-    </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
