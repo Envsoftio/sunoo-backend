@@ -17,8 +17,6 @@
           sans-serif;
       }
       .wrapper {
-        display: flex;
-        justify-content: center;
         background: #f6f2fa;
       }
       .card {
@@ -30,12 +28,7 @@
       }
       .card-topbar {
         height: 8px;
-        background: linear-gradient(
-          90deg,
-          #ff8a00 0%,
-          #ff3d81 50%,
-          #6f49ff 100%
-        );
+        background: #6f49ff;
       }
       .logo {
         text-align: center;
@@ -75,17 +68,17 @@
         color: #374151;
       }
       .socials {
-        display: flex;
-        justify-content: center;
+        text-align: center;
         margin: 14px 0;
-        gap: 12px;
       }
       .socials a {
+        display: inline-block;
         width: 34px;
         height: 34px;
         border-radius: 50%;
         border: 2px solid #c026d3;
-        margin-right: 5px;
+        margin: 0 6px;
+        vertical-align: middle;
       }
       .socials a img {
         margin: auto;
@@ -109,25 +102,32 @@
       }
     </style>
   </head>
-  <body>
-    <div class='wrapper'>
-      <div class='card'>
-        <div class='card-topbar'></div>
-        <div class='logo'>
-          <img
-            src='https://sunoo.app/images/sunoo-logo-black.png'
-            alt='Sunoo'
-          />
-        </div>
-        <div class='content'>
-          <p><span class='colour' style='color:rgb(85, 85, 85)'><span
+  <body style='margin: 0; padding: 0; background: #f6f2fa; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;'>
+    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background: #f6f2fa;'>
+      <tr>
+        <td align='center' style='padding: 20px 0;'>
+          <table role='presentation' width='600' cellpadding='0' cellspacing='0' border='0' class='card' style='max-width: 600px; width: 100%; background: #fff; border-radius: 12px; overflow: hidden;'>
+            <tr>
+              <td class='card-topbar' style='height: 8px; background: #6f49ff;'></td>
+            </tr>
+            <tr>
+              <td class='logo' style='text-align: center; padding: 32px 24px 30px;'>
+                <img
+                  src='https://sunoo.app/images/sunoo-logo-black.png'
+                  alt='Sunoo'
+                  style='max-width: 160px; height: auto;'
+                />
+              </td>
+            </tr>
+            <tr>
+              <td class='content' style='padding: 0 20px 20px; text-align: left;'>
+          <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'><span class='colour' style='color:rgb(85, 85, 85)'><span
                 class='size'
                 style='font-size:16px'
               >Hi <b>{{username}}</b>,</span></span><br /></p>
-          <div class='content-content'>
+          <div class='content-content' style='width: 100%; font-size: 15px; line-height: 26px; color: #374151;'>
             {{{content}}}
           </div>
-        </div>
         <div
           style='text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;'
         >
@@ -137,68 +137,81 @@
           <a
             href='https://play.google.com/store/apps/details?id=app.sunoo.envsoft&utm_source=email&utm_medium=email&utm_campaign=new_chapter&utm_content=google_play_button'
             target='_blank'
-            style='display: inline-flex; align-items: center; padding: 12px 20px;'
+            style='display: inline-block; padding: 12px 20px;'
           >
             <img
               src='https://sunoo.app/images/google-play.png'
               alt='Google Play'
-              style='height: 50px; margin-right: 8px; filter: brightness(0) invert(1);'
+              style='height: 50px; margin-right: 8px;'
             />
 
           </a>
         </div>
-        <div class='footer'>
-          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
-          <div class='socials'>
-            <a href='https://www.instagram.com/sunooapp/' target='_blank'>
+              </td>
+            </tr>
+            <tr>
+              <td class='footer' style='background: #f5f6f8; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 50px 30px 70px 30px; text-align: center;'>
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Want a sneak peek? Follow us for teasers &amp; updates:</p>
+          <div class='socials' style='text-align: center; margin: 14px 0;'>
+            <a href='https://www.instagram.com/sunooapp/' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/instagram.png'
                 alt='Instagram'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/youtube.png'
                 alt='YouTube'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/facebook.png'
                 alt='Facebook'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.linkedin.com/company/sunoo-app'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/linkedin.png'
                 alt='LinkedIn'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://x.com/SunooApp' target='_blank'>
+            <a href='https://x.com/SunooApp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/twitter-x.png/'
                 alt='X'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
           </div>
-          <p class='small'>© 2025 Sunoo.app
-            <span class='highlight'><b>💜</b></span>
+          <p class='small' style='font-size: 13px; margin-top: 16px; margin-bottom: 6px; color: #374151;'>© 2025 Sunoo.app
+            <span class='highlight' style='color: #c026d3;'><b>💜</b></span>
             All rights reserved.</p>
-          <p>Visit
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Visit
             <a
               href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
               target='_blank'
               style='text-decoration: none;'
             ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
             Today</p>
-        </div>
-      </div>
-    </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

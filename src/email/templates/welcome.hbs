@@ -26,10 +26,6 @@
       }
 
       .wrapper {
-        display: flex;
-
-        justify-content: center;
-
         background: #f6f2fa;
       }
 
@@ -48,12 +44,7 @@
       .card-topbar {
         height: 8px;
 
-        background: linear-gradient(
-          90deg,
-          #ff8a00 0%,
-          #ff3d81 50%,
-          #6f49ff 100%
-        );
+        background: #6f49ff;
       }
 
       .logo {
@@ -123,10 +114,6 @@
       }
 
       .feature {
-        display: flex;
-
-        align-items: center;
-
         margin: 15px 0;
 
         font-size: 15px;
@@ -135,6 +122,7 @@
       }
 
       .feature-icon {
+        display: inline-block;
         width: 24px;
 
         height: 24px;
@@ -145,17 +133,15 @@
 
         margin-right: 15px;
 
-        display: flex;
+        text-align: center;
 
-        align-items: center;
-
-        justify-content: center;
+        line-height: 24px;
 
         color: white;
 
         font-weight: bold;
 
-        flex-shrink: 0;
+        vertical-align: middle;
       }
 
       .cta {
@@ -181,7 +167,7 @@
 
         border-radius: 999px;
 
-        background: linear-gradient(90deg, #ff8a00, #ff3d81, #6f49ff);
+        background: #6f49ff;
       }
 
       .verification-box {
@@ -261,16 +247,13 @@
       }
 
       .socials {
-        display: flex;
-
-        justify-content: center;
+        text-align: center;
 
         margin: 14px 0;
-
-        gap: 12px;
       }
 
       .socials a {
+        display: inline-block;
         width: 34px;
 
         height: 34px;
@@ -279,7 +262,9 @@
 
         border: 2px solid #c026d3;
 
-        margin-right: 5px;
+        margin: 0 6px;
+
+        vertical-align: middle;
       }
 
       .socials a img {
@@ -326,76 +311,80 @@
 
   </head>
 
-  <body>
+  <body style='margin: 0; padding: 0; background: #f6f2fa; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;'>
 
-    <div class='wrapper'>
+    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background: #f6f2fa;'>
+      <tr>
+        <td align='center' style='padding: 20px 0;'>
+          <table role='presentation' width='600' cellpadding='0' cellspacing='0' border='0' class='card' style='max-width: 600px; width: 100%; background: #fff; border-radius: 12px; overflow: hidden;'>
+            <tr>
+              <td class='card-topbar' style='height: 8px; background: #6f49ff;'></td>
+            </tr>
+            <tr>
+              <td class='logo' style='text-align: center; padding: 32px 24px 30px;'>
 
-      <div class='card'>
+                <img
+                  src='https://sunoo.app/images/sunoo-logo-black.png'
+                  alt='Sunoo'
+                  style='max-width: 160px; height: auto;'
+                />
 
-        <div class='card-topbar'></div>
+              </td>
+            </tr>
+            <tr>
+              <td class='content' style='padding: 0 20px 20px; text-align: left;'>
 
-        <div class='logo'>
-
-          <img
-            src='https://sunoo.app/images/sunoo-logo-black.png'
-            alt='Sunoo'
-          />
-
-        </div>
-
-        <div class='content'>
-
-          <p><span class='colour' style='color:rgb(85, 85, 85)'><span
+          <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'><span class='colour' style='color:rgb(85, 85, 85)'><span
                 class='size'
                 style='font-size:16px'
               >Hello <b>{{userName}}</b>,</span></span><br /></p>
 
-          <p>Thank you for joining
+          <p style='margin: 0 0 18px; font-size: 15px; line-height: 26px; color: #374151;'>Thank you for joining
             {{appName}}! We're thrilled to have you as part of our community.</p>
 
-          <div class='highlight'>
+          <div class='highlight' style='background-color: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;'>
 
-            <h3>🎯 What's Next?</h3>
+            <h3 style='color: #1e40af; margin: 0 0 10px 0; font-size: 18px; font-weight: 600;'>🎯 What's Next?</h3>
 
-            <p>Your account has been created successfully! To complete your
+            <p style='color: #1e40af; margin: 0; font-size: 15px; line-height: 26px;'>Your account has been created successfully! To complete your
               registration and start exploring all the amazing features we have
               to offer, please verify your email address.</p>
 
           </div>
 
-          <div class='features'>
+          <div class='features' style='margin: 30px 0;'>
 
-            <h3>✨ What you can do now:</h3>
+            <h3 style='margin: 0 0 15px; font-size: 18px; font-weight: 600; color: #111827;'>✨ What you can do now:</h3>
 
-            <div class='feature'>
+            <div class='feature' style='margin: 15px 0; font-size: 15px; color: #374151;'>
 
-              <div class='feature-icon'>📚</div>
+              <div class='feature-icon' style='display: inline-block; width: 24px; height: 24px; background-color: #10b981; border-radius: 50%; margin-right: 15px; text-align: center; line-height: 24px; color: white; font-weight: bold; vertical-align: middle;'>📚</div>
 
-              <span>Discover and read amazing stories</span>
-
-            </div>
-
-            <div class='feature'>
-
-              <div class='feature-icon'>📖</div>
-
-              <span>Create and share your own stories</span>
+              <span style='vertical-align: middle;'>Discover and read amazing stories</span>
 
             </div>
 
-            <div class='feature'>
+            <div class='feature' style='margin: 15px 0; font-size: 15px; color: #374151;'>
 
-              <div class='feature-icon'>👥</div>
+              <div class='feature-icon' style='display: inline-block; width: 24px; height: 24px; background-color: #10b981; border-radius: 50%; margin-right: 15px; text-align: center; line-height: 24px; color: white; font-weight: bold; vertical-align: middle;'>📖</div>
 
-              <span>Connect with other storytellers</span>
+              <span style='vertical-align: middle;'>Create and share your own stories</span>
 
             </div>
 
-            <div class='feature'>
+            <div class='feature' style='margin: 15px 0; font-size: 15px; color: #374151;'>
 
-              <div class='feature-icon'>⭐</div>
+              <div class='feature-icon' style='display: inline-block; width: 24px; height: 24px; background-color: #10b981; border-radius: 50%; margin-right: 15px; text-align: center; line-height: 24px; color: white; font-weight: bold; vertical-align: middle;'>👥</div>
 
-              <span>Rate and review stories</span>
+              <span style='vertical-align: middle;'>Connect with other storytellers</span>
+
+            </div>
+
+            <div class='feature' style='margin: 15px 0; font-size: 15px; color: #374151;'>
+
+              <div class='feature-icon' style='display: inline-block; width: 24px; height: 24px; background-color: #10b981; border-radius: 50%; margin-right: 15px; text-align: center; line-height: 24px; color: white; font-weight: bold; vertical-align: middle;'>⭐</div>
+
+              <span style='vertical-align: middle;'>Rate and review stories</span>
 
             </div>
 
@@ -403,16 +392,16 @@
 
           {{#if verificationUrl}}
 
-            <div class='verification-box'>
+            <div class='verification-box' style='background-color: #fef3c7; padding: 25px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 25px 0; text-align: center;'>
 
-              <h3>🔐 Email Verification Required</h3>
+              <h3 style='color: #92400e; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;'>🔐 Email Verification Required</h3>
 
-              <p>Click the button below to verify your email address and
+              <p style='margin: 0 0 20px 0; color: #92400e; font-size: 15px; line-height: 26px;'>Click the button below to verify your email address and
                 activate your account:</p>
 
-              <div class='cta'>
+              <div class='cta' style='text-align: center; padding: 10px 0 40px; margin-top: 10px;'>
 
-                <a href='{{verificationUrl}}'>Verify Email Address</a>
+                <a href='{{verificationUrl}}' style='display: inline-block; padding: 14px 40px; font-size: 16px; font-weight: 600; color: #fff; text-decoration: none; border-radius: 999px; background: #6f49ff;'>Verify Email Address</a>
 
               </div>
 
@@ -422,11 +411,11 @@
 
             </div>
 
-            <div class='security-box'>
+            <div class='security-box' style='background-color: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;'>
 
-              <h4>🛡️ Security Information</h4>
+              <h4 style='color: #1e40af; margin: 0 0 10px 0; font-size: 16px;'>🛡️ Security Information</h4>
 
-              <p>This verification link is unique to your account and should not
+              <p style='margin: 0; color: #1e40af; font-size: 14px; line-height: 22px;'>This verification link is unique to your account and should not
                 be shared with anyone. If you didn't create an account with
                 {{appName}}, please ignore this email.</p>
 
@@ -434,62 +423,69 @@
 
           {{/if}}
 
-          <div class='cta'>
+          <div class='cta' style='text-align: center; padding: 10px 0 40px; margin-top: 10px;'>
 
-            <a href='{{appUrl}}'>Start Exploring {{appName}}</a>
+            <a href='{{appUrl}}' style='display: inline-block; padding: 14px 40px; font-size: 16px; font-weight: 600; color: #fff; text-decoration: none; border-radius: 999px; background: #6f49ff;'>Start Exploring {{appName}}</a>
 
           </div>
 
-          <p style='font-size: 14px; color: #6b7280; margin-top: 20px;'>If you
+          <p style='font-size: 14px; color: #6b7280; margin-top: 20px; margin: 20px 0 18px; font-size: 15px; line-height: 26px;'>If you
             have any questions, feel free to reach out to our support team.</p>
 
-          <p style='font-size: 14px; color: #6b7280; margin-top: 10px;'>This
+          <p style='font-size: 14px; color: #6b7280; margin-top: 10px; margin: 0 0 18px; font-size: 15px; line-height: 26px;'>This
             email was sent to
             {{userEmail}}. If you didn't create an account with
             {{appName}}, you can safely ignore this email.</p>
+              </td>
+            </tr>
+            <tr>
+              <td class='footer' style='background: #f5f6f8; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; padding: 50px 30px 70px 30px; text-align: center;'>
 
-        </div>
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Want a sneak peek? Follow us for teasers &amp; updates:</p>
 
-        <div class='footer'>
+          <div class='socials' style='text-align: center; margin: 14px 0;'>
 
-          <p>Want a sneak peek? Follow us for teasers &amp; updates:</p>
-
-          <div class='socials'>
-
-            <a href='https://www.instagram.com/sunooapp/' target='_blank'>
+            <a href='https://www.instagram.com/sunooapp/' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/instagram.png'
                 alt='Instagram'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://www.youtube.com/@sunooapp' target='_blank'>
+            <a href='https://www.youtube.com/@sunooapp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/youtube.png'
                 alt='YouTube'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.facebook.com/people/Sunoo-App/61576276623770/'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/facebook.png'
                 alt='Facebook'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
             <a
               href='https://www.linkedin.com/company/sunoo-app'
               target='_blank'
+              style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'
             >
               <img
                 src='https://sunoo.app/email-template/linkedin.png'
                 alt='LinkedIn'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
-            <a href='https://x.com/SunooApp' target='_blank'>
+            <a href='https://x.com/SunooApp' target='_blank' style='display: inline-block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #c026d3; margin: 0 6px; vertical-align: middle;'>
               <img
                 src='https://sunoo.app/email-template/twitter-x.png/'
                 alt='X'
+                style='margin: auto; padding: 10px 6px;'
               />
             </a>
 
@@ -504,34 +500,34 @@
             <a
               href='https://play.google.com/store/apps/details?id=app.sunoo.envsoft&utm_source=email&utm_medium=email&utm_campaign=new_chapter&utm_content=google_play_button'
               target='_blank'
-              style='display: inline-flex; align-items: center; padding: 12px 20px;'
+              style='display: inline-block; padding: 12px 20px;'
             >
               <img
                 src='https://sunoo.app/images/google-play.png'
                 alt='Google Play'
-                style='height: 50px; margin-right: 8px; filter: brightness(0) invert(1);''
+                style='height: 50px; margin-right: 8px;'
               />
 
             </a>
           </div>
 
-          <p class='small'>© 2025 Sunoo.app
-            <span class=''><b>💜</b></span>
+          <p class='small' style='font-size: 13px; margin-top: 16px; margin-bottom: 6px; color: #374151;'>© 2025 Sunoo.app
+            <span class='' style='color: #c026d3;'><b>💜</b></span>
             All rights reserved.</p>
 
-          <p>Visit
+          <p style='margin: 0; font-size: 14px; line-height: 24px; color: #374151;'>Visit
             <a
               href='https://sunoo.app?utm_source=email&amp;utm_medium=email&amp;utm_campaign=email_story_promotion&amp;utm_content=footer'
               target='_blank'
               style='text-decoration: none;'
             ><span class='colour' style='color:#9933ff'><b>Sunoo</b></span></a>
             Today</p>
-
-        </div>
-
-      </div>
-
-    </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
   </body>
 
