@@ -40,6 +40,45 @@ export class SupportTicketService {
     private dataSource: DataSource
   ) {}
 
+  private sanitizeUser(
+    user: User | undefined,
+    maskAdminForUser: boolean
+  ): Partial<User> | undefined {
+    if (!user) return undefined;
+
+    const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
+
+    if (maskAdminForUser && isAdminRole) {
+      return {
+        id: user.id,
+        name: 'Sunoo',
+        email: 'support@sunoo.app',
+        avatar: user.avatar,
+        role: user.role,
+      };
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+    };
+  }
+
+  private mapMessagesForResponse(
+    messages: SupportTicketMessage[],
+    isAdmin: boolean
+  ): SupportTicketMessage[] {
+    const maskAdminForUser = !isAdmin;
+
+    return messages.map(message => ({
+      ...message,
+      user: this.sanitizeUser(message.user, maskAdminForUser) as User,
+    }));
+  }
+
   async createTicket(
     createTicketDto: CreateSupportTicketDto,
     userId: string
@@ -163,29 +202,11 @@ export class SupportTicketService {
       .getManyAndCount();
 
     // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
-    if (!isAdmin) {
-      tickets.forEach(ticket => {
-        if (ticket.messages && ticket.messages.length > 0) {
-          ticket.messages = ticket.messages.map(message => {
-            if (
-              message.user &&
-              (message.user.role === 'admin' ||
-                message.user.role === 'superadmin')
-            ) {
-              return {
-                ...message,
-                user: {
-                  ...message.user,
-                  name: 'Sunoo',
-                  email: 'support@sunoo.app',
-                },
-              };
-            }
-            return message;
-          });
-        }
-      });
-    }
+    tickets.forEach(ticket => {
+      if (ticket.messages && ticket.messages.length > 0) {
+        ticket.messages = this.mapMessagesForResponse(ticket.messages, isAdmin);
+      }
+    });
 
     return { tickets, total };
   }
@@ -219,31 +240,17 @@ export class SupportTicketService {
       messageWhere.isInternal = false;
     }
 
-    ticket.messages = await this.supportTicketMessageRepository.find({
-      where: messageWhere,
-      relations: ['user'],
-      order: { created_at: 'ASC' },
-    });
+    ticket.messages = this.mapMessagesForResponse(
+      await this.supportTicketMessageRepository.find({
+        where: messageWhere,
+        relations: ['user'],
+        order: { created_at: 'ASC' },
+      }),
+      isAdmin
+    );
 
-    // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
-    if (!isAdmin && ticket.messages) {
-      ticket.messages = ticket.messages.map(message => {
-        if (
-          message.user &&
-          (message.user.role === 'admin' || message.user.role === 'superadmin')
-        ) {
-          return {
-            ...message,
-            user: {
-              ...message.user,
-              name: 'Sunoo',
-              email: 'support@sunoo.app',
-            },
-          };
-        }
-        return message;
-      });
-    }
+    // Sanitize ticket owner as well
+    ticket.user = this.sanitizeUser(ticket.user, false) as User;
 
     return ticket;
   }
@@ -344,27 +351,7 @@ export class SupportTicketService {
       order: { created_at: 'ASC' },
     });
 
-    // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
-    if (!isAdmin) {
-      return messages.map(message => {
-        if (
-          message.user &&
-          (message.user.role === 'admin' || message.user.role === 'superadmin')
-        ) {
-          return {
-            ...message,
-            user: {
-              ...message.user,
-              name: 'Sunoo',
-              email: 'support@sunoo.app',
-            },
-          };
-        }
-        return message;
-      });
-    }
-
-    return messages;
+    return this.mapMessagesForResponse(messages, isAdmin);
   }
 
   async addMessage(
@@ -500,23 +487,8 @@ export class SupportTicketService {
       );
     }
 
-    // Transform admin message to show "Sunoo" instead of admin name for non-admin users
-    if (
-      isAdmin &&
-      message.user &&
-      (message.user.role === 'admin' || message.user.role === 'superadmin')
-    ) {
-      return {
-        ...message,
-        user: {
-          ...message.user,
-          name: 'Sunoo',
-          email: 'support@sunoo.app',
-        },
-      };
-    }
-
-    return message;
+    // Sanitize/transform before returning
+    return this.mapMessagesForResponse([message], isAdmin)[0];
   }
 
   async updateMessage(
