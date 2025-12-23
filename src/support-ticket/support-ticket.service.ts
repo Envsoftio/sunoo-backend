@@ -21,6 +21,8 @@ import {
   SupportTicketQueryDto,
 } from '../dto/support-ticket.dto';
 import { EmailService } from '../email/email.service';
+import { PushNotificationService } from '../push-notification/push-notification.service';
+import { NotificationType } from '../dto/push-notification.dto';
 
 @Injectable()
 export class SupportTicketService {
@@ -34,6 +36,7 @@ export class SupportTicketService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private emailService: EmailService,
+    private pushNotificationService: PushNotificationService,
     private dataSource: DataSource
   ) {}
 
@@ -209,7 +212,9 @@ export class SupportTicketService {
     }
 
     // Load messages separately so we can filter internal notes for non-admins
-    const messageWhere: FindOptionsWhere<SupportTicketMessage> = { ticketId: id };
+    const messageWhere: FindOptionsWhere<SupportTicketMessage> = {
+      ticketId: id,
+    };
     if (!isAdmin) {
       messageWhere.isInternal = false;
     }
@@ -445,6 +450,47 @@ export class SupportTicketService {
               error
             );
             // Don't throw error - message should be saved even if email fails
+          }
+        })();
+      });
+
+      // Push notification to ticket owner (if enabled)
+      setImmediate(() => {
+        void (async () => {
+          try {
+            const user = await this.userRepository.findOne({
+              where: { id: message.ticket.userId },
+            });
+
+            if (
+              user &&
+              user.push_notifications_enabled &&
+              user.push_engagement_enabled
+            ) {
+              const preview =
+                createMessageDto.content?.slice(0, 140) ||
+                'New reply on your support ticket';
+
+              await this.pushNotificationService.sendToUser(
+                user.id,
+                'Support replied',
+                preview,
+                {
+                  ticketId: message.ticket.id,
+                  type: 'support_reply',
+                },
+                NotificationType.ENGAGEMENT
+              );
+
+              this.logger.log(
+                `Push notification sent for ticket #${message.ticket.id}`
+              );
+            }
+          } catch (error) {
+            this.logger.error(
+              `Failed to send push notification for ticket #${message.ticket.id}:`,
+              error
+            );
           }
         })();
       });
