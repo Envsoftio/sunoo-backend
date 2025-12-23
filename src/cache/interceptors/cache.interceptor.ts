@@ -34,7 +34,8 @@ export class CacheInterceptor implements NestInterceptor {
       url.includes('/payment') ||
       url.includes('/razorpay') ||
       url.includes('/webhook') || // Webhooks (matches both /webhook and /webhooks)
-      url.includes('/webhooks') // Explicit check for plural form
+      url.includes('/webhooks') || // Explicit check for plural form
+      url.includes('/support-tickets') // Support tickets must always be fresh
     ) {
       return next.handle();
     }
