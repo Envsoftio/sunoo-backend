@@ -266,6 +266,7 @@ export class GenreService {
           'category.slug',
           'category.description',
           'category.banner_url',
+          'category.featured',
         ])
         .addSelect('COUNT(DISTINCT book.id)', 'storyCount')
         .addSelect('COALESCE(AVG(rating.rating), 0)', 'averageRating')
@@ -285,6 +286,7 @@ export class GenreService {
         slug: category.slug,
         description: category.description,
         bannerUrl: category.banner_url,
+        isFeatured: category.featured || false,
         storyCount: parseInt(result.raw[index]?.storyCount || '0'),
         averageRating: parseFloat(
           parseFloat(result.raw[index]?.averageRating || '0').toFixed(1)
