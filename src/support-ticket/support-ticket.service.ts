@@ -122,13 +122,25 @@ export class SupportTicketService {
       where.category = category;
     }
 
+    const latestMessageCondition = [
+      'messages.created_at = (SELECT MAX(m.created_at)',
+      'FROM support_ticket_messages m',
+      'WHERE m."ticketId" = ticket.id',
+    ];
+
+    // Non-admins should only see public (non-internal) messages
+    if (!isAdmin) {
+      latestMessageCondition.push('AND m."isInternal" = false');
+    }
+    latestMessageCondition.push(')');
+
     const queryBuilder = this.supportTicketRepository
       .createQueryBuilder('ticket')
       .leftJoinAndSelect('ticket.user', 'user')
       .leftJoinAndSelect(
         'ticket.messages',
         'messages',
-        'messages.created_at = (SELECT MAX(m.created_at) FROM support_ticket_messages m WHERE m."ticketId" = ticket.id)'
+        latestMessageCondition.join(' ')
       )
       .leftJoinAndSelect('messages.user', 'messageUser')
       .where(where);
@@ -182,7 +194,7 @@ export class SupportTicketService {
   ): Promise<SupportTicket> {
     const ticket = await this.supportTicketRepository.findOne({
       where: { id },
-      relations: ['user', 'messages', 'messages.user'],
+      relations: ['user'],
     });
 
     if (!ticket) {
@@ -195,6 +207,18 @@ export class SupportTicketService {
         'You can only view your own support tickets'
       );
     }
+
+    // Load messages separately so we can filter internal notes for non-admins
+    const messageWhere: FindOptionsWhere<SupportTicketMessage> = { ticketId: id };
+    if (!isAdmin) {
+      messageWhere.isInternal = false;
+    }
+
+    ticket.messages = await this.supportTicketMessageRepository.find({
+      where: messageWhere,
+      relations: ['user'],
+      order: { created_at: 'ASC' },
+    });
 
     // Transform admin messages to show "Sunoo" instead of admin name for non-admin users
     if (!isAdmin && ticket.messages) {
@@ -304,8 +328,13 @@ export class SupportTicketService {
   ): Promise<SupportTicketMessage[]> {
     await this.findTicketById(ticketId, userId, isAdmin);
 
+    const messageWhere: FindOptionsWhere<SupportTicketMessage> = { ticketId };
+    if (!isAdmin) {
+      messageWhere.isInternal = false;
+    }
+
     const messages = await this.supportTicketMessageRepository.find({
-      where: { ticketId },
+      where: messageWhere,
       relations: ['user'],
       order: { created_at: 'ASC' },
     });
