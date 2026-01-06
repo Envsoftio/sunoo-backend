@@ -16,7 +16,7 @@ export class RazorpayService {
   }
 
   // Configuration: Set to false to disable offers completely
-  private readonly OFFERS_ENABLED = true;
+  private readonly OFFERS_ENABLED = false;
 
   private getAuthHeader(): string {
     const auth = Buffer.from(
