@@ -34,13 +34,18 @@ export class SleepSoundsController {
 
   @Get('categories')
   @ApiOperation({ summary: 'Get all published sleep sound categories' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   async getCategories() {
     return await this.sleepSoundsService.getAllCategories(true);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all sleep sounds for user (with access control)' })
+  @ApiOperation({
+    summary: 'Get all sleep sounds for user (with access control)',
+  })
   @ApiResponse({ status: 200, description: 'Sounds retrieved successfully' })
   async getSounds(@Request() req) {
     return await this.sleepSoundsService.getSoundsForUser(req.user.id);
@@ -50,7 +55,9 @@ export class SleepSoundsController {
   @ApiOperation({ summary: 'Get sounds by category' })
   @ApiResponse({ status: 200, description: 'Sounds retrieved successfully' })
   async getSoundsByCategory(@Param('id') categoryId: string, @Request() req) {
-    const allSounds = await this.sleepSoundsService.getSoundsForUser(req.user.id);
+    const allSounds = await this.sleepSoundsService.getSoundsForUser(
+      req.user.id
+    );
     return {
       ...allSounds,
       sounds: allSounds.sounds.filter(s => s.category_id === categoryId),
@@ -119,7 +126,7 @@ export class SleepSoundsController {
   async updateUserMix(
     @Request() req,
     @Param('id') mixId: string,
-    @Body() dto: Partial<CreateUserMixDto>,
+    @Body() dto: Partial<CreateUserMixDto>
   ) {
     return await this.sleepSoundsService.updateUserMix(req.user.id, mixId, dto);
   }

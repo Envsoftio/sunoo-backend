@@ -171,7 +171,7 @@ export class SleepSoundsService {
     });
 
     let accessibleSounds = allSounds;
-    let totalSounds = allSounds.length;
+    const totalSounds = allSounds.length;
 
     if (!isUserPremium) {
       // Filter non-premium sounds
