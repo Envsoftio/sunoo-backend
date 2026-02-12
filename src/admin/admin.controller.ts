@@ -924,4 +924,178 @@ export class AdminController {
   async cleanupDeviceTokens() {
     return await this.adminService.cleanupDeviceTokens();
   }
+
+  // Sleep Sounds Management - delegated to AdminService
+  @Get('sleep-sounds/categories')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all sleep sound categories (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  async getSleepSoundCategories() {
+    return await this.adminService.getSleepSoundCategories();
+  }
+
+  @Post('sleep-sounds/categories')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create sleep sound category (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Category created successfully' })
+  async createSleepSoundCategory(@Body() body: any) {
+    return await this.adminService.createSleepSoundCategory(body);
+  }
+
+  @Put('sleep-sounds/categories/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update sleep sound category (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  async updateSleepSoundCategory(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updateSleepSoundCategory(id, body);
+  }
+
+  @Delete('sleep-sounds/categories/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete sleep sound category (Admin only)' })
+  @ApiResponse({ status: 204, description: 'Category deleted successfully' })
+  async deleteSleepSoundCategory(@Param('id') id: string) {
+    await this.adminService.deleteSleepSoundCategory(id);
+  }
+
+  @Get('sleep-sounds/analytics/overview')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get sleep sounds analytics overview (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Analytics overview retrieved successfully' })
+  async getSleepAnalyticsOverview() {
+    return await this.adminService.getSleepAnalyticsOverview();
+  }
+
+  @Get('sleep-sounds/analytics/sessions')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get sleep sound sessions list (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Sessions retrieved successfully' })
+  async getSleepSoundSessions(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return await this.adminService.getSleepSoundSessions(
+      limit ? parseInt(limit, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined,
+    );
+  }
+
+  @Get('sleep-sounds/analytics/top-sounds')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get top sounds by plays (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Top sounds retrieved successfully' })
+  async getSleepTopSounds(@Query('limit') limit?: string) {
+    return await this.adminService.getSleepTopSounds(limit ? parseInt(limit, 10) : undefined);
+  }
+
+  @Get('sleep-sounds')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all sleep sounds (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Sounds retrieved successfully' })
+  async getSleepSounds(@Query('category_id') categoryId?: string) {
+    return await this.adminService.getSleepSounds(categoryId);
+  }
+
+  @Post('sleep-sounds')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create sleep sound (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Sound created successfully' })
+  async createSleepSound(@Body() body: any) {
+    return await this.adminService.createSleepSound(body);
+  }
+
+  @Put('sleep-sounds/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update sleep sound (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Sound updated successfully' })
+  async updateSleepSound(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updateSleepSound(id, body);
+  }
+
+  @Delete('sleep-sounds/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete sleep sound (Admin only)' })
+  @ApiResponse({ status: 204, description: 'Sound deleted successfully' })
+  async deleteSleepSound(@Param('id') id: string) {
+    await this.adminService.deleteSleepSound(id);
+  }
+
+  @Post('sleep-sounds/:id/toggle-publish')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle publish status of sleep sound (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Sound publish status toggled successfully' })
+  async toggleSleepSoundPublish(@Param('id') id: string) {
+    return await this.adminService.toggleSleepSoundPublish(id);
+  }
+
+  // Predefined Mixes Management
+  @Get('sleep-sounds/mixes/predefined')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all predefined mixes (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Mixes retrieved successfully' })
+  async getPredefinedMixes() {
+    return await this.adminService.getPredefinedMixes();
+  }
+
+  @Post('sleep-sounds/mixes/predefined')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create predefined mix (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Mix created successfully' })
+  async createPredefinedMix(@Body() body: any) {
+    return await this.adminService.createPredefinedMix(body);
+  }
+
+  @Put('sleep-sounds/mixes/predefined/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update predefined mix (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Mix updated successfully' })
+  async updatePredefinedMix(@Param('id') id: string, @Body() body: any) {
+    return await this.adminService.updatePredefinedMix(id, body);
+  }
+
+  @Delete('sleep-sounds/mixes/predefined/:id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete predefined mix (Admin only)' })
+  @ApiResponse({ status: 204, description: 'Mix deleted successfully' })
+  async deletePredefinedMix(@Param('id') id: string) {
+    await this.adminService.deletePredefinedMix(id);
+  }
+
+  // Settings Management
+  @Get('settings')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all app settings (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Settings retrieved successfully' })
+  async getSettings() {
+    return await this.adminService.getSettings();
+  }
+
+  @Put('settings/:key')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update app setting (SuperAdmin only)' })
+  @ApiResponse({ status: 200, description: 'Setting updated successfully' })
+  async updateSetting(@Param('key') key: string, @Body() body: { value: string }) {
+    return await this.adminService.updateSetting(key, body.value);
+  }
 }

@@ -235,4 +235,52 @@ export class UploadController {
     }
     return await this.uploadService.uploadAudio(file, storyId, filename);
   }
+
+  @Post('sleep-sound-audio')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Upload sleep sound audio file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        soundId: {
+          type: 'string',
+          description: 'Sleep Sound ID (optional for new sounds)',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Sleep sound audio uploaded successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - file missing or invalid',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for sleep sounds
+      fileFilter: (req, file, cb) => {
+        // Accept audio files
+        if (!file.mimetype.match(/\/(mp3|mpeg|wav|ogg|m4a|aac)$/)) {
+          return cb(new Error('Only audio files (mp3, wav, ogg, m4a, aac) are allowed'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
+  async uploadSleepSoundAudio(
+    @UploadedFile() file: any,
+    @Body('soundId') soundId?: string
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    return await this.uploadService.uploadSleepSoundAudio(file, soundId);
+  }
 }

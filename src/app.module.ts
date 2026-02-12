@@ -26,6 +26,7 @@ import s3Config from './config/s3.config';
 import { S3Module } from './common/services/s3.module';
 import { UploadModule } from './upload/upload.module';
 import { PushNotificationModule } from './push-notification/push-notification.module';
+import { SleepSoundsModule } from './sleep-sounds/sleep-sounds.module';
 import firebaseConfig from './config/firebase.config';
 
 @Module({
@@ -66,6 +67,7 @@ import firebaseConfig from './config/firebase.config';
     SupportTicketModule,
     UploadModule,
     PushNotificationModule,
+    SleepSoundsModule,
   ],
   controllers: [AppController],
   providers: [AppService, DatabaseLoggerService],

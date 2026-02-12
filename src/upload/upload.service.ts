@@ -169,4 +169,38 @@ export class UploadService {
       throw error;
     }
   }
+
+  async uploadSleepSoundAudio(file: any, soundId?: string): Promise<any> {
+    try {
+      const folder = soundId ? `sleep-sounds/${soundId}` : 'sleep-sounds';
+      const extension = file.originalname.split('.').pop();
+      const filename = soundId ? `audio.${extension}` : file.originalname;
+
+      const fileKey = await this.s3Service.uploadMulterFile(
+        file,
+        folder,
+        filename
+      );
+
+      const fileUrl = `${this.s3Url}/${fileKey}`;
+
+      return {
+        success: true,
+        message: 'Sleep sound audio uploaded successfully',
+        data: {
+          key: fileKey,
+          url: fileUrl,
+          file_size_bytes: file.size,
+          mime_type: file.mimetype,
+          duration_seconds: 0, // TODO: Extract with ffprobe if needed
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error uploading sleep sound audio: ${error.message}`,
+        error.stack
+      );
+      throw error;
+    }
+  }
 }

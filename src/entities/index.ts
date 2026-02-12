@@ -21,3 +21,16 @@ export {
   TicketPriority,
   TicketCategory,
 } from './support-ticket.entity';
+export { SleepSoundCategory } from './sleep-sound-category.entity';
+export { SleepSound } from './sleep-sound.entity';
+export { AppSettings } from './app-settings.entity';
+export {
+  SleepSoundAnalytics,
+  AnalyticsEventType,
+} from './sleep-sound-analytics.entity';
+export { SleepSoundSession } from './sleep-sound-session.entity';
+export { UserSoundMix } from './user-sound-mix.entity';
+export { PredefinedSoundMix } from './predefined-sound-mix.entity';
+export { DeviceToken } from './device-token.entity';
+export { Payment } from './payment.entity';
+export { CategorySimple } from './category-simple.entity';

@@ -19,6 +19,7 @@ import { DeviceToken } from '../entities/device-token.entity';
 import { EmailModule } from '../email/email.module';
 import { AuthModule } from '../auth/auth.module';
 import { PushNotificationModule } from '../push-notification/push-notification.module';
+import { SleepSoundsModule } from '../sleep-sounds/sleep-sounds.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PushNotificationModule } from '../push-notification/push-notification.m
     EmailModule,
     AuthModule,
     PushNotificationModule,
+    SleepSoundsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

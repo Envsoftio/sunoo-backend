@@ -21,6 +21,7 @@ import { S3Service } from '../common/services/s3.service';
 import { ContactFormDto } from '../dto/contact.dto';
 import { SanitizationUtil } from '../common/utils/sanitization.util';
 import { PushNotificationService } from '../push-notification/push-notification.service';
+import { SleepSoundsService } from '../sleep-sounds/sleep-sounds.service';
 import {
   SendNotificationDto,
   ContentNotificationDto,
@@ -64,7 +65,8 @@ export class AdminService {
     private emailService: EmailService,
     private zeptomailService: ZeptomailService,
     private s3Service: S3Service,
-    private pushNotificationService: PushNotificationService
+    private pushNotificationService: PushNotificationService,
+    private sleepSoundsService: SleepSoundsService
   ) {}
 
   // User Management
@@ -2654,5 +2656,83 @@ export class AdminService {
         message: error.message || 'Failed to cleanup device tokens',
       };
     }
+  }
+
+  // Sleep Sounds Management - delegated to SleepSoundsService
+  async getSleepSoundCategories() {
+    return await this.sleepSoundsService.getAllCategories(false);
+  }
+
+  async createSleepSoundCategory(dto: any) {
+    return await this.sleepSoundsService.createCategory(dto);
+  }
+
+  async updateSleepSoundCategory(id: string, dto: any) {
+    return await this.sleepSoundsService.updateCategory(id, dto);
+  }
+
+  async deleteSleepSoundCategory(id: string) {
+    return await this.sleepSoundsService.deleteCategory(id);
+  }
+
+  async getSleepSounds(categoryId?: string) {
+    const filters: any = {};
+    if (categoryId) filters.category_id = categoryId;
+    return await this.sleepSoundsService.getAllSounds(filters);
+  }
+
+  async createSleepSound(dto: any) {
+    return await this.sleepSoundsService.createSound(dto);
+  }
+
+  async updateSleepSound(id: string, dto: any) {
+    return await this.sleepSoundsService.updateSound(id, dto);
+  }
+
+  async deleteSleepSound(id: string) {
+    return await this.sleepSoundsService.deleteSound(id);
+  }
+
+  async toggleSleepSoundPublish(id: string) {
+    const sound = await this.sleepSoundsService.getSoundById(id);
+    return await this.sleepSoundsService.updateSound(id, {
+      is_published: !sound.is_published,
+    });
+  }
+
+  async getPredefinedMixes() {
+    return await this.sleepSoundsService.getAllPredefinedMixesForAdmin();
+  }
+
+  async createPredefinedMix(dto: any) {
+    return await this.sleepSoundsService.createPredefinedMix(dto);
+  }
+
+  async updatePredefinedMix(id: string, dto: any) {
+    return await this.sleepSoundsService.updatePredefinedMix(id, dto);
+  }
+
+  async deletePredefinedMix(id: string) {
+    return await this.sleepSoundsService.deletePredefinedMix(id);
+  }
+
+  async getSettings() {
+    return await this.sleepSoundsService.getAllSettings();
+  }
+
+  async updateSetting(key: string, value: string) {
+    return await this.sleepSoundsService.updateSetting(key, value);
+  }
+
+  async getSleepSoundSessions(limit?: number, offset?: number) {
+    return await this.sleepSoundsService.getSessionsForAdmin(limit ?? 50, offset ?? 0);
+  }
+
+  async getSleepAnalyticsOverview() {
+    return await this.sleepSoundsService.getAnalyticsOverview();
+  }
+
+  async getSleepTopSounds(limit?: number) {
+    return await this.sleepSoundsService.getTopSoundsByPlays(limit ?? 20);
   }
 }

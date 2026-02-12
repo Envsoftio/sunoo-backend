@@ -10,11 +10,15 @@ export class S3Service {
   private readonly s3Client: S3Client;
   private readonly bucket: string;
   private readonly region: string;
+  /** Base URL for public file access (e.g. CloudFront). If set, getFileUrl uses this instead of bucket.s3.region. */
+  private readonly publicBaseUrl: string | null;
 
   constructor(private configService: ConfigService) {
     const s3Config = this.configService.get('s3');
     this.bucket = s3Config.bucket;
     this.region = s3Config.region;
+    const hlsUrl = (s3Config.hlsUrl as string)?.trim() || '';
+    this.publicBaseUrl = hlsUrl ? hlsUrl.replace(/\/$/, '') : null;
 
     this.s3Client = new S3Client({
       region: this.region,
@@ -24,7 +28,10 @@ export class S3Service {
       },
     });
 
-    this.logger.log(`S3 Service initialized for bucket: ${this.bucket}`);
+    this.logger.log(
+      `S3 Service initialized for bucket: ${this.bucket}` +
+        (this.publicBaseUrl ? `, public URL: ${this.publicBaseUrl}` : '')
+    );
   }
 
   /**
@@ -97,7 +104,8 @@ export class S3Service {
   }
 
   /**
-   * Get the full S3 URL from a key (path)
+   * Get the full S3 URL from a key (path). Used for returned/response URLs only.
+   * Uses AWS_S3_HLS_URL as base when set (e.g. CloudFront); uploads still use AWS_S3_BUCKET.
    * @param key - The S3 key (path)
    * @returns The full S3 URL
    */
@@ -106,6 +114,9 @@ export class S3Service {
     // If already a full URL, return as is
     if (key.startsWith('http://') || key.startsWith('https://')) {
       return key;
+    }
+    if (this.publicBaseUrl) {
+      return `${this.publicBaseUrl}/${key}`;
     }
     return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
   }

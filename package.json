@@ -22,7 +22,9 @@
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
     "migrate:data": "ts-node scripts/migrate-data.ts",
     "migrate:fix-all-users": "ts-node scripts/fix-all-users.ts",
-    "set-email-provider": "ts-node scripts/set-email-provider.ts"
+    "set-email-provider": "ts-node scripts/set-email-provider.ts",
+    "import:sounds": "ts-node -r tsconfig-paths/register scripts/import-sleep-sounds.ts",
+    "seed:mixes": "ts-node -r tsconfig-paths/register scripts/seed-predefined-mixes.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.925.0",
