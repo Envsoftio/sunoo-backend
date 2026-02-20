@@ -521,13 +521,36 @@ export class SleepSoundsService {
   // Helper methods
   private async isUserPremium(userId: string): Promise<boolean> {
     const subscription = await this.subscriptionRepository.findOne({
-      where: { user_id: userId },
+      where: {
+        user_id: userId,
+        status: In(['active', 'pending', 'authenticated', 'halted', 'cancelled']),
+      },
+      order: { created_at: 'DESC' },
     });
 
     if (!subscription) return false;
 
-    // Check if subscription is active
-    return subscription.status === 'active';
+    if (
+      subscription.status &&
+      ['active', 'pending', 'authenticated', 'halted'].includes(
+        subscription.status
+      )
+    ) {
+      return true;
+    }
+
+    if (subscription.status === 'cancelled') {
+      const now = new Date();
+      const gracePeriodEndDate = subscription.next_billing_date
+        ? new Date(subscription.next_billing_date)
+        : subscription.end_date
+          ? new Date(subscription.end_date)
+          : null;
+
+      return gracePeriodEndDate ? now <= gracePeriodEndDate : false;
+    }
+
+    return false;
   }
 
   private attachS3Url(sound: SleepSound): any {
