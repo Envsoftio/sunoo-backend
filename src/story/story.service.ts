@@ -1140,7 +1140,16 @@ export class StoryService {
         },
       }));
 
-      return { success: true, data: stories };
+      // One entry per book: keep most recent progress (list already ordered by lastListenedAt DESC)
+      const seenBookIds = new Set<string>();
+      const uniqueStories = stories.filter((s) => {
+        const bookId = s?.id;
+        if (!bookId || seenBookIds.has(bookId)) return false;
+        seenBookIds.add(bookId);
+        return true;
+      });
+
+      return { success: true, data: uniqueStories };
     } catch (error) {
       return { success: false, message: error.message };
     }
