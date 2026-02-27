@@ -1521,9 +1521,16 @@ export class StoryService {
         .createQueryBuilder('book')
         .leftJoinAndSelect('book.category', 'category')
         .leftJoinAndSelect('book.bookRatings', 'bookRatings')
-        .where('book.title ILIKE :query OR book.description ILIKE :query', {
-          query: `%${query}%`,
-        })
+        .where(
+          `book.title ILIKE :query
+           OR book.bookDescription ILIKE :query
+           OR book.slug ILIKE :query
+           OR REPLACE(LOWER(book.slug), '-', ' ') ILIKE :normalizedQuery`,
+          {
+            query: `%${query}%`,
+            normalizedQuery: `%${query.toLowerCase().replace(/-/g, ' ').trim()}%`,
+          },
+        )
         .andWhere('book.isPublished = :published', { published: true })
         .orderBy('book.created_at', 'DESC')
         .skip((page - 1) * limit)
