@@ -828,6 +828,61 @@ export class AdminController {
     return await this.adminService.handleHlsWebhook(body);
   }
 
+  // HLS Chapter Update Webhook
+  @Post('webhooks/hls-update-chapters')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Add/replace chapters on an existing book via HLS conversion webhook',
+  })
+  @ApiResponse({ status: 200, description: 'Chapters updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async handleHlsUpdateChaptersWebhook(
+    @Body()
+    body: {
+      bookId: string;
+      outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
+    },
+    @Headers() allHeaders: Record<string, string>
+  ) {
+    // Verify webhook authentication (same logic as hls-conversion)
+    const expectedToken = process.env.WEBHOOK_AUTH_TOKEN;
+    const webhookAuthKey = Object.keys(allHeaders).find(
+      key => key.toLowerCase() === 'webhook_auth'
+    );
+    const webhookAuth = webhookAuthKey ? allHeaders[webhookAuthKey] : null;
+
+    if (!expectedToken) {
+      throw new UnauthorizedException('Webhook authentication not configured');
+    }
+    if (!webhookAuth) {
+      throw new UnauthorizedException('Missing webhook_auth header');
+    }
+
+    const trimmedWebhookAuth = webhookAuth.trim();
+    const receivedToken = trimmedWebhookAuth.replace(/^Bearer\s+/i, '');
+    const expectedTokenOnly = expectedToken.trim();
+
+    const isValid =
+      trimmedWebhookAuth === `Bearer ${expectedTokenOnly}` ||
+      receivedToken === expectedTokenOnly;
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid webhook authentication token');
+    }
+
+    // Validate payload
+    if (!body.bookId || typeof body.bookId !== 'string') {
+      throw new BadRequestException("Invalid payload: missing 'bookId'");
+    }
+    if (!body.outputPaths || !Array.isArray(body.outputPaths)) {
+      throw new BadRequestException("Invalid payload: missing 'outputPaths'");
+    }
+
+    return await this.adminService.handleHlsUpdateChapters(body);
+  }
+
   // Push Notification Endpoints
   @Post('push/send')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -930,7 +985,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all sleep sound categories (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   async getSleepSoundCategories() {
     return await this.adminService.getSleepSoundCategories();
   }
@@ -967,7 +1025,10 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get sleep sounds analytics overview (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Analytics overview retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics overview retrieved successfully',
+  })
   async getSleepAnalyticsOverview() {
     return await this.adminService.getSleepAnalyticsOverview();
   }
@@ -979,11 +1040,11 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Sessions retrieved successfully' })
   async getSleepSoundSessions(
     @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
+    @Query('offset') offset?: string
   ) {
     return await this.adminService.getSleepSoundSessions(
       limit ? parseInt(limit, 10) : undefined,
-      offset ? parseInt(offset, 10) : undefined,
+      offset ? parseInt(offset, 10) : undefined
     );
   }
 
@@ -991,9 +1052,14 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get top sounds by plays (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Top sounds retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Top sounds retrieved successfully',
+  })
   async getSleepTopSounds(@Query('limit') limit?: string) {
-    return await this.adminService.getSleepTopSounds(limit ? parseInt(limit, 10) : undefined);
+    return await this.adminService.getSleepTopSounds(
+      limit ? parseInt(limit, 10) : undefined
+    );
   }
 
   @Get('sleep-sounds')
@@ -1036,8 +1102,13 @@ export class AdminController {
   @Post('sleep-sounds/:id/toggle-publish')
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Toggle publish status of sleep sound (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Sound publish status toggled successfully' })
+  @ApiOperation({
+    summary: 'Toggle publish status of sleep sound (Admin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sound publish status toggled successfully',
+  })
   async toggleSleepSoundPublish(@Param('id') id: string) {
     return await this.adminService.toggleSleepSoundPublish(id);
   }
@@ -1095,7 +1166,10 @@ export class AdminController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update app setting (SuperAdmin only)' })
   @ApiResponse({ status: 200, description: 'Setting updated successfully' })
-  async updateSetting(@Param('key') key: string, @Body() body: { value: string }) {
+  async updateSetting(
+    @Param('key') key: string,
+    @Body() body: { value: string }
+  ) {
     return await this.adminService.updateSetting(key, body.value);
   }
 }

@@ -1331,6 +1331,58 @@ export class AdminService {
     }
   }
 
+  /**
+   * Handle HLS update-chapters webhook - appends new chapters to an existing book
+   */
+  async handleHlsUpdateChapters(payload: {
+    bookId: string;
+    outputPaths: Array<{ name: string; url: string; playbackTime?: string }>;
+  }) {
+    try {
+      const { bookId, outputPaths } = payload;
+
+      // Find the existing book
+      const book = await this.bookRepository.findOne({
+        where: { id: bookId, deleted_at: IsNull() },
+      });
+      if (!book) {
+        return { success: false, message: `Book not found for id: ${bookId}` };
+      }
+
+      // Get current chapter count to correctly sequence new chapters
+      const existingCount = await this.chapterRepository.count({
+        where: { bookId, deleted_at: IsNull() },
+      });
+
+      // Append new chapters after existing ones
+      const chapters = outputPaths.map((pathObj, index) =>
+        this.chapterRepository.create({
+          name: pathObj.name,
+          chapterUrl: pathObj.url,
+          bookId: book.id,
+          playbackTime: pathObj.playbackTime || undefined,
+          order: existingCount + index + 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+      );
+
+      const savedChapters = await this.chapterRepository.save(chapters);
+
+      return {
+        success: true,
+        status: 'success',
+        bookId: book.id,
+        chaptersInserted: savedChapters.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Internal Server Error',
+      };
+    }
+  }
+
   // Chapter Management Methods
   async getStoryChapters(storyId: string) {
     try {
